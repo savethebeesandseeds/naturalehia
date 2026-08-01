@@ -1,0 +1,64 @@
+# CMake out-of-source builds and generated metadata
+/build/
+/build-*/
+/out/
+/cmake-build-*/
+CMakeCache.txt
+CMakeFiles/
+CTestTestfile.cmake
+cmake_install.cmake
+compile_commands.json
+Testing/
+_deps/
+
+# C and C++ build products
+*.a
+*.app
+*.d
+*.dll
+*.dylib
+*.exe
+*.exp
+*.idb
+*.ilk
+*.la
+*.lib
+*.lo
+*.o
+*.obj
+*.out
+*.pdb
+*.so
+*.so.*
+
+# Coverage and profiling output
+*.gcda
+*.gcno
+*.gcov
+*.profdata
+*.profraw
+/coverage/
+
+# Visual Studio
+/.vs/
+*.VC.db
+*.VC.opendb
+*.sln
+*.suo
+*.user
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+
+# Other editors and operating systems
+/.idea/
+/.vscode/
+*.swp
+*~
+.DS_Store
+Desktop.ini
+Thumbs.db
+
+# Logs and temporary files
+*.log
+*.tmp
