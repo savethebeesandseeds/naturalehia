@@ -1,8 +1,8 @@
-# CMake out-of-source builds and generated metadata
-/build/
-/build-*/
-/out/
-/cmake-build-*/
+# CMake out-of-source builds and generated metadata in any project subtree
+build/
+build-*/
+out/
+cmake-build-*/
 CMakeCache.txt
 CMakeFiles/
 CTestTestfile.cmake
@@ -37,10 +37,10 @@ _deps/
 *.gcov
 *.profdata
 *.profraw
-/coverage/
+coverage/
 
 # Visual Studio
-/.vs/
+.vs/
 *.VC.db
 *.VC.opendb
 *.sln
@@ -51,8 +51,8 @@ _deps/
 *.vcxproj.user
 
 # Other editors and operating systems
-/.idea/
-/.vscode/
+.idea/
+.vscode/
 *.swp
 *~
 .DS_Store

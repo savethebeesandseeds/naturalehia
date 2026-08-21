@@ -1,0 +1,15 @@
+cff-version: 1.2.0
+message: >-
+  If this software contributes to your work, cite the project and the exact
+  version or commit you used.
+title: Logic Gates of the Biological Kingdom
+type: software
+authors:
+  - name: Naturalehia contributors
+license: MIT
+repository-code: https://github.com/savethebeesandseeds/naturalehia
+url: https://naturalehia.waajacu.com/projects/logic-gates-of-the-biological-kingdom/
+abstract: >-
+  Linux-first C++ research infrastructure for open and auditable protein-level
+  Boolean logic design, beginning with a two-input XOR specification and an
+  explicit reset requirement.

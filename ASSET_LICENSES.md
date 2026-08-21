@@ -4,10 +4,10 @@ The MIT License in this repository covers newly contributed Naturalehia
 software and documentation. It does **not** cover the pre-existing visual
 assets listed below:
 
-- `src/NATURALEHIALOGO-1.png`
-- `src/NATURALEHIALOGO.pdf`
-- `src/NATURALEHIALOGO.tex`
-- `src/waacamaya_p1.jpg`
+- `assets/NATURALEHIALOGO-1.png`
+- `assets/NATURALEHIALOGO.pdf`
+- `assets/NATURALEHIALOGO.tex`
+- `assets/waacamaya_p1.jpg`
 
 ## Current status
 
@@ -17,9 +17,10 @@ License. Their presence in the repository, availability through the project
 website, or inclusion in a checkout does not grant permission to copy, modify,
 redistribute, sublicense, or use them in another project.
 
-The existing website describes `waacamaya_p1.jpg` as a machine-created
+The repository history describes `waacamaya_p1.jpg` as a machine-created
 illustration made at `deepdreamgenerator.com`; that statement is attribution,
-not a license grant.
+not a license grant. The Naturalehia website displays this image and the
+wordmark, but that display does not alter their rights status.
 
 The wordmark files are connected to the included LaTeX source, which references
 the Acorn typeface. The repository does not contain the referenced font files or

@@ -1,0 +1,110 @@
+name: Logic Gates of the Biological Kingdom CI
+
+on:
+  push:
+    paths:
+      - "projects/logic-gates-of-the-biological-kingdom/**"
+      - ".github/workflows/logic-gates-of-the-biological-kingdom-ci.yml"
+      - ".gitattributes"
+      - ".gitignore"
+  pull_request:
+    paths:
+      - "projects/logic-gates-of-the-biological-kingdom/**"
+      - ".github/workflows/logic-gates-of-the-biological-kingdom-ci.yml"
+      - ".gitattributes"
+      - ".gitignore"
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Protein logic / Makefile workflow
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: projects/logic-gates-of-the-biological-kingdom
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install quality tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends shellcheck uncrustify
+
+      - name: Run the supported developer checks
+        run: make test
+
+  build-test-install:
+    name: Protein logic / ${{ matrix.compiler.name }} / ${{ matrix.build_type }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: projects/logic-gates-of-the-biological-kingdom
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type: [Debug, Release]
+        compiler:
+          - name: GCC
+            cxx: g++
+          - name: Clang
+            cxx: clang++
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        env:
+          CXX: ${{ matrix.compiler.cxx }}
+        run: >-
+          cmake -S . -B build -G Ninja
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          -DNATURALEHIA_PROTEIN_LOGIC_WARNINGS_AS_ERRORS=ON
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Install
+        run: cmake --install build --prefix install
+
+      - name: Configure installed-package consumer
+        run: >-
+          cmake -S tests/package_consumer -B consumer-build -G Ninja
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          -DCMAKE_PREFIX_PATH=${{ github.workspace }}/projects/logic-gates-of-the-biological-kingdom/install
+
+      - name: Build installed-package consumer
+        run: cmake --build consumer-build --parallel
+
+      - name: Test installed-package consumer
+        run: ctest --test-dir consumer-build --output-on-failure
+
+  sanitizers:
+    name: Protein logic / Clang / ASan + UBSan
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: projects/logic-gates-of-the-biological-kingdom
+    env:
+      CXX: clang++
+      ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
+      UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install quality tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends shellcheck uncrustify
+
+      - name: Run the supported sanitizer checks
+        run: make sanitize

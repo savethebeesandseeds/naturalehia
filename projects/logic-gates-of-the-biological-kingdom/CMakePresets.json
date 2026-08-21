@@ -1,0 +1,86 @@
+{
+  "version": 5,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 24,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "linux-debug",
+      "displayName": "Linux Debug",
+      "description": "Debug build with tests using the selected Linux compiler",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "BUILD_TESTING": "ON"
+      }
+    },
+    {
+      "name": "linux-release",
+      "displayName": "Linux Release",
+      "description": "Optimized Linux build with tests",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "BUILD_TESTING": "ON"
+      }
+    },
+    {
+      "name": "linux-sanitize",
+      "displayName": "Linux ASan + UBSan",
+      "description": "Debug build with address and undefined-behavior sanitizers",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "BUILD_TESTING": "ON",
+        "NATURALEHIA_PROTEIN_LOGIC_ENABLE_SANITIZERS": "ON"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "linux-debug",
+      "configurePreset": "linux-debug",
+      "jobs": 2
+    },
+    {
+      "name": "linux-release",
+      "configurePreset": "linux-release",
+      "jobs": 2
+    },
+    {
+      "name": "linux-sanitize",
+      "configurePreset": "linux-sanitize",
+      "jobs": 2
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "linux-debug",
+      "configurePreset": "linux-debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "linux-release",
+      "configurePreset": "linux-release",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "linux-sanitize",
+      "configurePreset": "linux-sanitize",
+      "output": {
+        "outputOnFailure": true
+      }
+    }
+  ]
+}

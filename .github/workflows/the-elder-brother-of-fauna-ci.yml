@@ -1,0 +1,81 @@
+name: The Elder Brother of Fauna CI
+
+on:
+  push:
+    paths:
+      - "projects/the-elder-brother-of-fauna/**"
+      - ".github/workflows/the-elder-brother-of-fauna-ci.yml"
+      - ".gitattributes"
+      - ".gitignore"
+      - "LICENSE"
+  pull_request:
+    paths:
+      - "projects/the-elder-brother-of-fauna/**"
+      - ".github/workflows/the-elder-brother-of-fauna-ci.yml"
+      - ".gitattributes"
+      - ".gitignore"
+      - "LICENSE"
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: Fauna / ${{ matrix.toolchain.name }} / ${{ matrix.build_type }}
+    runs-on: ${{ matrix.toolchain.os }}
+    defaults:
+      run:
+        working-directory: projects/the-elder-brother-of-fauna
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type: [Debug, Release]
+        toolchain:
+          - name: GCC
+            os: ubuntu-latest
+            cc: gcc
+            cxx: g++
+          - name: Clang
+            os: ubuntu-latest
+            cc: clang
+            cxx: clang++
+          - name: MSVC
+            os: windows-latest
+            cc: ""
+            cxx: ""
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        if: runner.os != 'Windows'
+        env:
+          CC: ${{ matrix.toolchain.cc }}
+          CXX: ${{ matrix.toolchain.cxx }}
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+
+      - name: Configure
+        if: runner.os == 'Windows'
+        run: cmake -S . -B build -G "Visual Studio 17 2022" -A x64
+
+      - name: Build
+        run: cmake --build build --config ${{ matrix.build_type }} --parallel
+
+      - name: Test
+        run: ctest --test-dir build -C ${{ matrix.build_type }} --output-on-failure
+
+      - name: Install
+        run: cmake --install build --config ${{ matrix.build_type }} --prefix install
+
+      - name: Configure installed-package consumer
+        run: >-
+          cmake -S tests/package_consumer -B consumer-build
+          -DCMAKE_PREFIX_PATH=${{ github.workspace }}/projects/the-elder-brother-of-fauna/install
+
+      - name: Build installed-package consumer
+        run: >-
+          cmake --build consumer-build --config ${{ matrix.build_type }}
+          --target naturalehia_fauna_package_consumer --parallel
+
+      - name: Test installed-package consumer
+        run: ctest --test-dir consumer-build -C ${{ matrix.build_type }} --output-on-failure
