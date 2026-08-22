@@ -1,11 +1,12 @@
 # Naturalehia homepage concept assets
 
 Generated on 2026-08-21 with the built-in OpenAI ImageGen workflow and refined on
-2026-08-22 with locally processed cutouts and user-supplied hero details. The
+2026-08-22 with locally processed cutouts and user-supplied hero and favicon
+details. The
 approved full-page design is preserved as
-`homepage-reference.png`. While the visual direction is being refined, the
-production homepage references PNG files directly so every reviewable image has
-one unambiguous filename.
+`homepage-reference.png`. Reviewable PNG sources remain in this folder; the
+homepage loads one clearly named WebP derivative per live artwork from
+`../homepage-runtime/`.
 
 No legacy Naturalehia artwork was supplied to the generator. The generated asset
 set was derived from the new approved homepage concept only.
@@ -28,20 +29,22 @@ fallbacks used by the homepage.
 - `homepage-reference.png` is the approved complete-page concept, not a live page
   asset.
 - Files ending in `-transparent.png`, plus the RGBA hero and observation plates,
-  are isolated images currently displayed by the homepage. Review these when
-  judging background removal and blending.
+  are the isolated production sources. Review these when judging background
+  removal and blending.
 - Matching PNG names without `-transparent` are untouched ImageGen originals.
 - The project panels and evidence band are full-bleed images and therefore need no
   transparent sibling.
 
-Responsive encodings are intentionally deferred until the artwork is approved.
-This folder currently contains reviewable PNG masters only—no resized WebP clones.
+The browser-ready encodings are deliberately separated into
+`assets/homepage-runtime/`. There is exactly one WebP per live source—no mobile,
+`@2x`, fallback, or `srcset` matrix—so this review folder remains unambiguous.
 
 ## Asset inventory
 
 | File | Dimensions | Intended placement |
 | --- | ---: | --- |
 | `homepage-reference.png` | 768 x 2048 | Approved complete-page visual reference |
+| `favicon-stone-n-source.png` | 1254 x 1254 | Preserved transparent source for the site favicon |
 | `hero-living-observatory.png` | 1228 x 941 | Production transparent hero artwork on the deep-forest field |
 | `hero-living-observatory-previous.png` | 1536 x 1024 | Preserved opaque hero iteration |
 | `hero-observation-animal-identity.png` | 2172 x 724 | Animal-identity plate in the hero observation rail |

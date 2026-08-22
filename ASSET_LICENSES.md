@@ -32,9 +32,9 @@ rights review as well.
 The artwork under `assets/homepage-concept/` was generated specifically for the
 Naturalehia homepage on 2026-08-21 and refined on 2026-08-22 with OpenAI's
 built-in ImageGen workflow. The rights-unconfirmed legacy files listed above were
-not supplied to the generator as inputs. Transparent PNG cutouts in that directory
-are mechanical derivatives of the generated PNG masters; the opaque masters
-remain preserved alongside them.
+not supplied to the generator as inputs. Transparent PNG cutouts in that directory,
+browser-ready WebPs under `assets/homepage-runtime/`, and `assets/favicon.png` are
+mechanical derivatives of the preserved source artwork.
 
 This section records provenance; it is not a legal opinion or a separate license
 grant. The project maintainer should select and state a redistribution license for
