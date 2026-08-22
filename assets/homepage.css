@@ -278,6 +278,18 @@ body.home-page::after {
   transform: translateY(-0.125rem);
 }
 
+.home-page .home-button-icon {
+  display: block;
+  width: 1.125rem;
+  height: 1.125rem;
+  flex: 0 0 auto;
+}
+
+.home-page .home-button-gold .home-button-icon {
+  filter: brightness(0) saturate(100%);
+  opacity: 0.78;
+}
+
 .home-page .home-button-gold {
   background-color: var(--home-gold);
   background-image:
@@ -585,7 +597,22 @@ body.home-page::after {
   min-height: 0;
   aspect-ratio: 4 / 5;
   overflow: hidden;
-  border: 1px solid rgba(16, 37, 31, 0.25);
+  border: 2px solid rgba(217, 182, 111, 0.9);
+  box-shadow:
+    0 0 0 0.08rem rgba(195, 149, 73, 0.38),
+    0 0 1.35rem 0.15rem rgba(195, 149, 73, 0.28),
+    0 1rem 2.4rem rgba(16, 37, 31, 0.18);
+  transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+.home-page .home-project:hover,
+.home-page .home-project:focus-within {
+  border-color: var(--home-gold-light);
+  box-shadow:
+    0 0 0 0.1rem rgba(195, 149, 73, 0.44),
+    0 0 1.85rem 0.3rem rgba(195, 149, 73, 0.4),
+    0 1.35rem 3rem rgba(16, 37, 31, 0.24);
+  transform: translateY(-0.35rem);
 }
 
 .home-page .home-project-card-link {
@@ -593,6 +620,7 @@ body.home-page::after {
   inset: 0;
   display: block;
   color: inherit;
+  cursor: pointer;
   text-decoration: none;
 }
 
@@ -616,6 +644,56 @@ body.home-page::after {
 
 .home-page .home-project-molecular .home-project-card-link:focus-visible::after {
   border-color: var(--home-forest-deep);
+}
+
+.home-page .home-project-corner {
+  position: absolute;
+  top: clamp(0.9rem, 2vw, 1.35rem);
+  right: clamp(0.9rem, 2vw, 1.35rem);
+  z-index: 2;
+  display: grid;
+  width: clamp(2.75rem, 5vw, 3.35rem);
+  aspect-ratio: 1;
+  border: 1px solid rgba(217, 182, 111, 0.92);
+  background: radial-gradient(circle, rgba(217, 182, 111, 0.34) 0 34%, rgba(217, 182, 111, 0.13) 58%, transparent 78%);
+  box-shadow:
+    inset 0 0 0.7rem rgba(217, 182, 111, 0.12),
+    0 0 1.35rem 0.28rem rgba(217, 182, 111, 0.36);
+  color: var(--home-gold-light);
+  font-family: var(--home-mono);
+  font-size: 1.3rem;
+  font-weight: 700;
+  line-height: 1;
+  place-items: center;
+  transition: background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease, color 180ms ease;
+}
+
+.home-page .home-project-corner span {
+  transition: transform 180ms ease;
+}
+
+.home-page .home-project-molecular .home-project-corner {
+  border-color: rgba(128, 98, 47, 0.78);
+  background: radial-gradient(circle, rgba(195, 149, 73, 0.3) 0 34%, rgba(195, 149, 73, 0.11) 58%, transparent 78%);
+  box-shadow:
+    inset 0 0 0.7rem rgba(195, 149, 73, 0.1),
+    0 0 1.35rem 0.28rem rgba(128, 98, 47, 0.28);
+  color: #715320;
+}
+
+.home-page .home-project-card-link:hover .home-project-corner,
+.home-page .home-project-card-link:focus-visible .home-project-corner {
+  border-color: rgba(239, 212, 156, 0.92);
+  background: radial-gradient(circle, rgba(239, 212, 156, 0.7) 0 34%, rgba(195, 149, 73, 0.27) 58%, transparent 78%);
+  box-shadow:
+    inset 0 0 0.8rem rgba(239, 212, 156, 0.18),
+    0 0 1.65rem 0.38rem rgba(217, 182, 111, 0.52);
+  color: #5f4319;
+}
+
+.home-page .home-project-card-link:hover .home-project-corner span,
+.home-page .home-project-card-link:focus-visible .home-project-corner span {
+  transform: translate(0.13rem, -0.13rem);
 }
 
 .home-page .home-project-art,
@@ -764,26 +842,64 @@ body.home-page::after {
 }
 
 .home-page .home-project-link {
-  display: inline-block;
-  color: inherit;
-  font-size: 0.66rem;
-  font-weight: 600;
+  position: absolute;
+  right: clamp(1rem, 2.25vw, 2rem);
+  bottom: clamp(1rem, 2.25vw, 2rem);
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  min-height: 3rem;
+  padding: 0.62rem 0.65rem 0.62rem 1rem;
+  border: 2px solid var(--home-gold-light);
+  background-color: var(--home-gold);
+  background-image:
+    var(--home-grain),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.13), rgba(77, 46, 12, 0.08));
+  background-repeat: repeat, no-repeat;
+  background-size: var(--home-grain-size), 100% 100%;
+  box-shadow:
+    inset 0 1px rgba(255, 255, 255, 0.2),
+    inset 0 -1px rgba(77, 46, 12, 0.14),
+    0 0 0 1px rgba(3, 23, 19, 0.32),
+    0 0.5rem 1.1rem rgba(3, 23, 19, 0.24);
+  color: var(--home-forest-deep);
+  font-size: 0.7rem;
+  font-weight: 700;
   letter-spacing: 0.055em;
-  text-decoration-line: underline;
-  text-decoration-color: var(--home-gold);
+  line-height: 1;
   text-transform: uppercase;
-  text-underline-offset: 0.35rem;
+  transition: background-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
 }
 
 .home-page .home-project-link span {
-  display: inline-block;
-  margin-left: 0.2rem;
-  transition: transform 180ms ease;
+  display: grid;
+  width: 1.75rem;
+  aspect-ratio: 1;
+  background: radial-gradient(circle, rgba(3, 23, 19, 0.28) 0 32%, rgba(3, 23, 19, 0.1) 58%, transparent 76%);
+  color: var(--home-forest-deep);
+  font-size: 1rem;
+  line-height: 1;
+  place-items: center;
+  text-shadow: 0 0 0.45rem rgba(3, 23, 19, 0.42);
+  transition: background-color 180ms ease, color 180ms ease, transform 180ms ease;
+}
+
+.home-page .home-project-card-link:hover .home-project-link,
+.home-page .home-project-card-link:focus-visible .home-project-link {
+  background-color: var(--home-gold-light);
+  box-shadow:
+    inset 0 1px rgba(255, 255, 255, 0.18),
+    inset 0 -1px rgba(77, 46, 12, 0.12),
+    0 0 0 2px rgba(3, 23, 19, 0.42),
+    0 0.6rem 1.25rem rgba(3, 23, 19, 0.3);
+  transform: translateY(-0.15rem);
 }
 
 .home-page .home-project-card-link:hover .home-project-link span,
 .home-page .home-project-card-link:focus-visible .home-project-link span {
-  transform: translate(0.15rem, -0.15rem);
+  transform: translateX(0.18rem);
 }
 
 .home-page .home-project-detail {
@@ -802,7 +918,7 @@ body.home-page::after {
 
 .home-page .home-project-timeline {
   bottom: 1rem;
-  width: min(72%, 29rem);
+  width: min(calc(100% - 12rem), 29rem);
 }
 
 .home-page .home-project-timeline ol {
@@ -1340,6 +1456,11 @@ body.home-page::after {
     aspect-ratio: 4 / 5;
   }
 
+  .home-page .home-project-corner {
+    top: 1rem;
+    right: 1rem;
+  }
+
   .home-page .home-project-copy {
     width: 100%;
     padding: 1.4rem;
@@ -1356,7 +1477,13 @@ body.home-page::after {
   }
 
   .home-page .home-project-timeline {
+    bottom: 5.25rem;
     width: calc(100% - 2.8rem);
+  }
+
+  .home-page .home-project-link {
+    right: 1.4rem;
+    bottom: 1.25rem;
   }
 
   .home-page .home-project-molecular .home-project-art img {
@@ -1451,9 +1578,20 @@ body.home-page::after {
   .home-page .home-nav a::after,
   .home-page .home-footer-nav a::after,
   .home-page .home-footer-links a::after,
+  .home-page .home-project,
+  .home-page .home-project-corner,
+  .home-page .home-project-corner span,
+  .home-page .home-project-link,
   .home-page .home-project-link span {
     animation: none;
     transition: none;
+  }
+
+  .home-page .home-project:hover,
+  .home-page .home-project:focus-within,
+  .home-page .home-project-card-link:hover .home-project-link,
+  .home-page .home-project-card-link:focus-visible .home-project-link {
+    transform: none;
   }
 }
 
