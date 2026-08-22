@@ -27,6 +27,20 @@ the Acorn typeface. The repository does not contain the referenced font files or
 their license. The wordmark and its source therefore remain excluded pending a
 rights review as well.
 
-Downstream distributors should omit these files unless they have separately
-obtained permission. To provide provenance or licensing information, contact
+## Generated homepage artwork
+
+The artwork under `assets/homepage-concept/` was generated specifically for the
+Naturalehia homepage on 2026-08-21 and refined on 2026-08-22 with OpenAI's
+built-in ImageGen workflow. The rights-unconfirmed legacy files listed above were
+not supplied to the generator as inputs. Transparent PNG cutouts in that directory
+are mechanical derivatives of the generated PNG masters; the opaque masters
+remain preserved alongside them.
+
+This section records provenance; it is not a legal opinion or a separate license
+grant. The project maintainer should select and state a redistribution license for
+the generated visual artwork before downstream reuse outside the Naturalehia site.
+
+Downstream distributors should omit the rights-unconfirmed legacy assets and
+generated homepage artwork unless they have separately obtained permission. To
+provide provenance or licensing information, contact
 [contact@waajacu.com](mailto:contact@waajacu.com).

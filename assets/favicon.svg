@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <title>Naturalehia</title>
+  <rect width="64" height="64" rx="9" fill="#082f27"/>
+  <path d="M32 52V28" fill="none" stroke="#f4ead7" stroke-linecap="round" stroke-width="2.5"/>
+  <path d="M31 36C22 36 16 30 15 20c9-1 16 3 18 11" fill="none" stroke="#d9b66f" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"/>
+  <path d="M33 31c2-8 9-12 18-11-1 10-7 16-16 16" fill="none" stroke="#d9b66f" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"/>
+  <path d="M26 51h12" fill="none" stroke="#d9b66f" stroke-linecap="round" stroke-width="2.5"/>
+</svg>
