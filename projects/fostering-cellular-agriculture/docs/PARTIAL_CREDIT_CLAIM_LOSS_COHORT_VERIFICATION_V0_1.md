@@ -11,9 +11,14 @@ It does **not** verify a controlled population register, real observed losses,
 term comparability, source truth, census completeness, an empirical frequency,
 a probability, correlation, calibration, price, rating, expected return, or
 financeability. The five-file cohort loader, controlled-register hash, Evidence
-Gate binding, and authoritative selected-path evidence-provenance seam are not
-implemented. The kernel therefore always leaves empirical, Portfolio, and
-calibrated-execution authority false.
+Gate binding, and empirical admission policy are not implemented. The
+authoritative selected-path evidence-provenance seam is implemented: resolved
+rows are reloaded in one immutable Claim Ledger package operation that preserves
+selected latest entry scope/status/source/date, requested cash-path status,
+provider terms, and applicable covenants. The cohort requires an explicitly
+complete-resolved path and records that the provenance was verified during
+evaluation. It still leaves empirical, Portfolio, and calibrated-execution
+authority false.
 
 ## Tested environment and result
 
@@ -32,18 +37,22 @@ The complete repository suite was compiled and run under both configurations:
 ```text
 cmake --build build/dev --config Debug --parallel
 ctest --test-dir build/dev -C Debug --output-on-failure
-Result: 66/66 tests passed in Debug (33.73 seconds).
+Result: 67/67 tests passed in Debug (87.62 seconds).
 
 cmake --build build/release --config Release --parallel
 ctest --test-dir build/release -C Release --output-on-failure
-Result: 66/66 tests passed in Release (16.42 seconds).
+Result: 67/67 tests passed in Release (34.28 seconds).
 ```
 
-The focused cohort test also passed directly in both configurations:
+The four focused seam regressions also passed in both configurations:
 
 ```text
-Debug:   1/1 passed; focused test 0.69 seconds (0.81 seconds total)
-Release: 1/1 passed; focused test 0.31 seconds (0.36 seconds total)
+Debug:   4/4 passed; 22.30 seconds total
+         Claim Ledger package 5.47 s; cohort 0.88 s;
+         Evidence Gate 15.54 s; population CLI 0.16 s
+Release: 4/4 passed; 9.82 seconds total
+         Claim Ledger package 4.91 s; cohort 0.74 s;
+         Evidence Gate 3.94 s; population CLI 0.20 s
 ```
 
 GCC, Clang, sanitizers, remote CI, and cross-platform deterministic replay were
@@ -143,7 +152,13 @@ The focused test verifies or rejects, as applicable:
 - a triggered positive-shortfall classification attached to exact zero face;
 - an exact positive `1e-11` face or provider term being collapsed by a
   materiality tolerance; and
-- separate principal, provider-cash, and horizon-settlement reconciliation.
+- separate principal, provider-cash, and horizon-settlement reconciliation;
+- resolved rows whose raw cash-path status is missing or not
+  `complete-resolved`;
+- unsafe requested scenario identifiers before package I/O;
+- missing ordinary source-manifest metadata while preserving the two reserved
+  absence markers; and
+- common-versus-scenario selected-entry scope without cross-scenario leakage.
 
 The focused result also confirms sorted observation output, propagation of
 synthetic/package blockers, and distinct known-positive versus
@@ -155,14 +170,16 @@ The current API accepts a caller-constructed in-memory frame. It does not parse
 or hash-bind `cohort.cfg`, `observations.tsv`, `methods.cfg`, `dossier.cfg`, and
 `evidence_manifest.tsv`; prove that all issued or at-risk claims were included;
 run the Evidence Gate; authenticate classifications; retain authoritative
-selected-entry status/source/date provenance; or emit source and method lineage.
-The regression therefore validates mechanical bookkeeping and fail-closed
-boundaries only.
+population/method/classification admission; or emit the full source and method
+lineage in its result. It does consume authoritative selected-entry
+status/source/date provenance for resolved rows and rejects a non-complete path
+attestation. The regression therefore validates mechanical bookkeeping, this
+provenance seam, and fail-closed boundaries only.
 
-The next admissible step is to obtain a controlled complete claim population
-and implement the five-file loader plus the narrow Claim Ledger evidence
-snapshot needed to prove realized-path admission without reparsing cash into a
-second ledger. Only after that evidence boundary passes may a separate study
-estimate marginal loss ranges. Dependence must still be tested independently
-before those marginals can inform a pooled instrument, premium, or investor
-return analysis.
+The five-file loader and controlled population acquisition are intentionally
+deferred from the present checkpoint. If later authorized, they can consume the
+implemented Claim Ledger snapshot without reparsing cash into a second ledger.
+Only after population, method, classification, status, source, date, and
+retained-copy admission passes may a separate study estimate marginal loss
+ranges. Dependence must still be tested independently before those marginals can
+inform a pooled instrument, premium, or investor-return analysis.

@@ -1,8 +1,9 @@
-# Internal Software Verification Record — Evidence Gate v0.2
+# Internal Software Verification Record — Evidence Gate
 
-**Verification date:** 27 August 2026  
-**Scope:** reference-project dossier loader, evidence manifest parser, compiled
-requirements, assessment logic, report, CLI behavior, and Wilson public fixture  
+**Verification date:** 30 August 2026
+**Scope:** reference-project schema 0.2, isolated claim-population schema 0.3,
+evidence manifest parser, compiled requirements, immutable-byte loading,
+assessment logic, report, CLI behavior, and Wilson public fixture
 **Result:** passed the checks below; residual limitations remain
 
 This record is a software verification note, not validation of any source
@@ -20,22 +21,26 @@ claim.
 | Language | C++20, extensions disabled |
 | Diagnostics | MSVC `/W4 /permissive- /WX` |
 | Configurations | Debug and Release |
-| Test command | `ctest --test-dir build/dev -C <config> --output-on-failure` |
-| Result | 10 / 10 passed in Debug and 10 / 10 passed in Release |
+| Test command | `ctest --test-dir build/<tree> -C <config> --output-on-failure` |
+| Result | 67 / 67 passed in Debug and 67 / 67 passed in Release |
 
-## Test inventory
+## Focused test inventory
 
-1. Annual risk-model invariants and outputs.
-2. Strict risk-scenario configuration parsing.
-3. Evidence loader and assessor unit tests.
-4. Illustrative risk CLI.
-5. Adverse risk CLI.
-6. Evidence CLI enforcing mode: valid incomplete dossier exits exactly `3`.
-7. Evidence CLI report-only mode: exits `0` and prints the non-enforcing
+1. Evidence loader and assessor unit tests.
+2. Evidence CLI enforcing mode: valid incomplete reference dossier exits
+   exactly `3`.
+3. Evidence CLI report-only mode: exits `0` and prints the non-enforcing
    warning.
-8. Evidence CLI invalid evaluation date: exits `2`.
-9. Evidence CLI missing date value followed by another option: exits `2`.
-10. Evidence CLI out-of-domain evaluation year: exits `2`.
+4. Evidence CLI invalid evaluation date: exits `2`.
+5. Evidence CLI missing date value followed by another option: exits `2`.
+6. Evidence CLI out-of-domain evaluation year: exits `2`.
+7. Claim-population CLI: authority plus independent review exits `0`; the
+   authority-only case exits `3` with the missing conjunction disclosed.
+
+The four focused seam regressions—Claim Ledger package, partial-credit cohort,
+Evidence Gate unit, and population CLI—passed `4/4` in Debug (`22.30` seconds)
+and Release (`9.82` seconds). The complete suite passed in Debug (`87.62`
+seconds) and Release (`34.28` seconds).
 
 ## Evidence-gate regressions
 
@@ -66,6 +71,23 @@ The evidence unit test covers:
   compiled IDs; and
 - strict rejection of unknown requirements, duplicate IDs, and false governance
   commitments.
+
+The isolated claim-population regressions additionally cover:
+
+- schema 0.3 subject-specific metadata with cross-subject fields rejected;
+- the supplemental `FIN-CLAIM-POPULATION-FRAME` requirement, requiring both a
+  capital-provider/government/regulator primary source and an independent
+  report at V3/exact applicability;
+- preservation of the four project-gate totals and prevention of permission
+  promotion in both subject directions, even with a hybrid manifest;
+- exact-byte dossier/manifest parsing rather than later live-file contents;
+- dossier, manifest-row, and manifest-count guardrails plus embedded NUL/control
+  rejection;
+- batch exposure of supplemental pass/fail reasons and subject-aware CLI exit;
+- report-time reassessment so a stale passing assessment cannot be paired with
+  a later-mutated dossier; and
+- explicit disclosure that a population pass grants no reference-project,
+  calibration, pricing, or investment authority.
 
 ## Static and fixture checks
 
@@ -136,3 +158,8 @@ Evidence Gate v0.2 is suitable for fail-closed research dossier control and for
 showing why the Wilson public record is not decision-ready. It is not approved
 as an underwriting system, rating model, transaction execution control, or
 impact assurance system.
+
+The schema 0.3 population profile is suitable only for admitting the declared
+population-frame source conjunction to a separately bound analytical workflow.
+It does not prove census truth, classifications, methods, term comparability,
+loss calibration, dependence, pricing, or investment suitability.

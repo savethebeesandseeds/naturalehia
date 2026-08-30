@@ -1725,5 +1725,14 @@ if(BUILD_TESTING)
                     -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/check_evidence_cli.cmake
             )
         endforeach()
+
+        add_test(
+            NAME cellular_finance_evidence_gate_claim_population
+            COMMAND
+                ${CMAKE_COMMAND}
+                -DPROGRAM=$<TARGET_FILE:naturalehia_evidence_gate_cli>
+                -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/claim-population-evidence-cli
+                -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/check_claim_population_evidence_cli.cmake
+        )
     endif()
 endif()

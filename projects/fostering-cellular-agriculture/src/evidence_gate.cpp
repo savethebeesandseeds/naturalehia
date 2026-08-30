@@ -470,6 +470,14 @@ static_assert(
     return value;
 }
 
+[[nodiscard]] bool contains_ascii_control(
+    std::string_view value) noexcept {
+    return std::any_of(value.begin(), value.end(), [](char character) {
+        const auto byte = static_cast<unsigned char>(character);
+        return byte < 0x20U || byte == 0x7FU;
+    });
+}
+
 void strip_terminal_carriage_return(std::string& value) noexcept {
     if (!value.empty() && value.back() == '\r') {
         value.pop_back();
@@ -919,6 +927,10 @@ void assign_metadata(
         if (key.empty() || value.empty()) {
             data_error(path, line_number, "key and value must not be empty");
         }
+        if (contains_ascii_control(key) || contains_ascii_control(value)) {
+            data_error(path, line_number,
+                "dossier keys and values must not contain ASCII control bytes");
+        }
         if (!seen.insert(std::string(key)).second) {
             data_error(
                 path, line_number, "duplicate key: " + std::string(key));
@@ -991,6 +1003,10 @@ void assign_metadata(
             data_error(
                 path, line,
                 "manifest fields must not have surrounding whitespace");
+        }
+        if (contains_ascii_control(fields[index])) {
+            data_error(path, line,
+                "manifest fields must not contain ASCII control bytes");
         }
     }
 

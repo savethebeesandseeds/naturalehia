@@ -8,8 +8,13 @@ The current C++ kernel re-verifies supplied Claim Ledger roots, preserves every
 row in the caller-declared denominator, extracts and reconciles synthetic
 resolved-path mechanics, and forms coarse mechanical outer envelopes for open
 cases. It does not prove that the declared rows are a complete population. The
-five-file loader, controlled-register hash, Evidence Gate
-binding, and selected-full-path field-level provenance seam are not implemented.
+five-file loader, controlled-register hash, and cohort-level Evidence Gate
+binding are not implemented. Claim Ledger's one-scenario selected-full-path
+evidence snapshot is implemented and consumed for resolved rows: it retains the
+selected latest entries and their common/scenario scope, input status, source,
+source date, retained-copy state, requested cash-path status, provider terms,
+and applicable covenants. That provenance seam is necessary but does not by
+itself admit a row as empirical.
 Accordingly, the kernel always reports
 `empirical_realized_cash_admissible=false` and never authorizes calibration or
 Portfolio export. This is an explicit implementation boundary, not a temporary
@@ -20,8 +25,10 @@ cohort object. It checks supplied row counts and identities, reloads each
 supplied Claim Ledger root, and either rejects structural contradictions or
 returns mechanical values with explicit blockers. It does not parse or
 hash-bind the five binder files, run an Evidence Gate, establish census
-completeness or term comparability, or retain authoritative selected-entry
-source/status/date provenance.
+completeness or term comparability, or apply the empirical status/date/source
+policy needed for realized-loss admission. The canonical cohort result records
+that the selected-path provenance was verified during evaluation, but does not
+yet serialize the full snapshot or method/evidence lineage.
 
 ## 1. Purpose and boundary
 
@@ -173,17 +180,25 @@ An amount upper-bound method MUST use an exact legal principal, guarantee, or co
 
 ### 3.4 `dossier.cfg` and `evidence_manifest.tsv`
 
-These files use a versioned extension of the project's Evidence Gate schema.
-The dossier MUST cover population-register authority, completeness, term
+Evidence Gate now implements a distinct claim-population dossier schema
+`0.3.0` and the supplemental compiled requirement
+`FIN-CLAIM-POPULATION-FRAME`. That requirement requires an exact, controlled
+primary register source from a capital provider, government disclosure, or
+regulator plus a separate independent report. It is assessed by the same batch
+engine but is excluded from the four reference-project gates and grants no
+project, calibration, pricing, or investment authority.
+
+A future cohort-bound dossier MUST cover population-register authority,
+completeness, term
 comparability, classification authority, exclusion-rule timing, and each method
 definition. `observations.tsv` cites the exact evidence records and requirements
 used for population membership and classification.
 
-The current Evidence Gate has no dedicated complete-claim-population
-requirement. Before a real binder can pass, the schema must add and enforce a
-compiled requirement such as `FIN-CLAIM-POPULATION-FRAME`, and each method must
-cite exact evidence record IDs as well as requirement IDs. A generic evidence
-pass cannot be relabeled as proof of census completeness.
+The implemented population-frame requirement covers only the declared register
+source conjunction. It does not establish row classification, method validity,
+term comparability, exclusion timing, or truth. Those remain separately bound
+requirements for any future controlled loader. A generic evidence pass cannot
+be relabeled as proof of census completeness.
 
 Individual Claim Ledger packages retain their own source manifests. Binder evidence supplements rather than replaces them.
 
@@ -233,8 +248,11 @@ aggregate_upper = sum_i U_i
 
 Positive-outcome frequency bounds use the same fixed included row set: rows already irreversibly positive enter both endpoints; unresolved compatible rows enter only the upper endpoint. These are **arithmetic identification ranges**, not sampling confidence intervals.
 
-The current programmatic kernel has no selected-entry provenance seam and
-therefore cannot identify observed-to-date irreversible cash. Contractual face
+The current programmatic kernel has an authoritative selected-full-path
+provenance seam for resolved rows, but no observed-to-date path evaluation for
+open rows and no empirical admission policy over the retained status/source/date
+fields. It therefore does not yet identify observed-to-date irreversible cash
+for open cases. Contractual face
 is only a peak-principal cap; it is not used as a cumulative shortfall or
 writeoff cap for an open revolving claim. Except for an exact zero-face claim,
 open shortfall and writeoff amounts therefore remain `Unknown` until a separate
@@ -325,11 +343,13 @@ caller summaries, blocks duplicate roots and claims, requires one unique
 economic cluster for every declared frame row including exclusions, and keeps
 all empirical admission flags false. It checks declared frame-count
 reconciliation but does not establish census completeness. Implementing the
-loader requires a
-narrow Claim Ledger extension that exposes the authoritative selected latest
-full-path entry versions with kind, period, known-at time, input status, source,
-and verified source date. Reparsing Claim Ledger TSV cash inside this binder is
-prohibited because it would create a second cash authority.
+loader no longer requires a second cash parser: resolved rows already reload
+through Claim Ledger's authoritative one-scenario snapshot of selected latest
+full-path entries, statuses, sources, dates, provider terms, and covenants.
+Reparsing Claim Ledger TSV cash inside this binder remains prohibited because
+it would create a second cash authority. The deferred work is the five-file
+binding and the population, method, classification, and empirical as-of policy,
+not a replacement cash engine.
 
 The target evaluator MUST extract, from verified Claim Ledger results,
 contractual face, opening principal, funded principal created, capitalized
@@ -349,8 +369,9 @@ and blockers. The current programmatic result contains the canonical observation
 ledger, declared denominator and count fields, Claim-Ledger-exact synthetic
 resolved totals, finite provider outer envelopes where mechanically available,
 Unknown open shortfall/writeoff amounts, compatible positive-outcome frequency
-ranges, claim/root IDs, and blockers; it does not yet contain source/method/evidence
-lineage or concentration measures. Both
+ranges, claim/root IDs, blockers, and a flag that the resolved selected-path
+provenance was verified during evaluation; it does not yet serialize the full
+source/method/evidence lineage or concentration measures. Both
 boundaries hard-code or derive:
 
 ```text
@@ -388,6 +409,9 @@ The current regression proves:
 - zero-loss members remain in denominators;
 - mechanically exact synthetic cash and actual principal created conserve
   through the selected Claim Ledger paths without substituting contractual face;
+- resolved rows require the raw scenario attestation to be explicitly
+  `complete-resolved`, and their full selected-path provenance is obtained from
+  the same immutable Claim Ledger package load used for evaluation;
 - open members widen compatible positive-outcome frequency ranges rather than
   becoming zero; amounts remain `Unknown` where no valid lifetime cap exists,
   while finite provider-cap ranges are retained where available;
@@ -420,7 +444,14 @@ confinement, Evidence Gate admission, or empirical source-status/date rejection.
 
 ## 8. Honest next evidence step
 
-The next evidence artifact is a real, controlled provider or program register covering the complete issued or at-risk partial-credit book, not a convenience sample. For every frame member it should bind executed protection terms, claim filings and decisions, dated lender and provider cash, recoveries, final distributions, open and disputed cases, and—if net provider loss will later be studied—expenses and subrogation.
+Any future evidence-acquisition milestone would require a real, controlled
+provider or program register covering the complete issued or at-risk
+partial-credit book, not a convenience sample. It is deliberately deferred from
+the present financial-construction checkpoint. If separately authorized, every
+frame member should bind executed protection terms, claim filings and decisions,
+dated lender and provider cash, recoveries, final distributions, open and
+disputed cases, and—if net provider loss will later be studied—expenses and
+subrogation.
 
 An independent challenger should test frame completeness, economic clustering, term comparability, classifications, exclusion timing, and source lineage. Only after that challenge should a separate transfer study ask whether this cohort is informative for new cellular-agriculture facilities. Dependence and common-factor evidence must then be added before marginal loss bounds can enter a probability polytope, pooled instrument replay, premium research, or investor-return analysis.
 

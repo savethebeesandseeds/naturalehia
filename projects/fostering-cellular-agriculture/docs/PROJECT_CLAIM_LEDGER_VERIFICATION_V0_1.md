@@ -46,7 +46,7 @@ cmake --preset dev
 cmake --build --preset dev --parallel
 ctest --test-dir build/dev -C Debug --output-on-failure
 
-Result: 63/63 tests passed in Debug.
+Result: 67/67 tests passed in Debug (87.62 seconds).
 ```
 
 The independently configured optimized build retained warnings as errors:
@@ -59,7 +59,7 @@ cmake -S . -B build/release -DBUILD_TESTING=ON
 cmake --build build/release --config Release --parallel
 ctest --test-dir build/release -C Release --output-on-failure
 
-Result: 63/63 tests passed in Release.
+Result: 67/67 tests passed in Release (34.28 seconds).
 ```
 
 Three registered tests directly cover this component:
@@ -71,8 +71,12 @@ Three registered tests directly cover this component:
 3. `cellular_finance_claim_ledger_cli` checks deterministic reporting and the
    three explicit readiness requirements.
 
-The other 60 tests guard the existing financial engines and adapters against
+The other 64 tests guard the existing financial engines and adapters against
 integration regressions.
+
+The package regression additionally exercises the on-demand one-scenario
+full-path evidence snapshot. In the focused seam run it passed in both Debug
+(`5.47` seconds) and Release (`4.91` seconds).
 
 ## Independent hand reconstruction
 
@@ -142,6 +146,15 @@ The ledger tests establish the following implemented controls:
   covenants are excluded or masked in the frozen decision configuration;
 - a retained full/backtest configuration is evaluated separately and is
   explicitly unavailable if a later row is incomplete or contradictory;
+- the same immutable package load can return one requested full-path evidence
+  snapshot with selected-latest entry scope, input status, source/date,
+  retained-copy state, raw cash-path status, provider terms, and applicable
+  covenants without reparsing or recalculating cash;
+- unsafe requested scenario IDs fail before package I/O, missing ordinary
+  source metadata hard-fails, and the reserved `SYNTHETIC` and
+  `NO_PUBLIC_SOURCE` markers retain no invented date;
+- common and scenario-specific selected entries and covenants remain
+  distinguishable without cross-scenario leakage;
 - scenario probability evidence and cash-path-completeness evidence are
   separately classified and sourced;
 - expected-return, NPV, and market-observation admission are separate labels:

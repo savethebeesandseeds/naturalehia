@@ -502,6 +502,29 @@ void test_claim_population_requirement_is_supplemental_and_conjunctive() {
               hybrid_population->requirement_passed,
           "subject isolation must not prevent the supplemental population requirement from passing");
 
+    Fixture reference_fixture;
+    write_text(reference_fixture.directory.path() / "retained" /
+                   "population.txt", "abc");
+    write_text(reference_fixture.directory.path() / "retained" /
+                   "review.txt", "abc");
+    std::string reference_hybrid_manifest = complete_manifest();
+    reference_hybrid_manifest += claim_population_support_row(
+        "POP-AUTHORITY-REFERENCE", "capital-provider-record",
+        "retained/population.txt", "controlled://synthetic/population");
+    reference_hybrid_manifest += claim_population_support_row(
+        "POP-INDEPENDENT-REFERENCE", "independent-report",
+        "retained/review.txt", "controlled://synthetic/review");
+    const cf::EvidenceAssessment reference_hybrid =
+        cf::assess_evidence_dossier(
+            cf::load_evidence_dossier_bytes(
+                reference_fixture.directory.path(), controlled_dossier(),
+                reference_hybrid_manifest),
+            "2026-08-27");
+    check(cf::all_gates_pass(reference_hybrid),
+          "supplemental records must not disturb a complete reference-project gate result");
+    check(!cf::claim_population_frame_passes(reference_hybrid),
+          "a reference-project dossier must not pass the claim-population profile");
+
     for (const std::string_view record_id :
          {std::string_view{"POP-AUTHORITY"},
           std::string_view{"POP-INDEPENDENT"}}) {
@@ -630,6 +653,22 @@ void test_claim_population_snapshot_and_schema_fail_closed() {
     check(throws_invalid_bytes(
               directory.path(), dossier_bytes, oversized_row),
           "manifest rows beyond the byte guardrail must fail closed");
+
+    std::string nul_owner = dossier_bytes;
+    const std::size_t owner_position =
+        nul_owner.find("dossier.owner=synthetic-test-owner");
+    nul_owner.insert(owner_position + std::string_view{"dossier.owner="}.size(),
+        1U, '\0');
+    check(throws_invalid_bytes(
+              directory.path(), nul_owner, manifest_bytes),
+          "NUL bytes in dossier metadata must fail closed");
+
+    std::string nul_record = manifest_bytes;
+    const std::size_t record_position = nul_record.find("POP-AUTHORITY");
+    nul_record.insert(record_position + 3U, 1U, '\0');
+    check(throws_invalid_bytes(
+              directory.path(), dossier_bytes, nul_record),
+          "NUL bytes in manifest identifiers must fail closed");
 
     cf::EvidenceDossier mutated = captured;
     mutated.metadata.facility_name = "forbidden cross-schema facility";

@@ -114,11 +114,14 @@ avoidable animal use.
   envelopes where defensible. Other open amount totals remain `Unknown` with
   blockers. Contractual face is never misused as a cumulative open-loss cap,
   and unknown provider amounts widen frequency bounds rather than becoming
-  zero. It emits no probability,
-  Portfolio, price, empirical, or calibration authority; the controlled-register
-  hash, bound five-file loader, Evidence Gate, and selected-path
-  evidence-provenance seam remain to be implemented before census completeness
-  or empirical loss experience can be claimed.
+  zero. Resolved rows are reloaded through Claim Ledger's one-scenario,
+  selected-latest full-path evidence snapshot, which preserves input status,
+  source and source date, common-versus-scenario scope, cash-path status,
+  provider terms, and applicable covenants; an explicitly complete-resolved
+  status is required. It emits no probability, Portfolio, price, empirical, or
+  calibration authority. Evidence Gate now has a separate claim-population
+  schema/profile, but the controlled-register hash, five-file cohort loader,
+  classification/method admission, and empirical as-of policy remain deferred.
 - A deterministic C++20 multi-project participation-pool kernel. It requires
   complete weighted joint scenarios, traces receipts to named cash sources,
   measures project and pool loss/NPV/liquidity tails, calculates pairwise loss
@@ -747,8 +750,8 @@ each relevant jurisdiction before solicitation or execution.
 | [Claim-Ledger Portfolio Adapter v0.2](docs/CLAIM_LEDGER_PORTFOLIO_ADAPTER_V0_2.md) | Verified package admission, decision-cut conversion, external source budgets, independent cash/principal reconciliation, and output lineage |
 | [Claim-Ledger Joint-Portfolio Assembler v0.1](docs/CLAIM_LEDGER_JOINT_PORTFOLIO_ASSEMBLER_V0_1.md) | Verified multi-claim assembly, explicit dependence, common-calendar and unique-right gates, marginal conservation, and expanded package/cash lineage |
 | [Claim-Ledger Joint-Portfolio Assembler v0.1 Verification](docs/CLAIM_LEDGER_JOINT_PORTFOLIO_VERIFICATION_V0_1.md) | Debug/Release record, hand-reconciled dependence example, rare-state and calendar controls, deep conservation checks, resource guards, review corrections, and residual evidence boundary |
-| [Partial-Credit Claim-Loss Cohort Binder v0.1](docs/PARTIAL_CREDIT_CLAIM_LOSS_COHORT_BINDER_V0_1.md) | Target five-file evidence-census standard plus an in-memory mechanical evaluator for caller-declared denominators, resolved principal conservation, fixed-denominator frequency ranges, finite provider outer envelopes where defensible, otherwise-unknown open amounts, and a hard no-empirical/no-calibration boundary |
-| [Partial-Credit Claim-Loss Cohort Binder v0.1 Verification](docs/PARTIAL_CREDIT_CLAIM_LOSS_COHORT_VERIFICATION_V0_1.md) | Debug/Release record, hand-reconstructed declared frame, face-versus-principal oracle, open-case arithmetic ranges, adversarial controls, and residual evidence boundary |
+| [Partial-Credit Claim-Loss Cohort Binder v0.1](docs/PARTIAL_CREDIT_CLAIM_LOSS_COHORT_BINDER_V0_1.md) | Target five-file evidence-census standard plus an in-memory mechanical evaluator that consumes Claim Ledger's authoritative selected-path provenance for resolved rows while preserving a hard no-empirical/no-calibration boundary |
+| [Partial-Credit Claim-Loss Cohort Binder v0.1 Verification](docs/PARTIAL_CREDIT_CLAIM_LOSS_COHORT_VERIFICATION_V0_1.md) | Debug/Release record, selected-path provenance seam, hand-reconstructed declared frame, face-versus-principal oracle, open-case ranges, adversarial controls, and deferred census boundary |
 | [Financial Instrument Family v0.1](docs/INSTRUMENT_FAMILY_V0_1.md) | Stage-specific claims, draw and payoff rules, real return sources, loss allocation, metrics, and falsification tests |
 | [Participation Pool Engine v0.1](docs/PARTICIPATION_POOL_ENGINE_V0_1.md) | Implemented explicit-joint-scenario kernel, cash-source invariants, loss and NPV outputs, diversification tests, layers, and current boundary |
 | [Portfolio Scenario Format v0.1](docs/PORTFOLIO_SCENARIO_FORMAT_V0_1.md) | Implemented strict reloadable input schema, source-budget semantics, and hand-calculated two-project fixture |
@@ -796,8 +799,8 @@ each relevant jurisdiction before solicitation or execution.
 | [Instrument Taxonomy](docs/INSTRUMENT_TAXONOMY.md) | Institutional classification and least-complex-effective-instrument test |
 | [Candidate Structures](docs/CANDIDATE_STRUCTURES.md) | Four provisional research term sheets tied to diagnosed financing failures |
 | [Reference-Project Selection](docs/REFERENCE_PROJECT_SELECTION.md) | Candidate screen, selection rationale, source boundaries, and comparator roles |
-| [Reference-Project Evidence Gate](docs/REFERENCE_PROJECT_GATE.md) | Executable schema 0.2, 57 requirements, pass/fail logic, and interpretation boundary |
-| [Evidence Gate v0.2 Verification](docs/EVIDENCE_GATE_VERIFICATION_V0_2.md) | Build environment, adversarial regressions, fixture checks, audits, and residual limitations |
+| [Reference-Project Evidence Gate](docs/REFERENCE_PROJECT_GATE.md) | Executable reference-project schema 0.2, 57 project requirements, pass/fail logic, and interpretation boundary |
+| [Evidence Gate Verification](docs/EVIDENCE_GATE_VERIFICATION_V0_2.md) | Reference-project gates plus the isolated claim-population schema 0.3/profile, immutable-byte parsing, adversarial regressions, and residual limitations |
 | [Believer Wilson Public Dossier](reference_projects/believer-wilson/PUBLIC_EVIDENCE_DOSSIER.md) | Current public facts, claims, conflicts, and machine-gate result |
 | [Believer Wilson Gap Register](reference_projects/believer-wilson/GAP_REGISTER.md) | Prioritized missing evidence and decisions blocked |
 | [Believer Wilson Controlled Data Request](reference_projects/believer-wilson/CONTROLLED_DATA_REQUEST.md) | Phased data-room request mapped to every evidence gate |

@@ -501,6 +501,17 @@ attestation that a forecast became true. If later facts conflict, the frozen
 decision calculation can remain available while full-path evaluation is
 explicitly unavailable.
 
+For downstream realized-path review, the package loader also exposes an
+on-demand, one-scenario **full-path evidence snapshot** produced in the same
+immutable load as the evaluated package. It contains exactly the selected
+latest row for each economic fact, common-versus-scenario scope, input status,
+source metadata and declared record date, retained-copy verification state, the
+raw scenario cash-path attestation, evaluated provider terms, and applicable
+common plus selected-scenario covenants. The snapshot binds to the existing
+full-evaluation scenario index; it does not recalculate cash and grants no
+empirical, calibration, pricing, or Portfolio authority. `SYNTHETIC` and
+`NO_PUBLIC_SOURCE` receive no invented source date.
+
 **Portfolio-adapter-ready** remains a downstream requirement: investor cash,
 principal return, principal loss, continuing exposure, source IDs, and
 resolution time must map without reclassification. Conversion units without an
