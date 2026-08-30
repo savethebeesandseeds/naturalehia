@@ -1,122 +1,201 @@
-# Fostering Cellular Agriculture: The Financial Instruments in Brief
+# Fostering Cellular Agriculture: The Financial Instrument in Brief
 
-**Working economic description — version 0.9**
+**Public economic description — version 1.0**
 
-## The purpose
+## What we are building
 
-Cellular agriculture must turn research into reliable industrial production
-before it can replace animal-derived supply. Ordinary debt fits poorly when
-failure risk is high, cash arrives late, and facilities share technical risks.
-This project is building an open financial standard and a focused instrument
-family for that gap. It defines the asset investors may finance, not a system
-for managing a fund.
+Cellular agriculture needs patient capital while research, pilot work, and
+first industrial facilities still have high failure risk and late cash. The
+core instrument is a **Multi-Project Milestone Participation**: one disclosed
+claim on several project claims, with later funding released only when stated
+milestones are met.
 
-## The common asset standard
+This is financial engineering, not fund-management design. The instrument
+defines what the investor owns, where cash can come from, what counts as loss,
+and how shared failures are measured.
 
-Every project claim must state:
+## The asset
 
-- investor cash needs and milestones for later funding;
-- contractual principal, repayment, conversion, and writeoff;
-- identified success cash, recoveries, and third-party payments; and
-- shared risks that can make several projects fail together.
+An investor owns a pro-rata, limited-recourse right to:
 
-Investor cash and contractual principal are separate:
+- a fixed schedule of cellular-agriculture project claims that satisfy the
+  stated inclusion conditions;
+- principal repayment and specifically assigned commercial, licensing,
+  royalty, capacity, offtake, or exit cash;
+- identified cash recoveries; and
+- in a supported variant, a separately identified external payment.
+
+The investor does not automatically own the facilities, company equity,
+company value, speculative intellectual property, unused payer capacity, or a
+manager's promise.
+
+Each project uses the same financial interface:
+
+```text
+cash required and milestone dates
++ principal created, repaid, converted, written off, or still outstanding
++ assigned success cash and its source
++ cash recovery after failure
++ exposure to shared biological, scale-up, supplier, regulatory, and buyer risk
+```
+
+Investor cash and contractual principal are separate. In the synthetic example
+they happen to be equal at each primary funding draw because that is the stated
+at-par term. Unknown is not zero. Continuing principal is exposure, not cash
+and not yet a realized loss.
+
+## How money moves
+
+The core has callable commitments. Project funding is released at milestones;
+failure can stop later draws. Actual project receipts and recoveries pass
+through pro rata, after explicit pool costs.
 
 ```text
 investor return = dated cash received - dated cash paid
-contractual principal loss = principal finally written off
+
+opening principal + principal created
+  = principal cash returned
+  + evidenced conversion or other extinguishment
+  + principal still outstanding
+  + resolved principal loss
+
+therefore continuing principal is exposure, not loss
+pooling changes the distribution of resolved loss
+packaging creates no cash
 ```
 
-Price changes investment return, not principal loss. A fully repaid above-par
-purchase can lose money and still have no protection claim. Unknown is not
-zero; payment in kind, conversion units, unused capacity, and refinancing are
-not operating cash.
+Success participation is capped by rights and source budgets already written
+into each claim. Refinancing is liquidity, not operating value. Payment in kind
+is not cash.
 
-## The instrument family
+## One core and two variants
 
-| Instrument | Function |
-|---|---|
-| Milestone-gated claim | Funds later stages only after stated conditions; failure cancels future availability. |
-| Success participation | Shares success cash already granted to the claim. |
-| Participation pool | Holds several disclosed claims, their contractual cash rights, and realized cash when evidenced. |
-| Partial-credit guarantee | Moves a fixed share of final principal loss to a public or catalytic provider. |
-| First-loss and priority claims | Redistribute one pool's cash and loss among investors. |
+| Construction | What it changes | What it cannot do |
+|---|---|---|
+| Multi-Project Milestone Participation | Combines disclosed milestone claims and makes project, liquidity, loss, return, and dependence measurable. | It cannot improve project cash or remove common shocks. |
+| **Variant 1:** Funded First-Loss and Priority Claims | Fully funds the commitment and allocates loss first to a 0–20 junior claim; principal cash pays the 20–100 priority claim first. | It reallocates cash and loss; it does not create value or diversification. |
+| **Variant 2:** Failure-Contingent Partial-Credit Guarantee | An external provider pays a fixed share of final resolved loss, subject to a cash cap. | It does not cure gross loss, cover continuing exposure, or make provider capacity free. |
 
-Pooling reduces concentration only when projects do not fail together. The
-model uses explicit joint outcomes, never assumed independence.
+The two variants are alternatives in version 1. Combining them needs a new
+no-double-recovery waterfall.
 
-## The first concrete public-credit instrument
+## Why an institution might consider it
 
-The first stated overlay is a **Failure-Contingent Public Partial-Credit
-Guarantee** on an investor's pool claim. It puts no public cash into projects
-upfront.
+The conditional attraction is not a promise of yield. It is a standardized,
+limited-recourse claim with milestone-controlled funding, several named cash
+sources, explicit loss accounting, and visible exposure to both project and
+common risks. A real institution might consider it if enforceable success cash
+and genuine pooling produce adequate return at its independently supported
+hurdle, or if a separately funded risk bearer makes the remaining terms
+acceptable.
 
-All figures in the following demonstration are synthetic `DEMO million`
-amounts. They are proposed mechanics, not executed legal terms.
+The investment thesis is falsified if the cash rights are absent or overlap,
+milestones do not stop wasteful funding, common shocks erase diversification,
+adverse NPV remains inadequate, recoveries are unevidenced, or the protection
+provider cannot legally and financially perform. The present synthetic example
+fails the adverse-NPV and premium-feasibility tests.
 
-```text
-aggregate contractual reference principal K = 20.000000
-public loss share g                          = 1/6
-attachment A                                = 0
-modeled maximum public commitment g × K     = 3.333333
-payment date                                = month 24, after recoveries
+## The ten-claim test
 
-scenario public payment X = (1/6) × final principal writeoff
-```
+The implemented example has exactly ten claims, 100 of aggregate contractual
+reference principal, three milestone dates, and nine complete joint outcomes.
+It includes research platforms, pilots, demonstrations, first-industrial
+facilities, and repeat production. Its probabilities, cash, recoveries,
+hurdles, and provider terms are all synthetic. The fixture models dated draws
+and path-contingent stops, not real milestone predicates or certificates.
 
-If both projects succeed, payment is zero. If either fails, gross loss is `8`
-and payment is `1.333333`; if both fail, gross loss is `16` and payment is
-`2.666667`. The investor retains five sixths. Gross loss stays visible, and
-public payment is not project revenue, recovery, or returned principal.
+No project defaults are multiplied as if independent. The joint states
+explicitly include biological/process, scale-up/commissioning, supplier/media,
+regulatory/qualification, buyer/product-acceptance, compound, and systemic
+shocks.
 
-Under the declared synthetic probability bounds:
+At the declared central mix, the unsupported core has:
 
-| Measure | Minimum | Central | Maximum |
-|---|---:|---:|---:|
-| Expected gross principal loss | 2.480000 | 3.200000 | 4.800000 |
-| Expected public payment | 0.413333 | 0.533333 | 0.800000 |
-| Expected retained principal loss | 2.066667 | 2.666667 | 4.000000 |
-| Expected investor NPV before guarantee | -0.800000 | 1.400000 | 2.390000 |
-| Expected investor NPV after guarantee, before premium | 0.000000 | 1.933333 | 2.803333 |
+All table amounts are synthetic `DEMO million` on a constant analysis-close
+monetary basis. Cash amounts are nominal unless labeled NPV or PV.
 
-NPV means net present value at the stated investor target return. Endpoints are
-different feasible probability mixtures, not one forecast. A provider issuing
-these terms would need authority and capacity for the full `3.333333`
-commitment, not only the maximum expected payment.
+| Measure | Synthetic result |
+|---|---:|
+| Expected investor cash paid, including pool cost | 94.624000 |
+| Expected investor receipts | 121.648900 |
+| Expected continuing principal exposure | 8.520000 |
+| Expected resolved principal loss | 9.980600 |
+| Expected NPV at the stated 8% physical hurdle | 0.661828 |
+| Probability of any resolved impairment | 37% |
+| Loss ES95 / ES99 | 70.803000 / 90.000000 |
 
-## The honest price result
+Pooling reduces central ES95 by 7.914, or 10.053737%, relative to the sum of
+standalone claim tails. At ES99 the benefit is zero. Common shocks therefore
+remain decisive.
 
-At a one-sixth loss share, the minimum **expected** investor NPV over admitted
-probability mixtures reaches zero before premium. No failed scenario is made
-whole: protected NPV remains `-3.866667` when one project fails and
-`-13.533333` when both fail.
+The full-provider-performance guarantee comparison keeps project economics
+visible. Values below are at the central synthetic weights and before any
+investor premium.
 
-The investor can pay at most zero and preserve that threshold. Under this
-synthetic probability set, the provider's largest expected gross claim is
-`0.800000` before its other costs. No commercial premium satisfies both sides.
+| Same ten-claim pool | Unsupported core | With 30% guarantee, provider performs |
+|---|---:|---:|
+| Investor cash paid, including pool cost | 94.624000 | 94.624000 |
+| Project receipts and recoveries | 121.648900 | 121.648900 |
+| External provider cash | 0 | 2.994180 |
+| Total investor receipts | 121.648900 | 124.643080 |
+| Gross resolved principal loss | 9.980600 | 9.980600 |
+| Loss retained by investor | 9.980600 | 6.986420 |
+| Continuing principal exposure | 8.520000 | 8.520000 |
+| Expected NPV at 8% | 0.661828 | 2.699617 |
+| Worst expected NPV in the envelope | -18.717674 | -14.925982 |
 
-The public version therefore has a modeled `0.800000` gross-claim-only funding
-gap, plus provider costs and buffers. It is an explicit catalytic subsidy in
-this research design—not a market premium, legal or accounting classification,
-private return, project value, recovery, or diversification.
+The only new dated cash is the external transfer; the NPV improvement is its
+discounted value at the stated 8% hurdle, not its nominal amount. The guarantee
+creates no project cash and does not remove impairment or continuing exposure.
 
-## Where value can come from
+## The honest result
 
-Value requires real mechanisms: milestones stop future funding, enforceable
-success rights offset failures, different outcomes reduce concentration, and a
-public balance sheet deliberately bears disclosed risk. Packaging creates no
-cash, priority reallocates cash, and a guarantee transfers loss.
+The central NPV is slightly positive, but the worst expected NPV permitted by
+the synthetic probability ranges is **-18.717674**. Full declared success
+participation cannot reach robust break-even. The candidate core is therefore
+not shown financeable.
 
-The C++ implementation contains the Project Claim Ledger, a package-verified
-portfolio adapter and multi-claim joint assembler, joint-scenario risk
-analysis, success participation, and the public-credit term. It keeps cash,
-principal, exposure, return, and loss separate.
+Variant 1 makes the loss order real by funding 20 of first-loss capital.
+However, prefunding drag is 8.983578 at the central mix, and neither class
+meets its stated central hurdle under these invented terms.
 
-These are synthetic mechanics. Real use requires enforceable rights, dated
-cash, risk evidence, defensible joint probabilities, provider authority and
-credit analysis, and independent professional review. Nothing here is a market
-price, rating, offer, financing result, or proof of animal displacement.
+Variant 2 pays 30% of final resolved loss, with a provider commitment cap of
+30. Expected nominal provider payment is 2.994180 centrally and can reach
+6.457605 under the probability envelope; modeled single-path payment reaches
+27. Investor NPV
+before premium improves centrally to 2.699617, but the adverse expected NPV
+remains -14.925982. The investor cannot pay a non-negative premium and preserve
+the target. Including provider costs produces a 28.467332 support gap; modeled
+wrong-way provider credit increases it to 28.702444.
+Under that credit stress, investor NPV before premium is 2.617773 centrally and
+-15.161094 at the adverse endpoint, rather than 2.699617 and -14.925982 under
+full provider performance.
 
-See the detailed
-[public guarantee terms](FAILURE_CONTINGENT_PUBLIC_PARTIAL_CREDIT_GUARANTEE_V0_1.md)
-and the [Project Financial Interface](PROJECT_FINANCIAL_INTERFACE_V0_1.md).
+This is not a failure of the project. It is the value of the standard: a weak
+or under-supported claim can be rejected without hiding the gap in optimistic
+probabilities, management language, or tranching.
+
+The earlier two-claim public-guarantee control remains unchanged: zero investor
+premium capacity and a 0.800000 claim-only catalytic gap before provider
+expenses. The ten-claim example is a harder, separate sensitivity.
+
+## What is synthetic, evidenced, and unknown
+
+**Evidenced here:** the source code, input files, cash identities, loss
+allocation, probability optimization, tails, correlations, provider exposure,
+and reconciliation tests are retained and reproducible. This is evidence of
+implemented mechanics only.
+
+**Synthetic:** every ten-claim cash amount, probability, recovery, hurdle,
+factor loading, provider term, and counterparty state.
+
+**Unknown before a live issue:** authenticated contracts, actual project and
+recovery data, defensible joint probabilities, investor hurdle evidence,
+enforceable transfer and security rights, provider authority and credit
+capacity, legal/tax/accounting treatment, market adoption, and whether the
+financing actually advances industrial capacity and animal displacement.
+
+See the
+[candidate term sheet](MULTI_PROJECT_MILESTONE_PARTICIPATION_TERM_SHEET_V1.md)
+and the
+[ten-claim analysis](TEN_CLAIM_INSTRUMENT_ANALYSIS_V1.md).

@@ -20,6 +20,20 @@ claim enters those models. The
 which claim fits each stage, where its cash return comes from, who bears loss,
 and what would falsify its investment thesis.
 
+The current construction decision is the
+[Multi-Project Milestone Participation candidate term sheet](docs/MULTI_PROJECT_MILESTONE_PARTICIPATION_TERM_SHEET_V1.md):
+one untranched core and only two alternatives, funded first loss or a
+failure-contingent partial-credit guarantee. The
+[ten-claim analysis](docs/TEN_CLAIM_INSTRUMENT_ANALYSIS_V1.md) applies the same
+fixed project paths and probability set to all three.
+
+The consolidated C++ comparison is `naturalehia-instrument-family`; its seven
+reproducible inputs and invocation are documented with the
+[ten-claim synthetic fixture](scenarios/ten-claim-instrument-v1-synthetic/README.md).
+The completed construction passes 68 of 68 tests in both Debug and Release,
+with identical consolidated output and zero reported monetary reconciliation
+error across the five composing engines.
+
 > **Current status:** this repository implements an open financial standard that
 > keeps cash sources, contractual loss, dependence, and evidence quality
 > explicit. The Project Claim Ledger
@@ -43,18 +57,21 @@ and what would falsify its investment thesis.
 > are transparent mechanics and ambiguity tests, not calibrated forecasts or
 > prices.
 >
-> The first named instrument is the
-> [Failure-Contingent Public Partial-Credit Guarantee v0.1](docs/FAILURE_CONTINGENT_PUBLIC_PARTIAL_CREDIT_GUARANTEE_V0_1.md):
-> a synthetic first-dollar one-sixth share of final resolved principal loss,
-> capped at `3.333333` DEMO million on `20` of reference principal. In its
-> fixture, worst-case expected investor NPV rises from `-0.800000` to zero
-> before premium, but investor premium capacity is zero while the provider's
-> robust claim-only floor is `0.800000`. That `0.800000` is explicit catalytic
-> subsidy before provider costs—not diversification, recovery, or hidden
-> project value. Its probabilities, dependence, provider performance, demand,
-> and terms remain unevidenced. Retained
-> public packages are incomplete and supply no empirical calibration; no result
-> is fair value, a rating, a recommendation, or proof of financeability.
+> The selected core is now the **Multi-Project Milestone Participation**. Its
+> exactly ten-claim fixture has nine explicit dependent states, milestone stop,
+> continuing exposure, recoveries, success cash, a two-class funded waterfall,
+> and a separately cost-recovery-tested and credit-stressed 30% guarantee. The central
+> unsupported NPV is `0.661828`, but the adverse expected NPV is
+> `-18.717674`; neither variant repairs the candidate across the whole
+> synthetic probability set. That rejection is a financial result, not a
+> management conclusion.
+>
+> The earlier
+> [Failure-Contingent Public Partial-Credit Guarantee v0.1](docs/FAILURE_CONTINGENT_PUBLIC_PARTIAL_CREDIT_GUARANTEE_V0_1.md)
+> remains an unchanged two-claim control: zero investor premium capacity and a
+> `0.800000` claim-only catalytic gap before provider expenses. Retained public
+> packages remain incomplete and supply no empirical calibration; no result is
+> fair value, a rating, a recommendation, or proof of financeability.
 
 ## Mission and theory of change
 
@@ -197,6 +214,13 @@ avoidable animal use.
   rejects explicit-contractual-ledger portfolios; Claim-Ledger adapter output
   cannot enter until subscription cash, reserve cash, acquisition cost, and
   asset principal are separated in that stack.
+- A consolidated C++20 ten-claim instrument-family reporter and strict golden
+  test. It requires exactly ten synthetic claims, the five declared adverse
+  risk categories, a two-class funded variant, and the exact 30% protection
+  point; then reports the unsupported core, funded waterfall, full-performance
+  guarantee, provider-credit stress, common-witness ranges, tails,
+  concentration, dependence, premium feasibility, and catalytic gaps without
+  creating another solver.
 - A deterministic C++20 robust capital-mobilization frontier over a declared
   finite `q`-by-`A` grid. Each candidate creates one funded junior
   loss-absorbing claim and one market-facing priority claim, re-projects the
@@ -741,7 +765,9 @@ each relevant jurisdiction before solicitation or execution.
 
 | Document | Role |
 |---|---|
-| [The Financial Instruments in Brief](docs/FINANCIAL_INSTRUMENT_IN_BRIEF.md) | Two-page explanation of the common asset standard, instrument family, and first public partial-credit guarantee |
+| [The Financial Instrument in Brief](docs/FINANCIAL_INSTRUMENT_IN_BRIEF.md) | Short front-door explanation of the core asset, two alternatives, ten-claim result, and honest rejection boundary |
+| [Multi-Project Milestone Participation Candidate Term Sheet](docs/MULTI_PROJECT_MILESTONE_PARTICIPATION_TERM_SHEET_V1.md) | Institution-readable property right, funding, cash, loss, waterfall, disclosure, and falsification terms |
+| [Ten-Claim Instrument Analysis](docs/TEN_CLAIM_INSTRUMENT_ANALYSIS_V1.md) | Exactly ten claims, nine dependent states, unsupported/first-loss/guarantee comparison, provider economics, and adverse witnesses |
 | [Financial Architecture](docs/FINANCIAL_ARCHITECTURE.md) | Short public explanation of the aim, common interface, instrument family, value thesis, and honest boundary |
 | [Project Financial Interface v0.1](docs/PROJECT_FINANCIAL_INTERFACE_V0_1.md) | Common capital, state, payoff, recovery, factor, metric, and pooling conventions |
 | [Portfolio Explicit Contractual-Principal Ledger v0.2](docs/PORTFOLIO_EXPLICIT_PRINCIPAL_LEDGER_V0_2.md) | Separate investor-cash and contractual-principal accounting, above-par behavior, strict format, and v0.1 compatibility |

@@ -1,5 +1,10 @@
 # Candidate Structures
 
+> **Historical design appendix.** The current construction decision is one
+> [Multi-Project Milestone Participation](MULTI_PROJECT_MILESTONE_PARTICIPATION_TERM_SHEET_V1.md)
+> with no more than two alternatives. The four outlines below remain useful
+> failure-mode research; they are not the current public candidate family.
+
 ## Status, purpose, and boundary
 
 This document contains four **provisional research term-sheet outlines** for a
@@ -9,12 +14,12 @@ claims that an instrument is lawful, financeable, or suitable in any
 jurisdiction. No amount, price, probability, rating, impact, or counterparty is
 represented as observed or approved.
 
-There is no preferred instrument. Each candidate addresses a different
-financing failure and should be considered only after the failure has been
-evidenced for a named reference project. The candidates are not presumed to be
-combined. Complexity, fees, collateral, concessionary value, and failure modes
-must be assessed before a structure can be compared with ordinary equity,
-debt, procurement, grants, or operating improvements.
+When this appendix was written there was no preferred instrument. Each outline
+addresses a different financing failure and remains conditional on evidence
+for a named project. The current term sheet narrows the public construction;
+these outlines are not presumed combined with it. Complexity, fees,
+collateral, concessionary value, and failure modes still require comparison
+with ordinary equity, debt, procurement, grants, or operating improvements.
 
 Any payment made by a buyer, guarantor, public body, philanthropic funder, or
 other provider is a transfer from that provider to the project or its capital

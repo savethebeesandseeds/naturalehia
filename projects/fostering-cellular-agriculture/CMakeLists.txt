@@ -483,6 +483,28 @@ if(NATURALEHIA_CELLULAR_FINANCE_BUILD_CLI)
     cellular_finance_set_compile_policy(
         naturalehia_joint_cohort_cli
     )
+
+    add_executable(
+        naturalehia_instrument_family_cli
+        apps/instrument_family_cli/main.cpp
+    )
+    target_link_libraries(
+        naturalehia_instrument_family_cli
+        PRIVATE Naturalehia::CellularFinance
+    )
+    target_compile_features(
+        naturalehia_instrument_family_cli
+        PRIVATE cxx_std_20
+    )
+    set_target_properties(
+        naturalehia_instrument_family_cli
+        PROPERTIES
+            CXX_EXTENSIONS OFF
+            OUTPUT_NAME "naturalehia-instrument-family"
+    )
+    cellular_finance_set_compile_policy(
+        naturalehia_instrument_family_cli
+    )
 endif()
 
 include(CTest)
@@ -1733,6 +1755,15 @@ if(BUILD_TESTING)
                 -DPROGRAM=$<TARGET_FILE:naturalehia_evidence_gate_cli>
                 -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/claim-population-evidence-cli
                 -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/check_claim_population_evidence_cli.cmake
+        )
+
+        add_test(
+            NAME cellular_finance_ten_claim_instrument_family_cli_synthetic
+            COMMAND
+                ${CMAKE_COMMAND}
+                -DPROGRAM=$<TARGET_FILE:naturalehia_instrument_family_cli>
+                -DFIXTURE=${CMAKE_CURRENT_SOURCE_DIR}/scenarios/ten-claim-instrument-v1-synthetic
+                -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/check_ten_claim_instrument_cli.cmake
         )
     endif()
 endif()

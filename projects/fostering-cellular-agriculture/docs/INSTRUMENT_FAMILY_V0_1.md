@@ -1,5 +1,12 @@
 # Financial Instrument Family v0.1
 
+> **Stage-form appendix, not the current public family.** The selected
+> construction is the
+> [Multi-Project Milestone Participation](MULTI_PROJECT_MILESTONE_PARTICIPATION_TERM_SHEET_V1.md)
+> with funded first loss or partial credit as the only two version-1
+> alternatives. The forms below explain how underlying project claims may
+> differ by stage before admission to that common asset.
+
 ## Purpose
 
 This appendix defines a coherent ladder of financial claims for cellular

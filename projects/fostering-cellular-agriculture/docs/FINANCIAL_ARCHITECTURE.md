@@ -44,29 +44,23 @@ duration, expected return, tail risk, correlation, diversification, and value.
 The standard describes the economics of a project. It is not a laboratory or
 company-management manual.
 
-## The instrument family
+## The selected instrument family
 
-Different stages need different claims because their repayment sources and
-failure patterns are different.
+Stage-specific research, pilot, facility, and production terms remain inside
+the underlying project claims. The market-facing family is deliberately
+narrow:
 
-| Instrument | Intended stage | Economic design and return source |
-|---|---|---|
-| Research participation agreement | Research through pilot | Staged capital receives licensing, royalty, equity-linked, or defined commercialization success payments rather than relying on pre-revenue debt service |
-| Milestone-gated scale-up facility | Pilot through first industrial build | Failed paths stop drawing; successful paths repay funded capital and an agreed return, potentially with limited success participation |
-| Qualified-output-backed production note | Commissioning through repeat production | Repayment comes from qualified-output sales, capacity payments, or enforceable offtake rather than nameplate capacity |
-| Untranched participation pool | Multiple financially compatible projects | Investors share combined repayments, recoveries, and success upside while bearing the pool’s failures and common-factor shocks |
-| Fully funded capital stack | A reconciled compatible pool | At-par first-loss, intermediate, and senior claims divide the same principal loss and actual pool cash; priority changes exposure and return, not aggregate value |
+| Construction | Economic function |
+|---|---|
+| Multi-Project Milestone Participation | Callable, untranched, limited-recourse participation in a fixed disclosed pool of milestone claims and their assigned cash |
+| Funded First-Loss and Priority Claims | Two fully funded claims on the same pool; loss runs junior first and principal cash runs priority first |
+| Failure-Contingent Partial-Credit Guarantee | External capped payment of a stated share of final resolved principal loss on the untranched core |
 
-The implemented milestone-gated facility is therefore one component of the
-architecture: it addresses staged development and first-facility exposure. It
-is not the final instrument and not the project’s entire thesis.
-
-Completion support, guarantees, insurance, capacity reservations, and narrow
-price or input hedges are supporting risk-transfer legs. They may strengthen a
-core instrument by removing one defined bottleneck; they are not substitutes
-for an economically valuable underlying claim. The first implemented overlay
-is proportional protection on final realized principal loss in the untranched
-pool.
+The milestone-gated facility remains an underlying claim form, not a competing
+public instrument. Other completion, insurance, procurement, price, or input
+hedges stay research possibilities rather than version-1 variants. The two
+selected variants are alternatives; combining them requires a separately
+tested no-double-recovery waterfall.
 
 ## How an instrument can create value
 
