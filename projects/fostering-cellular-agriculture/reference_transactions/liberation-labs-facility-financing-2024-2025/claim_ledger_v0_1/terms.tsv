@@ -1,0 +1,17 @@
+term_id	value_status	value	input_status	known_at_period	source_record_id	note
+public_announcement_date	known	2024-10-15	observed	UNKNOWN	LL-RNS-2024-10-15-CORR	RNS publication date is not the execution funding settlement or price-observation date
+october_round_amount_million	known	3.5	observed	UNKNOWN	LL-RNS-2024-10-15-CORR	Aggregate further financing announcement; not face amount or settled buyer price
+agronomics_subscription_million	known	2.0	observed	UNKNOWN	LL-RNS-2024-10-15-CORR	Reported subscription from own cash; no note register or settlement ledger
+other_named_subscriptions_million_each	known	0.5	observed	UNKNOWN	LL-RNS-2024-10-15-CORR	New Agrarian Galloway and Jim Mellon each reported at this amount
+april_round_amount_million	known	12.5	observed	UNKNOWN	LL-RNS-2024-04-05	Same facility and qualified-financing context; cluster relation to October is unresolved
+later_reported_2024_bridge_aggregate_million	known	19.0	backtest	UNKNOWN	LL-RNS-2025-01-30	Later issuer aggregate; October inclusion and overlap are unresolved
+promised_interest_rate_per_annum	known	0.10	contractual	UNKNOWN	LL-RNS-2024-10-15-CORR	Promised accrual term only; payment day count compounding and cash-versus-PIK mechanics are UNKNOWN
+contractual_maturity_date	known	2027-10-10	contractual	UNKNOWN	LL-RNS-2024-10-15-CORR	Maturity date does not establish redemption cash
+security_description	known	secured	contractual	UNKNOWN	LL-RNS-2024-10-15-CORR	Collateral lien rank perfection intercreditor and recovery are UNKNOWN
+qualified_financing_conversion_right_april	known	reported	contractual	UNKNOWN	LL-RNS-2024-04-05	April qualified-financing statement; cluster relation and trigger economics are UNKNOWN
+qualified_financing_conversion_right_october	known	reported	contractual	UNKNOWN	LL-RNS-2024-10-15-CORR	October reference to qualified financing; price discount cap units and note-level settlement are UNKNOWN
+use_of_proceeds	known	continued construction of Richmond Indiana facility	observed	UNKNOWN	LL-RNS-2024-10-15-CORR	No draw-to-expenditure or sources-and-uses ledger
+interest_payment_mechanics	unknown	UNKNOWN	unknown	UNKNOWN	NO_PUBLIC_SOURCE	No claim-level dated interest cash can be formed
+principal_redemption_mechanics	unknown	UNKNOWN	unknown	UNKNOWN	NO_PUBLIC_SOURCE	Maturity prepayment acceleration and default cash are incomplete
+collateral_and_priority	unknown	UNKNOWN	unknown	UNKNOWN	NO_PUBLIC_SOURCE	The word secured is not a collateral or recovery schedule
+covenant_package	unknown	UNKNOWN	unknown	UNKNOWN	NO_PUBLIC_SOURCE	No claim covenant state is admitted

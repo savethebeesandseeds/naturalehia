@@ -1,0 +1,4 @@
+term_id	value_status	value	input_status	known_at_period	source_record_id	note
+fixture_purpose	known	four-state final-normalization mechanics fixture	stress	0	SYNTHETIC	Not a market quote probability estimate legal conclusion or offering
+contractual_face_amount_million	known	10	contractual	0	SYNTHETIC	Face differs from buyer price and equals funded principal plus capitalized fee
+buyer_price_million	known	9	contractual	0	SYNTHETIC	Primary buyer cash before buyer direct cost and net of simultaneous cash fee receipt

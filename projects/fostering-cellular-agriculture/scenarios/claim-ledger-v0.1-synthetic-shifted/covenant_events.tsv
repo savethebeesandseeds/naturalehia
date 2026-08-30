@@ -1,0 +1,2 @@
+scope	scenario_id	event_id	covenant_id	period	event_date_status	event_date	known_at_period	state	input_status	source_record_id	note
+common	NOT_APPLICABLE	closing-covenant-pass	minimum-liquidity	0	known	2026-02-01	0	pass	stress	SYNTHETIC	Synthetic state proves that a covenant event has no automatic cash consequence

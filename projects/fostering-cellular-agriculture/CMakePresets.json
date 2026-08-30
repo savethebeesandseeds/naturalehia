@@ -1,0 +1,38 @@
+{
+  "version": 5,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 24,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "dev",
+      "displayName": "Development with strict diagnostics",
+      "description": "Build the annual, claim-ledger, evidence-gate, staged-capital, participation-pool, probability-envelope, event-probability-polytope, success-participation, pooled-loss-protection, provider price-ladder, provider counterparty-credit, fully funded capital-stack, and robust capital-mobilization-frontier engines, CLIs, and tests with warnings as errors.",
+      "binaryDir": "${sourceDir}/build/dev",
+      "cacheVariables": {
+        "BUILD_TESTING": "ON",
+        "NATURALEHIA_CELLULAR_FINANCE_BUILD_CLI": "ON",
+        "NATURALEHIA_CELLULAR_FINANCE_WARNINGS_AS_ERRORS": "ON"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "dev",
+      "configurePreset": "dev",
+      "configuration": "Debug"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "dev",
+      "configurePreset": "dev",
+      "configuration": "Debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    }
+  ]
+}

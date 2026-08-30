@@ -1,0 +1,26 @@
+field_id	public_observation	evidence_class	provenance_tag	status	decision_effect	source_ids
+observation_cluster	April 2024 USD 12.5m SCPN round; October 2024 further USD 3.5m note; later USD 19m 2024 bridge aggregate	C	CLM	UNRESOLVED	Cannot determine separate clusters add-on series or overlap; no observation count assigned	LL-RNS-2024-04-05;LL-RNS-2024-10-15-CORR;LL-RNS-2025-01-30
+candidate_observation_date	RNS publication date 2024-10-15; execution funding settlement and price-observation times undisclosed	C	CLM	PARTIAL	Exact transaction timestamp required before freezing ex-ante information	LL-RNS-2024-10-15-CORR
+settlement_date	Raised and subscribed from cash per RNS; no dated ledger	C	CLM	MISSING	Primary settled tier unavailable	LL-RNS-2024-10-15-CORR
+issuer	Liberation Labs Holdings Inc.	C	CLM	OBSERVED	Issuer named in October; exact obligor guarantors and later legal-entity continuity require contracts	LL-RNS-2024-10-15-CORR;LL-RNS-2025-12-19
+use_of_proceeds	Continued construction of Richmond Indiana facility	C	CLM	PARTIAL	Relevant use stated but no facility sources-and-uses ledger	LL-RNS-2024-10-15-CORR
+currency	USD	C	CLM	OBSERVED	Native currency identified	LL-RNS-2024-10-15-CORR
+round_amount	USD 3500000 described as further funding	C	CLM	OBSERVED_PARTIAL	Aggregate announced amount only; relation to April round and 2024 bridge aggregate unresolved	LL-RNS-2024-04-05;LL-RNS-2024-10-15-CORR;LL-RNS-2025-01-30
+investor_amounts	Agronomics USD 2000000; three other October subscriptions of USD 500000 each	C	CLM	OBSERVED	Amounts reported but face amount issue price and registered note series absent	LL-RNS-2024-10-15-CORR
+transaction_status	Raised and subscribed from cash per RNS	C	CLM	PARTIAL	No executed note or dated settlement ledger; primary settled tier unavailable	LL-RNS-2024-10-15-CORR
+gross_price	No face amount versus paid-price reconciliation	NO_EVIDENCE	NO_PUBLIC_SOURCE	MISSING	Price input P_j unavailable	NO_PUBLIC_SOURCE
+buyer_direct_cost	No buyer cost ledger	NO_EVIDENCE	NO_PUBLIC_SOURCE	MISSING	All-in investor outflow C_j unavailable	NO_PUBLIC_SOURCE
+promised_interest	10 percent per annum	C	CLM	OBSERVED_PROMISED_TERM	Cannot substitute for expected-cash discount-equivalent rate	LL-RNS-2024-10-15-CORR
+maturity	2027-10-10	C	CLM	OBSERVED	One contractual date available	LL-RNS-2024-10-15-CORR
+interest_mechanics	Payment dates; day count; compounding; cash or PIK; accrued-interest rules absent	NO_EVIDENCE	NO_PUBLIC_SOURCE	MISSING	Dated promised cash cannot be reconstructed	NO_PUBLIC_SOURCE
+principal_redemption	No complete maturity redemption; prepayment; acceleration; or default mechanics	NO_EVIDENCE	NO_PUBLIC_SOURCE	MISSING	Repayment path cannot be reconstructed	NO_PUBLIC_SOURCE
+conversion_right	April and October qualified-financing conversion statements; later issuer-family aggregate Series A1 conversion	C	CLM	PARTIAL_CONTEXT_ONLY	Trigger economics legal-entity continuity and note-specific noncash settlement unavailable	LL-RNS-2024-04-05;LL-RNS-2024-10-15-CORR;LL-RNS-2025-12-19
+security_priority	Described as secured; no collateral or lien rank	C	CLM	PARTIAL	Recovery and priority comparison axes unresolved	LL-RNS-2024-10-15-CORR
+arm_length_orderliness	Existing ownership and named investor relationships disclosed	C	CLM	UNRESOLVED_ADVERSE	Independent arm-length price formation not established	LL-RNS-2024-04-05;LL-RNS-2024-10-15-CORR;LL-RNS-2025-01-30
+liquidity_transfer	No transfer restrictions or secondary execution evidence	NO_EVIDENCE	NO_PUBLIC_SOURCE	MISSING	Liquidity comparison axis unresolved	NO_PUBLIC_SOURCE
+ex_ante_information_set	No probability record frozen to exact October execution or observation time	NO_EVIDENCE	NO_PUBLIC_SOURCE	MISSING	Later financing and conversion outcomes cannot enter the ex-ante expected-cash model	NO_PUBLIC_SOURCE
+physical_probability_set	No independent ex-ante state-probability set	NO_EVIDENCE	NO_PUBLIC_SOURCE	MISSING	Physical expected cash cannot be formed	NO_PUBLIC_SOURCE
+recovery_cash_paths	No dated default; restructuring; collateral; or recovery paths	NO_EVIDENCE	NO_PUBLIC_SOURCE	MISSING	Expected loss and recovery cannot be placed in cash	NO_PUBLIC_SOURCE
+expected_cash_rate_preimage	Not calculated	NO_EVIDENCE	NO_PUBLIC_SOURCE	INELIGIBLE	No H_j interval and no evidence-set input	NO_PUBLIC_SOURCE
+joint_adjustment_bridge	No sourced signed bounds exact jointly feasible projection or no-double-count reconciliation	NO_EVIDENCE	NO_PUBLIC_SOURCE	MISSING	Cannot normalize candidate to target claim	NO_PUBLIC_SOURCE
+final_decision	Retain public package; manual candidate rejection; do not generate hurdle-evidence configuration	DERIVED_DECISION	DER	INELIGIBLE	Cluster unresolved and no transaction-consistent hurdle identified	LL-RNS-2024-04-05;LL-RNS-2024-10-15-CORR;LL-RNS-2025-01-30;LL-SEC-D-2025-02-10;LL-RNS-2025-12-19

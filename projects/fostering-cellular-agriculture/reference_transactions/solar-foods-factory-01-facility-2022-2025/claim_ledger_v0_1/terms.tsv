@@ -1,0 +1,21 @@
+term_id	value_status	value	input_status	known_at_period	source_record_id	note
+agreement_month	known	2022-05	observed	UNKNOWN	SF-CD-2024-09-05	Month-level retrospective disclosure; exact execution date is UNKNOWN
+original_loan_amount_million	known	15.0	observed	UNKNOWN	SF-CD-2024-09-05	Reported agreement amount; not lender all-in price or borrower net proceeds
+draw_status	known	fully drawn reported	observed	UNKNOWN	SF-CD-2024-09-05	No dated bank settlement or draw-to-use ledger
+reported_principal_after_fee_million	known	16.3	observed	UNKNOWN	SF-CD-2024-09-05	Reported principal including capitalized commission; exact opening date is UNKNOWN
+capitalized_danske_commission_million	known	1.3	contractual	UNKNOWN	SF-CD-2024-09-05	Recipient cash payer value date withholding and borrower net proceeds are UNKNOWN
+interest_formula_to_2025_12_31	known	0.0227 plus three-month EURIBOR	contractual	UNKNOWN	SF-CD-2024-09-05	Reset payment fixing floor day-count and facility cash are UNKNOWN
+interest_formula_after_2025_12_31	known	0.0403 plus three-month EURIBOR	contractual	UNKNOWN	SF-CD-2024-09-05	Reset payment fixing floor day-count and facility cash are UNKNOWN
+principal_installment_million	known	0.67916666	contractual	UNKNOWN	SF-CD-2024-09-05	Every three months beginning 2024-09-30; maturity final rounding and actual claim cash are incomplete
+principal_installment_start_date	known	2024-09-30	contractual	UNKNOWN	SF-CD-2024-09-05	A scheduled date is not settlement evidence
+guarantor_names	known	Finnvera Oyj; EKF Denmark	observed	UNKNOWN	SF-CD-2024-09-05	Names only; coverage allocation cap deductible lag claim and recovery are UNKNOWN
+minimum_liquidity_covenant_million	known	4.0	contractual	UNKNOWN	SF-CD-2024-09-05	Definition calculation cure and reporting mechanics are incomplete
+maximum_gearing_covenant	known	1.5	contractual	UNKNOWN	SF-CD-2024-09-05	Definition calculation cure and reporting mechanics are incomplete
+negative_pledge	known	reported	contractual	UNKNOWN	SF-CD-2024-09-05	Does not establish collateral or lien priority
+environmental_and_social_undertakings	known	reported	contractual	UNKNOWN	SF-CD-2024-09-05	Definitions and consequences are incomplete
+audited_aggregate_long_term_loan_repayments_2024_million	known	1.35833332	backtest	UNKNOWN	SF-AUD-2024	Company-wide amount equals two scheduled instalments arithmetically but is not claim-level cash
+audited_aggregate_long_term_loan_repayments_2025_million	known	2.71666664	backtest	UNKNOWN	SF-AUD-2025	Company-wide amount equals four scheduled instalments arithmetically but is not claim-level cash
+audited_aggregate_finance_cost_cash_2024_million	known	1.55539545	backtest	UNKNOWN	SF-AUD-2024	Company-wide amount is not attributed to the Danske facility
+audited_aggregate_finance_cost_cash_2025_million	known	1.12782616	backtest	UNKNOWN	SF-AUD-2025	Company-wide amount is not attributed to the Danske facility
+final_maturity	unknown	UNKNOWN	unknown	UNKNOWN	NO_PUBLIC_SOURCE	Complete principal path and weighted-average life remain unavailable
+guarantee_cash_rights	unknown	UNKNOWN	unknown	UNKNOWN	NO_PUBLIC_SOURCE	No provider settlement can be computed

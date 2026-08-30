@@ -1,0 +1,2 @@
+context_id	observed_date	value_status	value	input_status	known_at_period	source_record_id	admission_status	note
+series-a1-issuer-family-report	2025-12-19	known	Aggregate capital plus accrued interest converted into Series A1 shares; amount price units settlement date and October claim link UNKNOWN	backtest	UNKNOWN	LL-RNS-2025-12-19	context-only	Different reported legal-entity name and no note register prevent admission as October claim cash or non-cash settlement

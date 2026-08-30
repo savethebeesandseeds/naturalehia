@@ -1,0 +1,7 @@
+scope	scenario_id	event_id	covenant_id	period	event_date_status	event_date	known_at_period	state	input_status	source_record_id	note
+common	NOT_APPLICABLE	covenant-state-2023-06-30	aggregate-financial-covenants	UNKNOWN	known	2023-06-30	UNKNOWN	breach-with-non-exercise-consent	backtest	SF-CD-2024-09-05	Specific failed threshold and consent mechanics are not public
+common	NOT_APPLICABLE	covenant-state-2023-09-30	aggregate-financial-covenants	UNKNOWN	known	2023-09-30	UNKNOWN	breach-with-non-exercise-consent	backtest	SF-CD-2024-09-05	Specific failed threshold and consent mechanics are not public
+common	NOT_APPLICABLE	covenant-state-2024-03-31	aggregate-financial-covenants	UNKNOWN	known	2024-03-31	UNKNOWN	pass	backtest	SF-CD-2024-09-05	Reported compliance; no test certificate or calculation
+common	NOT_APPLICABLE	covenant-state-2024-06-30	aggregate-financial-covenants	UNKNOWN	known	2024-06-30	UNKNOWN	pass	backtest	SF-CD-2024-09-05	Reported compliance; no test certificate or calculation
+common	NOT_APPLICABLE	covenant-state-2024-audited	aggregate-financial-covenants	UNKNOWN	unknown	UNKNOWN	UNKNOWN	pass	backtest	SF-AUD-2024	Audited statement reports compliance during 2024 without a claim-level test ledger
+common	NOT_APPLICABLE	covenant-state-2025-audited	aggregate-financial-covenants	UNKNOWN	unknown	UNKNOWN	UNKNOWN	pass	backtest	SF-AUD-2025	Audited statement reports compliance during 2025 without a claim-level test ledger

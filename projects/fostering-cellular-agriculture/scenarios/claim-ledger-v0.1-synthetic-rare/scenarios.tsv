@@ -1,0 +1,3 @@
+scenario_id	probability_status	probability_lower	probability_upper	probability_known_at_period	probability_input_status	probability_source_record_id	cash_path_status	cash_path_status_known_at_period	cash_path_input_status	cash_path_status_source_record_id
+performing-maturity	known	0.999999999999999	0.999999999999999	0	stress	SYNTHETIC	complete-resolved	0	derived	SYNTHETIC
+failure-with-provider	known	0.000000000000001	0.000000000000001	0	stress	SYNTHETIC	complete-resolved	0	derived	SYNTHETIC

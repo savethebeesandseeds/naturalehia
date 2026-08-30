@@ -1,0 +1,717 @@
+<!doctype html>
+<html lang="en" class="cellular-document">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A concise public explanation of the open financial standard and instrument family proposed to fund cellular agriculture from research through mass production.">
+  <meta name="theme-color" content="#021815">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Financial Architecture for Fostering Cellular Agriculture">
+  <meta property="og:description" content="How transparent, stage-appropriate financial instruments could help credible cellular-agriculture science cross into industry.">
+  <meta property="og:site_name" content="Naturalehia">
+  <meta property="og:url" content="https://naturalehia.waajacu.com/projects/fostering-cellular-agriculture/financial-architecture.html">
+  <link rel="canonical" href="https://naturalehia.waajacu.com/projects/fostering-cellular-agriculture/financial-architecture.html">
+  <link rel="stylesheet" href="../../assets/site.css">
+  <link rel="stylesheet" href="./assets/cellular-page.css">
+  <link rel="icon" href="../../assets/favicon.png" type="image/png" sizes="256x256">
+  <title>Financial Architecture — Fostering Cellular Agriculture</title>
+  <style>
+    .cellular-page.architecture-page {
+      width: auto;
+      zoom: 1;
+      background: var(--cell-dark);
+    }
+
+    .architecture-page::after {
+      position: fixed;
+    }
+
+    .architecture-main {
+      background-color: var(--cell-paper);
+      background-image:
+        radial-gradient(circle at 13% 8%, rgba(255, 255, 255, 0.5), transparent 25%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(115, 79, 36, 0.04));
+    }
+
+    .architecture-hero {
+      padding: clamp(3.5rem, 8vw, 6.75rem) 0 clamp(3rem, 7vw, 5.5rem);
+      border-bottom: 1px solid rgba(222, 179, 93, 0.55);
+      background:
+        radial-gradient(circle at 78% 34%, rgba(42, 100, 76, 0.28), transparent 38%),
+        var(--cell-dark);
+      color: var(--cell-paper-light);
+    }
+
+    .architecture-hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.45fr) minmax(16rem, 0.55fr);
+      align-items: end;
+      gap: clamp(2.5rem, 7vw, 7rem);
+    }
+
+    .architecture-hero h1 {
+      max-width: 56rem;
+      margin: 0.8rem 0 1.25rem;
+      color: var(--cell-paper-light);
+      font-family: var(--cell-display);
+      font-size: clamp(2.8rem, 7.2vw, 6.4rem);
+      font-weight: 400;
+      letter-spacing: -0.055em;
+      line-height: 0.93;
+      text-transform: uppercase;
+    }
+
+    .architecture-hero h1 span {
+      display: block;
+      color: var(--cell-gold-light);
+      font-family: var(--cell-serif);
+      font-size: 0.66em;
+      font-style: italic;
+      letter-spacing: -0.04em;
+      line-height: 1.08;
+      text-transform: none;
+    }
+
+    .architecture-lede {
+      max-width: 48rem;
+      margin-bottom: 0;
+      color: rgba(238, 227, 212, 0.88);
+      font-size: clamp(1rem, 1.8vw, 1.25rem);
+      line-height: 1.55;
+    }
+
+    .architecture-version {
+      padding: 1.25rem 0 0 1.4rem;
+      border-top: 1px solid rgba(222, 179, 93, 0.65);
+      border-left: 1px solid rgba(222, 179, 93, 0.65);
+    }
+
+    .architecture-version p {
+      margin-bottom: 0.7rem;
+      color: rgba(238, 227, 212, 0.72);
+      font-size: 0.82rem;
+      line-height: 1.5;
+    }
+
+    .architecture-version strong {
+      display: block;
+      margin-bottom: 0.2rem;
+      color: var(--cell-gold-light);
+      font-family: var(--cell-mono);
+      font-size: 0.7rem;
+      font-weight: 400;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .architecture-version a {
+      color: var(--cell-paper-light);
+      font-weight: 700;
+      text-decoration-color: var(--cell-gold);
+    }
+
+    .architecture-paper {
+      width: min(calc(100% - 2.5rem), 68rem);
+      margin-inline: auto;
+      padding: clamp(3.5rem, 8vw, 7rem) 0;
+    }
+
+    .architecture-paper section + section {
+      margin-top: clamp(3.5rem, 7vw, 6rem);
+      padding-top: clamp(3rem, 6vw, 5rem);
+      border-top: 1px solid var(--cell-line);
+    }
+
+    .architecture-section-number {
+      display: block;
+      margin-bottom: 0.75rem;
+      color: var(--cell-rust);
+      font-family: var(--cell-mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .architecture-paper h2 {
+      max-width: 46rem;
+      margin-bottom: 1.25rem;
+      color: var(--cell-ink);
+      font-family: var(--cell-display);
+      font-size: clamp(2rem, 4.8vw, 3.8rem);
+      font-weight: 400;
+      letter-spacing: -0.045em;
+      line-height: 1;
+    }
+
+    .architecture-paper h3 {
+      margin-bottom: 0.6rem;
+      color: var(--cell-ink);
+      font-family: var(--cell-mono);
+      font-size: 0.82rem;
+      font-weight: 400;
+      letter-spacing: 0.035em;
+      line-height: 1.35;
+      text-transform: uppercase;
+    }
+
+    .architecture-paper p,
+    .architecture-paper li {
+      font-size: 1rem;
+      line-height: 1.7;
+    }
+
+    .architecture-paper p {
+      max-width: 54rem;
+      margin-bottom: 1.2rem;
+    }
+
+    .architecture-equation {
+      margin: 2rem 0;
+      padding: clamp(1.3rem, 4vw, 2.2rem);
+      border: 1px solid var(--cell-line);
+      background: rgba(255, 249, 239, 0.44);
+      color: var(--cell-ink);
+      font-family: var(--cell-mono);
+      font-size: clamp(0.82rem, 2vw, 1rem);
+      line-height: 1.8;
+      text-align: center;
+    }
+
+    .architecture-equation span {
+      display: block;
+    }
+
+    .architecture-table-wrap {
+      margin-top: 2rem;
+      overflow-x: auto;
+      border-block: 1px solid var(--cell-line);
+    }
+
+    .architecture-table {
+      width: 100%;
+      min-width: 46rem;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .architecture-table th,
+    .architecture-table td {
+      padding: 1rem 0.9rem;
+      border-bottom: 1px solid rgba(120, 82, 39, 0.22);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .architecture-table tr:last-child th,
+    .architecture-table tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .architecture-table thead th {
+      color: var(--cell-rust);
+      font-family: var(--cell-mono);
+      font-size: 0.7rem;
+      font-weight: 400;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .architecture-table tbody th {
+      width: 22%;
+      color: var(--cell-ink);
+      font-weight: 700;
+    }
+
+    .architecture-table td {
+      color: var(--cell-muted);
+    }
+
+    .architecture-table-note {
+      margin-top: 0.8rem;
+      color: var(--cell-muted);
+      font-size: 0.8rem !important;
+    }
+
+    .architecture-mechanisms {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1px;
+      margin: 2rem 0 0;
+      padding: 1px;
+      background: var(--cell-line);
+      list-style: none;
+    }
+
+    .architecture-mechanisms li {
+      min-width: 0;
+      padding: 1.5rem;
+      background: var(--cell-paper-light);
+    }
+
+    .architecture-mechanisms li::before {
+      display: block;
+      margin-bottom: 1.2rem;
+      color: var(--cell-gold);
+      content: counter(list-item, decimal-leading-zero);
+      font-family: var(--cell-serif);
+      font-size: 2.2rem;
+      line-height: 1;
+    }
+
+    .architecture-mechanisms p {
+      margin-bottom: 0;
+      color: var(--cell-muted);
+      font-size: 0.92rem;
+      line-height: 1.55;
+    }
+
+    .architecture-test {
+      margin-top: 2rem;
+      padding: clamp(1.5rem, 4vw, 2.5rem);
+      background: var(--cell-dark);
+      color: var(--cell-paper-light);
+    }
+
+    .architecture-test h3 {
+      color: var(--cell-gold-light);
+    }
+
+    .architecture-test p,
+    .architecture-test li {
+      color: rgba(238, 227, 212, 0.84);
+    }
+
+    .architecture-test ul {
+      margin: 1.4rem 0 0;
+      padding-left: 1.25rem;
+    }
+
+    .architecture-test li + li {
+      margin-top: 0.65rem;
+    }
+
+    .architecture-outputs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin: 1.75rem 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .architecture-outputs li {
+      padding: 0.45rem 0.7rem;
+      border: 1px solid var(--cell-line);
+      color: var(--cell-muted);
+      font-family: var(--cell-mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.025em;
+      line-height: 1.2;
+      text-transform: uppercase;
+    }
+
+    .architecture-boundary {
+      padding: clamp(1.7rem, 4vw, 2.7rem);
+      border-left: 4px solid var(--cell-rust);
+      background: rgba(140, 81, 56, 0.08);
+    }
+
+    .architecture-boundary p:last-child {
+      margin-bottom: 0;
+    }
+
+    .architecture-source {
+      margin-top: 2.5rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--cell-line);
+      color: var(--cell-muted);
+      font-size: 0.83rem !important;
+    }
+
+    .architecture-source a {
+      color: var(--cell-ink);
+      font-weight: 700;
+      text-decoration-color: var(--cell-gold);
+    }
+
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    @media (max-width: 720px) {
+      .architecture-hero-grid,
+      .architecture-mechanisms {
+        grid-template-columns: 1fr;
+      }
+
+      .architecture-hero-grid {
+        align-items: start;
+      }
+
+      .architecture-version {
+        max-width: 28rem;
+      }
+
+      .architecture-paper {
+        width: min(calc(100% - 1.5rem), 68rem);
+      }
+
+      .architecture-table-wrap {
+        padding-bottom: 0.25rem;
+      }
+    }
+
+    @media print {
+      @page {
+        size: A4;
+        margin: 11mm 13mm;
+      }
+
+      html,
+      body {
+        background: #fff;
+        font-size: 9pt;
+      }
+
+      .architecture-page .cell-header,
+      .architecture-page .cell-footer {
+        display: none;
+      }
+
+      .architecture-page::after {
+        display: none;
+      }
+
+      .architecture-hero,
+      .architecture-test {
+        background: #fff;
+        color: #000;
+      }
+
+      .architecture-main {
+        background: #fff;
+      }
+
+      .architecture-hero {
+        padding: 0 0 5mm;
+      }
+
+      .architecture-hero-grid {
+        grid-template-columns: minmax(0, 2fr) minmax(45mm, 1fr);
+        gap: 8mm;
+      }
+
+      .architecture-hero h1 {
+        margin: 2mm 0 3mm;
+        font-size: 28pt;
+        line-height: 0.94;
+      }
+
+      .architecture-lede,
+      .architecture-paper p,
+      .architecture-paper li {
+        font-size: 8.2pt;
+        line-height: 1.3;
+      }
+
+      .architecture-version {
+        padding: 3mm 0 0 3mm;
+      }
+
+      .architecture-version p {
+        margin-bottom: 1.5mm;
+        font-size: 7pt;
+        line-height: 1.25;
+      }
+
+      .architecture-paper {
+        width: 100%;
+        padding: 5mm 0 0;
+      }
+
+      .architecture-paper section + section {
+        margin-top: 4mm;
+        padding-top: 3mm;
+      }
+
+      .architecture-paper h2 {
+        margin-bottom: 2mm;
+        font-size: 15pt;
+        line-height: 1;
+      }
+
+      .architecture-paper h3,
+      .architecture-section-number {
+        margin-bottom: 1mm;
+        font-size: 6.7pt;
+      }
+
+      .architecture-paper p {
+        max-width: none;
+        margin-bottom: 2mm;
+      }
+
+      .architecture-equation {
+        margin: 3mm 0;
+        padding: 2.5mm;
+        font-size: 7.2pt;
+        line-height: 1.3;
+      }
+
+      .architecture-table-wrap {
+        margin-top: 2.5mm;
+        overflow: visible;
+      }
+
+      .architecture-table {
+        min-width: 0;
+        font-size: 6.8pt;
+        line-height: 1.2;
+      }
+
+      .architecture-table th,
+      .architecture-table td {
+        padding: 1.7mm 1.5mm;
+      }
+
+      .architecture-table thead th,
+      .architecture-table-note,
+      .architecture-source {
+        font-size: 6.2pt !important;
+      }
+
+      .architecture-mechanisms {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        margin-top: 3mm;
+      }
+
+      .architecture-mechanisms li {
+        padding: 2.3mm;
+      }
+
+      .architecture-mechanisms li::before {
+        margin-bottom: 1mm;
+        font-size: 12pt;
+      }
+
+      .architecture-mechanisms p {
+        font-size: 6.4pt;
+        line-height: 1.2;
+      }
+
+      .architecture-test,
+      .architecture-boundary {
+        margin-top: 3mm;
+        padding: 3mm;
+      }
+
+      .architecture-test ul {
+        columns: 2;
+        column-gap: 6mm;
+        margin: 2mm 0 0;
+      }
+
+      .architecture-test li + li {
+        margin-top: 1mm;
+      }
+
+      .architecture-outputs {
+        gap: 1mm;
+        margin-top: 2.5mm;
+      }
+
+      .architecture-outputs li {
+        padding: 1mm 1.5mm;
+        font-size: 6.2pt;
+      }
+
+      .architecture-table,
+      .architecture-test,
+      .architecture-boundary {
+        break-inside: avoid;
+      }
+
+      .architecture-hero h1,
+      .architecture-hero h1 span,
+      .architecture-lede,
+      .architecture-version p,
+      .architecture-version strong,
+      .architecture-version a,
+      .architecture-test h3,
+      .architecture-test p,
+      .architecture-test li {
+        color: #000;
+      }
+    }
+  </style>
+</head>
+<body class="cellular-page architecture-page">
+  <a class="skip-link" href="#main-content">Skip to content</a>
+
+  <header class="cell-header">
+    <div class="cell-shell cell-header-inner">
+      <a class="cell-brand" href="../../" aria-label="Naturalehia home">Naturalehia</a>
+      <nav class="cell-nav" aria-label="Primary navigation">
+        <a href="./">Project</a>
+        <a href="#instrument-family">Instruments</a>
+        <a href="./docs/FINANCIAL_ARCHITECTURE.md">Canonical text</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main-content" class="architecture-main">
+    <header class="architecture-hero">
+      <div class="cell-shell architecture-hero-grid">
+        <div>
+          <p class="cell-kicker">Public north-star summary / Version 0.1</p>
+          <h1>Financial architecture <span>for Fostering Cellular Agriculture</span></h1>
+          <p class="architecture-lede">An open financial standard and a focused family of instruments for helping credible cellular-agriculture science cross from research into mass production.</p>
+        </div>
+        <aside class="architecture-version" aria-label="Document status">
+          <p><strong>Status</strong>Research architecture</p>
+          <p><strong>Purpose</strong>Explain risk, return and value in common financial terms</p>
+          <p><a href="./docs/FINANCIAL_ARCHITECTURE.md">Read the canonical Markdown source</a></p>
+        </aside>
+      </div>
+    </header>
+
+    <article class="architecture-paper">
+      <section id="aim" aria-labelledby="aim-heading">
+        <span class="architecture-section-number">01 / Aim</span>
+        <h2 id="aim-heading">Make risk understandable and financeable.</h2>
+        <p>Fostering Cellular Agriculture will develop an open financial standard and a focused family of instruments that can fund cellular-agriculture projects from research through mass production.</p>
+        <p>The purpose is to help credible science cross the difficult passage into industry. Financial engineering should make risk understandable, divide it honestly, and connect each development stage to capital capable of bearing it. It cannot make weak economics valuable merely by packaging them.</p>
+      </section>
+
+      <section id="interface" aria-labelledby="interface-heading">
+        <span class="architecture-section-number">02 / The central idea</span>
+        <h2 id="interface-heading">One financial interface, many kinds of project.</h2>
+        <p>We are not beginning with one fund, security or legal form. We are building a common financial interface that unlike scientific and industrial projects can connect to without forcing them to use the same technology or instrument.</p>
+        <div class="architecture-equation" aria-label="Project financial interface equals five components">
+          <span>project financial interface =</span>
+          <span>capital schedule + milestone states + success cash rights</span>
+          <span>+ failure recovery + shared risk-factor exposure</span>
+        </div>
+        <p>The interface lets us calculate capital exposure, expected loss, recovery, duration, expected return, tail risk, correlation, diversification and value. It describes project economics; it is not a laboratory or company-management manual.</p>
+
+        <div class="architecture-table-wrap" tabindex="0" role="region" aria-label="Financial interface components; scroll horizontally on narrow screens">
+          <table class="architecture-table">
+            <caption class="visually-hidden">Components of the project financial interface and their financial meaning</caption>
+            <thead>
+              <tr><th scope="col">Component</th><th scope="col">Financial meaning</th></tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row">Capital schedule</th><td>How much can be committed and drawn, when, and for how long it remains exposed.</td></tr>
+              <tr><th scope="row">Milestone states</th><td>The paths from research toward production, including stop, failure and exit states.</td></tr>
+              <tr><th scope="row">Success cash flows</th><td>Repayment, licensing, royalties, revenue participation, equity-linked value or refinancing proceeds.</td></tr>
+              <tr><th scope="row">Failure and recovery</th><td>Capital lost, unused commitment preserved, recovery cash and recovery timing.</td></tr>
+              <tr><th scope="row">Common risk exposure</th><td>Shared technology, input, equipment, buyer, energy, regulatory and funding dependencies.</td></tr>
+              <tr><th scope="row">Uncertainty status</th><td>Whether an input is observed, contractually fixed, estimated or synthetic.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="instrument-family" aria-labelledby="instrument-heading">
+        <span class="architecture-section-number">03 / The instrument family</span>
+        <h2 id="instrument-heading">Different stages need different claims.</h2>
+        <p>The repayment sources and failure patterns of research, scale-up and established production are not interchangeable. The proposed family therefore changes the claim as the project matures.</p>
+
+        <div class="architecture-table-wrap" tabindex="0" role="region" aria-label="Proposed financial instruments; scroll horizontally on narrow screens">
+          <table class="architecture-table">
+            <caption class="visually-hidden">Proposed instrument family by stage, design and source of return</caption>
+            <thead>
+              <tr><th scope="col">Instrument</th><th scope="col">Stage</th><th scope="col">Design and source of return</th></tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row">Research participation agreement</th><td>Research through pilot</td><td>Staged capital receives licensing, royalty, equity-linked or defined commercialization-success payments rather than relying on pre-revenue debt service.</td></tr>
+              <tr><th scope="row">Milestone-gated scale-up facility</th><td>Pilot through first industrial build</td><td>Failed paths stop drawing. Successful paths repay funded capital and an agreed return, potentially with limited success participation.</td></tr>
+              <tr><th scope="row">Qualified-output-backed production note</th><td>Commissioning through repeat production</td><td>Repayment comes from qualified-output sales, capacity payments or enforceable offtake—not nameplate capacity.</td></tr>
+              <tr><th scope="row">Untranched participation pool</th><td>Multiple financially compatible projects</td><td>Investors share combined repayments, recoveries and success upside while bearing the pool’s failures and common-factor shocks.</td></tr>
+              <tr><th scope="row">Fully funded capital stack</th><td>A reconciled compatible pool</td><td>At-par first-loss, intermediate and senior claims divide the same principal loss and actual pool cash. Priority changes exposure and return, not aggregate value.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="architecture-table-note">The implemented milestone-gated facility is one component of this architecture, not the final instrument or the project’s entire thesis.</p>
+        <p>Completion support, guarantees, insurance, capacity reservations and narrow price or input hedges can remove defined bottlenecks. They support a core instrument; they do not substitute for an economically valuable underlying claim.</p>
+      </section>
+
+      <section id="value" aria-labelledby="value-heading">
+        <span class="architecture-section-number">04 / How value may be created</span>
+        <h2 id="value-heading">Five mechanisms worth testing.</h2>
+        <ol class="architecture-mechanisms">
+          <li><h3>Staging limits wasted capital</h3><p>A failed project loses only capital released before failure, rather than an entire commitment.</p></li>
+          <li><h3>Success participation funds risk</h3><p>Royalties, revenue participation, equity-linked value or commercialization payments let successes compensate for failures when fixed interest is unaffordable.</p></li>
+          <li><h3>Pooling can diversify</h3><p>Pooling may reduce idiosyncratic tail risk. It does not reduce expected loss by itself or protect against shared shocks.</p></li>
+          <li><h3>Narrow support removes bottlenecks</h3><p>A price floor, qualified-output commitment, completion support or guarantee has value only when it offsets an identified exposure and has a real payer.</p></li>
+          <li><h3>A shared standard lowers friction</h3><p>Comparable exposure and payoff records can reduce repeated analysis costs without hiding differences among projects.</p></li>
+        </ol>
+
+        <div class="architecture-test" aria-labelledby="test-heading">
+          <h3 id="test-heading">The value test</h3>
+          <p>Every proposed instrument must identify where investor cash actually comes from: customers, project revenue, licensing, royalties, equity value, refinancing, recoveries or an explicit third-party contribution. Payment-in-kind enlarges a claim but does not create cash.</p>
+          <ul>
+            <li>Expected cash flows must compensate for expected loss, time, illiquidity and common-factor risk.</li>
+            <li>Severe but plausible loss must remain bearable for the capital assigned to it.</li>
+            <li>Successful-project upside must be sufficient to balance development failures.</li>
+            <li>Pooling must show measurable diversification benefit after correlation.</li>
+            <li>The structure must improve funding availability, tenor or cost relative to separate financing.</li>
+            <li>All claims must reconcile to underlying project cash flows and explicit outside support.</li>
+          </ul>
+        </div>
+        <p>Tranching can give investors different loss and return positions, but it only redistributes the pool’s result. It should follow evidence that the untranched pool has economic value—not manufacture the appearance of safety.</p>
+        <p>The implemented capital-stack test subscribes the complete commitment at par into a zero-yield reserve, pays principal senior-first, pays bounded non-principal priorities before the first-loss residual and allocates loss upward. It reports tranche loss, exhaustion, expected NPV, cash multiple, tail shortfall and common-witness weighted-average life; it does not estimate a market spread or fair value.</p>
+      </section>
+
+      <section id="build" aria-labelledby="build-heading">
+        <span class="architecture-section-number">05 / What we are building</span>
+        <h2 id="build-heading">Comparable project states; standalone and pooled results.</h2>
+        <p>The standard represents each project’s capital needs, state-contingent payoffs, failure recovery and common-factor exposure. The first implemented pool kernel calculates standalone and pooled risk and return from explicit joint project states. Its strict reloadable scenario format and human-readable report are implemented. The first stage-specific adapter translates actual milestone-gated facility paths into that interface, including explicit allocations when repayment comes from more than one kind of cash.</p>
+        <p>The software now tests a connected synthetic chain: the untranched pool, probability uncertainty, investor success participation, external loss protection and its premium bounds, provider price and counterparty-credit stress, and a fully funded capital stack. The stack converts the fixed pool into at-par first-loss, intermediate and senior claims while reconciling distributions, costs, losses, unresolved exposure, reserve movement and robust duration. Additional project adapters, market pricing and empirical calibration remain next.</p>
+        <ul class="architecture-outputs" aria-label="Principal model outputs">
+          <li>Exposure at default</li>
+          <li>Expected loss</li>
+          <li>Cash return</li>
+          <li>NPV and hurdle</li>
+          <li>IRR distribution</li>
+          <li>Cash multiple</li>
+          <li>Duration</li>
+          <li>Liquidity need</li>
+          <li>Value at risk</li>
+          <li>Expected shortfall</li>
+          <li>Correlated stress loss</li>
+          <li>Diversification benefit</li>
+          <li>Tranche loss allocation</li>
+          <li>Tranche weighted-average life</li>
+        </ul>
+        <p>Existing evidence, facility and staged-capital models remain technical support. The public result should stay simple: what each instrument finances, where its return comes from, who bears loss, why it might be valuable and which assumptions could make it fail.</p>
+      </section>
+
+      <section id="boundary" aria-labelledby="boundary-heading">
+        <div class="architecture-boundary">
+          <span class="architecture-section-number">06 / Honest boundary</span>
+          <h2 id="boundary-heading">A research program, not an offer.</h2>
+          <p>This architecture is not an offer, price, rating or claim that a project is financeable. A financial standard cannot substitute for real cash-generating rights, credible probabilities or viable production economics. Its purpose is to make those conditions visible and engineer capital around them when they genuinely exist.</p>
+        </div>
+        <p class="architecture-source">This page is a readable rendering. The maintained source is <a href="./docs/FINANCIAL_ARCHITECTURE.md">Financial Architecture for Fostering Cellular Agriculture</a> in Markdown.</p>
+      </section>
+    </article>
+  </main>
+
+  <footer class="cell-footer">
+    <div class="cell-shell cell-footer-inner">
+      <div><a class="cell-brand" href="../../">Naturalehia</a><p>Financial engineering in service of cellular agriculture.</p></div>
+      <nav aria-label="Footer navigation"><a href="./">Project</a><a href="#aim">Aim</a><a href="./docs/FINANCIAL_ARCHITECTURE.md">Canonical text</a></nav>
+    </div>
+  </footer>
+</body>
+</html>

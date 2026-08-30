@@ -1,0 +1,5 @@
+scenario_id	probability_status	probability_lower	probability_upper	probability_known_at_period	probability_input_status	probability_source_record_id	cash_path_status	cash_path_status_known_at_period	cash_path_input_status	cash_path_status_source_record_id
+rounding-a	known	0.055401167915852388	0.055401167915852388	0	stress	SYNTHETIC	complete-resolved	0	derived	SYNTHETIC
+rounding-b	known	0.14936164155771800	0.14936164155771800	0	stress	SYNTHETIC	complete-resolved	0	derived	SYNTHETIC
+rounding-c	known	0.54223477686624921	0.54223477686624921	0	stress	SYNTHETIC	complete-resolved	0	derived	SYNTHETIC
+rounding-d	known	0.25300241366018034	0.25300241366018034	0	stress	SYNTHETIC	complete-resolved	0	derived	SYNTHETIC

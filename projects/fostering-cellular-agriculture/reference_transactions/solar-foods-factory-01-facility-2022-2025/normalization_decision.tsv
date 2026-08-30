@@ -1,0 +1,37 @@
+field_id	public_observation	evidence_class	provenance_tag	status	decision_effect	source_ids
+observation_cluster	May 2022 Solar Foods Factory 01 Danske Bank export-credit facility	C;A	CLM;AUD	DEFINED	One candidate economic cluster; later audited performance records are not additional observations	SF-CD-2024-09-05;SF-AUD-2024;SF-AUD-2025
+candidate_observation_date	May 2022 agreement and full draw reported retrospectively	C	CLM	PARTIAL	Exact execution settlement and price-observation timestamp required before freezing ex-ante information	SF-CD-2024-09-05
+issuer	Solar Foods Oyj	C	CLM	OBSERVED	Borrower identified; exact obligor and any additional liable parties require executed documents	SF-CD-2024-09-05
+lender	Danske Bank A/S Finland branch	C	CLM	OBSERVED	Named lender identified	SF-CD-2024-09-05
+guarantors	Finnvera Oyj and Denmark export-credit agency EKF	C	CLM	PARTIAL	Names observed; guarantee rights and economics unresolved	SF-CD-2024-09-05
+use_of_proceeds	Construction of Factory 01 production process	C	CLM	PARTIAL	Relevant use stated; no draw-to-expenditure ledger	SF-CD-2024-09-05
+currency	EUR	C	CLM	OBSERVED	Native currency identified	SF-CD-2024-09-05
+agreement_date	May 2022	C	CLM	PARTIAL	Month and year observed; exact execution and value dates absent	SF-CD-2024-09-05
+committed_amount	EUR 15000000	C	CLM	OBSERVED	Original loan amount reported	SF-CD-2024-09-05
+transaction_status	Fully drawn per later company description	C	CLM	EXECUTED_DRAWN_REPORTED	Stronger than an announcement; no dated bank settlement ledger	SF-CD-2024-09-05
+principal_after_fee	EUR 16300000 including capitalized EUR 1300000 Danske commission	C	CLM	OBSERVED_PARTIAL	Borrower claim amount observed; lender cash price and fee timing unresolved	SF-CD-2024-09-05
+gross_price	No complete draw deduction and fee cash reconciliation	NO_EVIDENCE	NO_PUBLIC_SOURCE	MISSING	Price input P_j unavailable on an all-in investor basis	NO_PUBLIC_SOURCE
+lender_direct_cost	No lender cost ledger	NO_EVIDENCE	NO_PUBLIC_SOURCE	MISSING	All-in investor outflow C_j unavailable	NO_PUBLIC_SOURCE
+interest_formula	2.27 percent plus three-month EURIBOR through 2025-12-31; 4.03 percent plus three-month EURIBOR thereafter	C	CLM	OBSERVED_PROMISED_TERM	Promised formula cannot substitute for expected-cash discount-equivalent rate	SF-CD-2024-09-05
+interest_mechanics	Reset and payment dates; fixing source; floor; day count; fallback; default rate; compounding absent	NO_EVIDENCE	NO_PUBLIC_SOURCE	MISSING	Dated promised interest cash cannot be reconstructed	NO_PUBLIC_SOURCE
+principal_schedule	EUR 679166.66 every three months beginning 2024-09-30	C	CLM	OBSERVED_PARTIAL	Instalment and start known; complete dates final rounding and maturity absent	SF-CD-2024-09-05
+principal_cash_2024	Aggregate audited long-term-loan repayments EUR 1358333.32 equal two disclosed instalments	A;C	AUD;CLM;DER	RECONCILED_AGGREGATE_EX_POST	Strong arithmetic control but not creditor-level settlement evidence or ex-ante probability input	SF-AUD-2024;SF-CD-2024-09-05
+principal_cash_2025	Aggregate audited long-term-loan repayments EUR 2716666.64 equal four disclosed instalments	A;C	AUD;CLM;DER	RECONCILED_AGGREGATE_EX_POST	Strong arithmetic control but not creditor-level settlement evidence or ex-ante probability input	SF-AUD-2025;SF-CD-2024-09-05
+interest_cash_2024	Aggregate interest and other finance costs paid EUR 1555395.45	A	AUD	AGGREGATE_ONLY_EX_POST	Cannot allocate to Danske facility derive claim yield or enter ex-ante probability set	SF-AUD-2024
+interest_cash_2025	Aggregate interest and other finance costs paid EUR 1127826.16	A	AUD	AGGREGATE_ONLY_EX_POST	Cannot allocate to Danske facility derive claim yield or enter ex-ante probability set	SF-AUD-2025
+maturity	No explicit final maturity	NO_EVIDENCE	NO_PUBLIC_SOURCE	MISSING	Full principal path and weighted-average life unresolved	NO_PUBLIC_SOURCE
+prepayment_default_amendment	Lender termination or term-change right on covenant breach reported; complete mechanics absent	C	CLM	PARTIAL	State-contingent promised cash unresolved	SF-CD-2024-09-05
+covenants	Minimum liquidity EUR 4m; maximum gearing 1.5; negative pledge; environmental and social undertakings	C	CLM	OBSERVED_PARTIAL	Threshold states available; definitions calculations cure and reporting absent	SF-CD-2024-09-05
+covenant_history	Two 2023 noncompliance dates covered by one advance consent not to exercise the stated termination right; compliance reported in 2024 and 2025	C;A	CLM;AUD	OBSERVED_EX_POST	Useful backtest transitions; not an ex-ante probability or recovery model	SF-CD-2024-09-05;SF-AUD-2024;SF-AUD-2025
+guarantee_rights	Coverage; beneficiary; premium; exclusions; claim timing; recourse; provider settlement absent	NO_EVIDENCE	NO_PUBLIC_SOURCE	MISSING	Provider cash and lender recovery unavailable	NO_PUBLIC_SOURCE
+security_priority	Negative pledge reported; collateral and lien priority not allocated to facility	C	CLM	PARTIAL	Recovery and priority comparison axes unresolved	SF-CD-2024-09-05
+arm_length_orderliness	External bank named; competitive process and all side compensation not public	C	CLM	UNRESOLVED	Orderly arm-length price formation not established	SF-CD-2024-09-05
+liquidity_transfer	No transfer rights or secondary execution evidence	NO_EVIDENCE	NO_PUBLIC_SOURCE	MISSING	Liquidity comparison axis unresolved	NO_PUBLIC_SOURCE
+technology_bridge	Gas-fermentation protein facility rather than cultivated-meat tissue production	C	CLM	MISMATCH_UNADJUSTED	Adjacent construction-credit case requires evidenced technology adjustment	SF-CD-2024-09-05
+date_regime_bridge	May 2022 transaction versus 2026 observation cut-off and future target issuance	C	CLM	MISSING	Stale transaction cannot be rolled forward mechanically	SF-CD-2024-09-05
+ex_ante_information_set	No probability record frozen to exact May 2022 execution settlement or observation time	NO_EVIDENCE	NO_PUBLIC_SOURCE	MISSING	Later covenant and repayment outcomes cannot enter original expected-cash model	NO_PUBLIC_SOURCE
+physical_probability_set	No independent ex-ante state-probability set for lender cash	NO_EVIDENCE	NO_PUBLIC_SOURCE	MISSING	Physical expected cash cannot be formed	NO_PUBLIC_SOURCE
+recovery_cash_paths	No dated borrower default guarantee enforcement restructuring or recovery paths	NO_EVIDENCE	NO_PUBLIC_SOURCE	MISSING	Expected loss and recovery cannot be placed in cash	NO_PUBLIC_SOURCE
+expected_cash_rate_preimage	Not calculated	NO_EVIDENCE	NO_PUBLIC_SOURCE	INELIGIBLE	No H_j interval and no evidence-set input	NO_PUBLIC_SOURCE
+joint_adjustment_bridge	No sourced signed bounds exact jointly feasible projection or no-double-count reconciliation	NO_EVIDENCE	NO_PUBLIC_SOURCE	MISSING	Cannot normalize candidate to target claim	NO_PUBLIC_SOURCE
+final_decision	Retain public package; manual candidate rejection; do not generate hurdle-evidence configuration	DERIVED_DECISION	DER	INELIGIBLE	No transaction-consistent hurdle identified	SF-CD-2024-09-05;SF-AUD-2024;SF-AUD-2025

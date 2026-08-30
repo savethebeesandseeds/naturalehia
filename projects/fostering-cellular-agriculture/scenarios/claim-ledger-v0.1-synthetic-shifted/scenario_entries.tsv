@@ -1,0 +1,10 @@
+scenario_id	entry_id	economic_fact_id	event_group_id	kind	period	known_at_period	value_status	lower_value	upper_value	input_status	source_record_id	provider_claim_id
+performing-maturity	success-interest-accrual	success-interest-accrual	maturity-success	interest-accrual	12	0	known	1	1	stress	SYNTHETIC	NONE
+performing-maturity	success-principal-due	success-principal-due	maturity-success	principal-due	12	0	known	10	10	stress	SYNTHETIC	NONE
+performing-maturity	success-interest-due	success-interest-due	maturity-success	interest-due	12	0	known	1	1	stress	SYNTHETIC	NONE
+performing-maturity	success-principal-cash	success-principal-cash	maturity-success	principal-cash	12	0	known	10	10	stress	SYNTHETIC	NONE
+performing-maturity	success-interest-cash	success-interest-cash	maturity-success	interest-cash	12	0	known	1	1	stress	SYNTHETIC	NONE
+failure-with-provider	failure-principal-due	failure-principal-due	maturity-failure	principal-due	12	0	known	10	10	stress	SYNTHETIC	NONE
+failure-with-provider	failure-recovery-principal-cash	failure-recovery-principal-cash	maturity-failure	recovery-principal-cash	12	0	known	2	2	stress	SYNTHETIC	NONE
+failure-with-provider	failure-guarantee-principal-cash	failure-guarantee-principal-cash	maturity-failure	guarantee-principal-cash	12	0	known	4	4	stress	SYNTHETIC	synthetic-provider-claim
+failure-with-provider	failure-principal-writeoff	failure-principal-writeoff	maturity-failure	principal-writeoff	12	0	known	4	4	stress	SYNTHETIC	NONE
