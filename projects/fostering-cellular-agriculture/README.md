@@ -6,10 +6,12 @@ cellular-agriculture projects from research through mass production. The
 standard translates capital needs, milestone states, success cash flows,
 failure recovery, and shared risks into comparable financial terms.
 
-Start with [The Financial Instrument in Brief](docs/FINANCIAL_INSTRUMENT_IN_BRIEF.md),
-the short explanation of what investors own, where returns come from, and how
-loss and diversification work. The [Financial Architecture](docs/FINANCIAL_ARCHITECTURE.md)
-is the project’s public north star. The browser-facing
+Start with the [technical white paper](whitepaper/fostering-cellular-agriculture-white-paper.pdf),
+the publication-level statement of the proposed instrument, its cash rights,
+risk allocation, valuation equations, synthetic ten-claim results, and evidence
+boundary. [The Financial Instrument in Brief](docs/FINANCIAL_INSTRUMENT_IN_BRIEF.md)
+is the short explanation of what investors own, where returns come from, and how
+loss and diversification work. The browser-facing
 [Investor View](investor-view.html) makes the validated ten-claim synthetic
 case explorable through cash sources, NPV, tail loss, shared factors, joint
 states, protection variants, and the remaining investability gap. The technical
@@ -773,10 +775,11 @@ each relevant jurisdiction before solicitation or execution.
 
 | Document | Role |
 |---|---|
+| [Technical White Paper](whitepaper/fostering-cellular-agriculture-white-paper.pdf) | Article-format statement of the instrument, financial mechanics, risk and return results, investability gap, limitations, and research path |
 | [The Financial Instrument in Brief](docs/FINANCIAL_INSTRUMENT_IN_BRIEF.md) | Short front-door explanation of the core asset, two alternatives, ten-claim result, and honest rejection boundary |
 | [Multi-Project Milestone Participation Candidate Term Sheet](docs/MULTI_PROJECT_MILESTONE_PARTICIPATION_TERM_SHEET_V1.md) | Institution-readable property right, funding, cash, loss, waterfall, disclosure, and falsification terms |
 | [Ten-Claim Instrument Analysis](docs/TEN_CLAIM_INSTRUMENT_ANALYSIS_V1.md) | Exactly ten claims, nine dependent states, unsupported/first-loss/guarantee comparison, provider economics, and adverse witnesses |
-| [Financial Architecture](docs/FINANCIAL_ARCHITECTURE.md) | Short public explanation of the aim, common interface, instrument family, value thesis, and honest boundary |
+| [Financial Architecture research note](docs/FINANCIAL_ARCHITECTURE.md) | Maintained design note behind the public white paper: aim, common interface, instrument family, value thesis, and honest boundary |
 | [Project Financial Interface v0.1](docs/PROJECT_FINANCIAL_INTERFACE_V0_1.md) | Common capital, state, payoff, recovery, factor, metric, and pooling conventions |
 | [Portfolio Explicit Contractual-Principal Ledger v0.2](docs/PORTFOLIO_EXPLICIT_PRINCIPAL_LEDGER_V0_2.md) | Separate investor-cash and contractual-principal accounting, above-par behavior, strict format, and v0.1 compatibility |
 | [Project Claim Ledger v0.1](docs/PROJECT_CLAIM_LEDGER_V0_1.md) | Upstream one-claim settlement, balance, cash, conversion, guarantee, covenant, and ex-ante/backtest normalization standard |

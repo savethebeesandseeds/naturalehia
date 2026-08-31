@@ -1,0 +1,814 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{mathpazo}
+\usepackage[protrusion=true,expansion=false]{microtype}
+\usepackage[a4paper,top=25mm,bottom=24mm,left=25mm,right=25mm,headheight=22pt]{geometry}
+\usepackage{amsmath,amssymb,mathtools}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{caption}
+\usepackage{fancyhdr}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc,fit}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage{hyperref}
+\usepackage[nameinlink,noabbrev]{cleveref}
+
+\definecolor{Forest}{HTML}{08241F}
+\definecolor{DeepForest}{HTML}{021815}
+\definecolor{Paper}{HTML}{F6F0E8}
+\definecolor{Gold}{HTML}{C8953F}
+\definecolor{Rust}{HTML}{8C5138}
+\definecolor{Sage}{HTML}{879A8D}
+\definecolor{Mist}{HTML}{E7ECE8}
+\definecolor{Alert}{HTML}{A63D2F}
+\definecolor{Positive}{HTML}{2F6B57}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=Forest,
+  citecolor=Rust,
+  urlcolor=Rust,
+  pdftitle={Fostering Cellular Agriculture: A Transparent Multi-Project Milestone Participation},
+  pdfauthor={Naturalehia},
+  pdfsubject={Open financial engineering for cellular agriculture},
+  pdfkeywords={cellular agriculture, financial engineering, milestone finance, portfolio risk, guarantees, blended finance}
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\footnotesize\color{Forest}\textsc{Fostering Cellular Agriculture}}
+\fancyhead[R]{\footnotesize\color{Rust}\textsc{Technical White Paper / Version 1.0}}
+\fancyfoot[L]{\footnotesize\color{Sage}Open research design / synthetic economics}
+\fancyfoot[R]{\footnotesize\color{Forest}\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\headrule}{\hbox to\headwidth{\color{Gold}\leaders\hrule height \headrulewidth\hfill}}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.55em}
+\setlength{\emergencystretch}{2em}
+\setlength{\tabcolsep}{5pt}
+\renewcommand{\arraystretch}{1.16}
+\setcounter{tocdepth}{1}
+\setlist[itemize]{leftmargin=1.45em,itemsep=0.22em,topsep=0.25em}
+\setlist[enumerate]{leftmargin=1.65em,itemsep=0.3em,topsep=0.3em}
+\captionsetup{font=small,labelfont={bf,color=Forest}}
+\renewcommand{\sectionmark}[1]{}
+\raggedbottom
+\clubpenalty=10000
+\widowpenalty=10000
+\displaywidowpenalty=10000
+
+\newcommand{\demounit}{\textsc{demo million}}
+\newcommand{\statussynthetic}{\textcolor{Rust}{\textsc{Synthetic}}}
+\newcommand{\statusunknown}{\textcolor{Alert}{\textsc{Unknown}}}
+\newcommand{\statusimplemented}{\textcolor{Positive}{\textsc{Implemented}}}
+\newcommand{\tightnote}[1]{\par\smallskip{\footnotesize\color{Sage}#1}\par}
+\newcommand{\result}[1]{\textbf{\color{Forest}#1}}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcolumntype{R}{>{\raggedleft\arraybackslash}X}
+\newcolumntype{P}[1]{>{\raggedright\arraybackslash}p{#1}}
+
+\newenvironment{paperbox}[1]{%
+  \begin{center}\begin{minipage}{0.96\textwidth}%
+  \color{Forest}\hrule height 1.2pt\vspace{0.65em}%
+  {\large\bfseries #1}\par\smallskip\color{black}%
+}{%
+  \vspace{0.45em}\color{Gold}\hrule height 0.7pt
+  \end{minipage}\end{center}%
+}
+
+\begin{document}
+\pagenumbering{gobble}
+
+\begin{titlepage}
+  \thispagestyle{empty}
+  \pagecolor{Paper}\color{Forest}
+  \vspace*{8mm}
+  {\small\bfseries\color{Rust}\MakeUppercase{Naturalehia Research \enspace/\enspace Technical White Paper}}\par
+  \vspace{14mm}
+  {\Huge\bfseries Fostering Cellular Agriculture}\par
+  \vspace{3mm}
+  {\LARGE A Transparent Multi-Project Milestone Participation for Financing Research-to-Industry Scale-Up}\par
+  \vspace{10mm}
+  \color{Gold}\rule{\textwidth}{1.4pt}\par
+  \vspace{10mm}
+  \begin{tabularx}{\textwidth}{@{}P{0.27\textwidth}Y@{}}
+    \textbf{Author} & Naturalehia, open financial-engineering research\\
+    \textbf{Version} & 1.0 / 31 August 2026\\
+    \textbf{Model case} & Ten synthetic project claims / 60-month horizon\\
+    \textbf{Correspondence} & \href{https://naturalehia.waajacu.com/projects/fostering-cellular-agriculture/}{naturalehia.waajacu.com/projects/fostering-cellular-agriculture}\\
+    \textbf{License} & MIT for source, model code and original paper text\\
+  \end{tabularx}
+
+  \vfill
+  \begin{minipage}{\textwidth}
+    \color{DeepForest}\hrule height 0.8pt\vspace{0.8em}
+    \textbf{Research-status notice.} This paper describes a candidate financial instrument and a synthetic numerical experiment. It is not an offer, solicitation, investment recommendation, rating, valuation, fairness opinion, or legal, tax, accounting, regulatory, or prudential advice. No issuer, security, guarantee provider, market price, or regulatory treatment has been established. The economic labels used here do not determine legal classification. All monetary results are invented \demounit{} values used to test mechanics.
+  \end{minipage}
+  \vspace{8mm}
+  {\small\color{Rust}\textit{Packaging creates no cash. Tranching reallocates risk. Honest rejection is a model output.}}
+\end{titlepage}
+\nopagecolor\color{black}
+\pagenumbering{roman}
+
+\begin{abstract}
+Cellular agriculture requires patient capital across research, pilot, demonstration and first-industrial stages, yet early cash is sparse, technical failures are correlated and the legal source of investor repayment is often unclear. We define a candidate \emph{Multi-Project Milestone Participation}: a limited-recourse claim on dated project draws, explicitly assigned success cash, recoveries and continuing principal across a disclosed set of projects. Later funding is callable only after stated milestones. Dependence is represented by complete joint states and a bounded set of physical probability measures rather than by multiplying independent project defaults.
+
+The financial contribution is a source-separated, principal-conserving model that compares an unsupported callable core with two mutually exclusive variants: a fully funded first-loss/priority stack and a failure-contingent partial-credit guarantee. In a ten-claim synthetic experiment with 100 of reference principal, the core has central expected NPV of \(0.661828\) at an 8\% hurdle but adverse expected NPV of \(-18.717674\). Pooling reduces central principal-loss ES95 by 10.05\%, while ES99 diversification benefit is zero. Neither the funded stack nor the 30\% guarantee restores robust investor adequacy under the declared terms. The result is therefore a rejection, not a financing claim. We state the contractual, empirical, institutional and legal evidence required to turn the design into a real asset.
+\end{abstract}
+
+\textbf{Keywords:} cellular agriculture; financial engineering; milestone finance; project participation; portfolio dependence; partial-credit guarantee; blended finance; expected shortfall.\\
+\textbf{JEL classification:} G11, G23, G32, G38, Q14.
+
+\tableofcontents
+\clearpage
+\pagenumbering{arabic}
+
+\section{Introduction}
+
+The objective of this research is practical: make it possible for institutional, mission and public capital to finance credible cellular-agriculture work from research into repeatable production without concealing the risk that capital is actually taking. The ethical purpose is to help build an industrial alternative to systems that confine and slaughter animals. That purpose raises the standard of evidence; it does not relax it.
+
+The financing problem is not solved by naming a fund, adding projects, or promising that scale will arrive. Investors need a valuable asset: a defined property right to identifiable cash, a complete account of when capital is at risk, a distribution of loss and return that respects shared shocks, and terms under which the asset can be accepted or rejected. Public and philanthropic institutions need the same visibility from the opposite side: what risk they absorb, when cash can be called, whether support is additional, and whether a private return is being created by productive cash or subsidy.
+
+Biomedical research-backed obligation proposals established an important intellectual precedent by combining uncertain development programs, staged asset value and structured claims \citep{fernandez2012rbo,fagnan2013cancer,fagnan2014orphan}. The present design borrows the discipline of pooling, cash waterfalls and explicit guarantees, but it does not assume that cellular-agriculture projects possess comparable licensing markets, development probabilities, or debt capacity. It begins one level lower: every project must first connect to a common financial interface, and every unit of investor return must trace to an enforceable source.
+
+This paper makes four contributions:
+
+\begin{enumerate}
+  \item It defines the economic asset before the legal wrapper: a limited-recourse participation in dated, source-budgeted project cash, recovery and continuing exposure.
+  \item It gives one core construction and two alternative risk-allocation variants without claiming that tranching or guarantees create underlying project value.
+  \item It evaluates the constructions under explicit joint physical states and probability ambiguity, preserving adverse witnesses rather than reducing the result to one expected return.
+  \item It turns non-investability into a useful output by stating measurable rejection conditions and the evidence needed for a live issuance.
+\end{enumerate}
+
+\begin{paperbox}{Key finding: the current terms are defined but not shown financeable}
+The synthetic core is barely positive at the central probability mix, yet fails under an admissible adverse mix. Central ES95 diversification exists but disappears at ES99. A funded first-loss layer introduces material prefunding drag, and a 30\% guarantee improves investor NPV only by adding external provider cash; it still leaves a large adverse gap and an unfunded provider budget requirement. The model therefore rejects all three current constructions. This is evidence that the standard can expose a financing gap, not evidence about any live company.
+\end{paperbox}
+
+\section{The financing problem}
+
+\subsection{Why research-to-industry scale-up resists ordinary debt}
+
+Cellular-agriculture projects cross qualitatively different stages. Shared science and platform research can create broad public and private option value while producing no near-term debt-service cash. Pilot and demonstration assets may generate operational evidence but remain exposed to biology, contamination, media supply, equipment integration, product qualification and buyer acceptance. First-industrial facilities add construction, commissioning, throughput, yield, cost and market risks at larger capital scale. Published techno-economic work illustrates why scale, media, mass transfer and process assumptions remain economically decisive, while reviews show that materially different assumptions still drive modeled outcomes \citep{humbird2021scale,pasitka2024continuous,goodwin2024scoping}. Food-safety hazards and regulatory controls create another distinct evidence path \citep{fao2023safety}. Repeat facilities can become more debt-like only after these risks are evidenced and contractual revenues exist.
+
+An ordinary fixed-rate loan presumes a sufficiently stable repayment source. A conventional venture investment can absorb more uncertainty but may be unsuitable for institutions seeking dated cash and bounded exposure. A single project can be too concentrated for either. The engineering task is therefore not to disguise early uncertainty as credit. It is to create a transparent progression of claims whose cash rights, loss states and evidence requirements mature with the underlying work. Dynamic-leverage research in biomedicine supports this sequencing: equity-like risk absorbs early discovery uncertainty and debt is introduced only as risk becomes measurable \citep{montazerhodjat2016dynamic}.
+
+\subsection{The five separations that prevent false value}
+
+The proposed standard maintains five separations throughout:
+
+\begin{enumerate}
+  \item \textbf{Investor cash versus contractual principal.} Cash paid is a dated flow; principal is a contractual balance. At-par draws may make them numerically equal, but they are not conceptually interchangeable.
+  \item \textbf{Project cash versus external support.} Commercial, licensing, royalty and recovery receipts are produced by project rights. Guarantee payments are transfers from another balance sheet.
+  \item \textbf{Resolved loss versus continuing exposure.} A delayed or unresolved claim is not cash and is not automatically a realized loss.
+  \item \textbf{Expected loss versus price, provision and capital.} A provider's expected claim cost is not, by itself, a market premium, accounting provision, fiscal subsidy estimate or regulatory capital number \citep{omb2025a11,eu2024financialregulation,basel2026framework}.
+  \item \textbf{Mission impact versus financial return.} Animal displacement and welfare benefit require their own causal evidence. They do not substitute for investor cash flow.
+\end{enumerate}
+
+These are not merely disclosure preferences. They are conservation boundaries. If a proposed return cannot be located on one side of a real contract, it is not part of the asset.
+
+\section{Related financial engineering and design departure}
+
+\subsection{Research-backed obligations and correlation}
+
+Fernandez, Stein and Lo propose pooling biomedical-development assets in a bankruptcy-remote vehicle financed by senior debt, junior debt and equity, with repayment materially dependent on sale or licensing of development rights \citep{fernandez2012rbo}. Later work applies the idea to smaller orphan-disease portfolios \citep{fagnan2014orphan}. The relevance here is not either simulated return level. It is the architectural idea that heterogeneous research risks can be represented as assets only when the vehicle controls transferable value and the portfolio, waterfall, triggers and liquidity are modeled together.
+
+Portfolio size alone is not diversification. Work on financing low-probability ``long shots'' emphasizes that even modest common dependence can undermine apparently safe senior claims and that tranching cannot convert a negative-NPV pool into a positive-NPV pool \citep{hull2019longshots}. Correlated-development analysis reaches the same caution through explicit common-factor models \citep{lo2021correlated}. Cellular agriculture has obvious common factors: related cell platforms, shared media and growth-factor suppliers, similar scale-up physics, common equipment vendors, regulatory pathways, buyers and follow-on capital markets. The present model therefore starts from complete joint states. It never obtains a portfolio default distribution by multiplying marginal defaults as if independent.
+
+\subsection{Guarantees and realized blended-finance analogues}
+
+The biomedical megafund guarantee literature shows why mean expected claims are an incomplete measure of the guarantor's commitment: adverse cash calls can be large even when mean cost appears modest \citep{fagnan2013cancer}. The Global Health Investment Fund provides a realized analogue of a mission-oriented pool using milestone and royalty instruments with partial downside protection from philanthropic/public guarantors. Its reported mechanism absorbed the first 20\% of losses and shared subsequent losses, leaving private investors exposed \citep{worldbank2017ghif}. This supports the legitimacy of transparent partial loss sharing; it does not validate cellular-agriculture probabilities, recoveries or investor demand.
+
+Blended-finance discipline requires a development rationale, additionality, minimum concessionality, commercial sustainability and transparency about the support used to mobilize private capital \citep{ifcblended}. Accordingly, any first-loss or guarantee value in this paper is shown separately from project economics.
+
+\subsection{Where this proposal differs}
+
+The design does not begin with leverage or a rated senior tranche. It begins with a standardized claim ledger. It does not count company valuations, generic intellectual property, unused payer capacity or refinancing proceeds as operating cash. It does not assume a liquid secondary market for failed or partially developed assets. It does not force one instrument across all stages. Finally, its central result is allowed to be rejection.
+
+\section{Definition of the underlying asset}
+
+\subsection{The project financial interface}
+
+Each candidate project is normalized through the same interface \citep{fca2026interface}. For project \(i\), the interface must identify the items in \cref{tab:interface} before inclusion.
+
+\begin{table}[htbp]
+\centering
+\caption{Minimum project financial interface}
+\label{tab:interface}
+\begin{tabularx}{\textwidth}{@{}P{0.19\textwidth}Y Y@{}}
+\toprule
+\textbf{Component} & \textbf{Required representation} & \textbf{Reason for investors} \\
+\midrule
+Capital & Dated commitment, draw, fee and milestone schedule & Determines cash paid, liquidity need and the value of stopping later draws \\
+State & Observable milestone, delay, stop, conversion and resolution states & Prevents narrative progress from replacing contractual conditions \\
+Principal & Creation, repayment, conversion, write-off and continuing balance & Separates exposure from cash and realized loss \\
+Success cash & Named commercial, licensing, royalty, capacity, offtake or exit right, with source budget & Establishes where non-principal return can legally come from \\
+Recovery & Priority, amount, timing and evidentiary status & Determines loss-given-resolution without assuming salvage \\
+Shared risk & Biology, scale-up, supplier, regulatory and buyer factor exposure & Makes dependence and concentration explicit \\
+Evidence & Contractual, observed, estimated, synthetic or unknown status & Prevents unknown values from entering as zero \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The investor owns a pro-rata, limited-recourse right to the admitted project claims, specifically assigned success cash, identified recoveries and any separately documented support. The investor does not automatically own a facility, company equity, company value, speculative intellectual property, a public sponsor's unused balance sheet, or a manager's promise.
+
+\subsection{Admission is a falsifiable contract test}
+
+A project is admitted only if the claim is unique, cash-source budgets do not overlap, milestone evidence can control draws, principal identities reconcile, the common calendar is explicit, and all material factor exposures are declared. Admission verifies representability; it does not validate the project or imply financeability. Missing evidence remains \statusunknown{}, never zero.
+
+For a live pool, claim data must be authenticated against executed contracts, controlled data-room records, verifier certificates and settlement instructions. At minimum, legal diligence must establish transferability, perfection, priority, limited recourse, insolvency treatment and enforceability in each relevant jurisdiction.
+
+\section{The candidate instrument}
+
+\subsection{Core: Multi-Project Milestone Participation}
+
+The core is one disclosed claim across a fixed set of project claims. Investors make callable commitments. Each project can draw only at dated milestones. Failure or non-achievement can stop later funding. Actual project receipts and recoveries pass through pro rata after explicit pool cost. The claim is not promised a fixed coupon independent of project cash; return arises only from identified rights.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  node distance=8mm and 11mm,
+  box/.style={draw=Forest,rounded corners=2pt,fill=Paper,minimum height=11mm,text width=31mm,align=center,font=\small},
+  dark/.style={box,fill=DeepForest,text=white,draw=DeepForest},
+  support/.style={box,fill=Mist,draw=Rust},
+  arrow/.style={-{Latex[length=2.2mm]},thick,draw=Forest},
+  both/.style={{Latex[length=2.2mm]}-{Latex[length=2.2mm]},thick,draw=Forest}
+]
+\node[dark] (investors) {Investors\\callable commitment};
+\node[box,right=of investors] (vehicle) {Limited-recourse\\participation vehicle};
+\node[box,right=of vehicle,yshift=13mm] (projects) {Admitted projects\\milestone draws};
+\node[box,right=of vehicle,yshift=-13mm] (rights) {Assigned cash rights\\and recoveries};
+\node[support,below=of investors] (provider) {Optional external\\protection provider};
+\draw[both] (investors) -- node[above,font=\scriptsize]{calls} node[below,font=\scriptsize]{distributions} (vehicle);
+\draw[arrow] (vehicle) -- node[above,sloped,font=\scriptsize]{gated funding} (projects);
+\draw[arrow] (projects) -- node[right,font=\scriptsize]{evidence / assignment} (rights);
+\draw[arrow] (rights) -- node[below,sloped,font=\scriptsize]{project cash} (vehicle);
+\draw[arrow,draw=Rust] (provider) -- node[below,sloped,font=\scriptsize]{separate transfer} (vehicle);
+\end{tikzpicture}
+\caption{Economic architecture. Project cash and external support remain visibly separate.}
+\label{fig:architecture}
+\end{figure}
+
+\subsection{Variant 1: fully funded first-loss and priority claims}
+
+The full commitment is subscribed at inception. A funded first-loss claim occupies loss coordinates 0--20 and a priority claim occupies 20--100. Principal cash and unused reserve pay priority first; assigned non-principal cash pays priority up to a lifetime cap and then flows to the first-loss residual. Pool cost is called pro rata. Returned reserve is capital, not profit.
+
+If \(L_s\) is aggregate resolved principal loss in state \(s\), loss allocation is
+\begin{align}
+L^{\mathrm{FL}}_s &= \min(L_s,20),\\
+L^{\mathrm{PR}}_s &= \min\bigl(\max(L_s-20,0),80\bigr).
+\end{align}
+This variant changes payment timing and priority. It does not change project receipts, gross loss, common-factor dependence or diversification. Full prefunding can reduce call risk but introduces negative carry when capital waits in reserve.
+
+\subsection{Variant 2: failure-contingent partial-credit guarantee}
+
+The alternative guarantee attaches only to the untranched core in version 1. Let \(g\) be the covered share, \(\Gamma\) the provider's legal cash cap and \(L_s\) final resolved loss. With full provider performance,
+\begin{align}
+G_s &= \min(gL_s,\Gamma),\\
+L^{\mathrm{retained}}_s &= L_s-G_s.
+\end{align}
+The ten-claim experiment uses \(g=30\%\), \(\Gamma=30\), and month-60 settlement. Continuing exposure is not covered. The guarantee creates an external claim on a provider and a corresponding contingent liability for that provider; it does not create project revenue or diversification.
+
+The funded stack and guarantee are intentionally alternative constructions. Combining them would require a new attachment, recovery, subrogation and no-double-recovery waterfall.
+
+\section{Formal model}
+
+\subsection{Indexing, flows and balances}
+
+Projects are indexed by \(i\in\{1,\ldots,n\}\), complete joint states by \(s\in\mathcal S\), and months by \(t\in\mathcal T\). Define:
+
+\begin{itemize}
+  \item \(d_{ist}\): investor-funded project draw;
+  \item \(c_{ist}\): explicit pool cost attributable to the state;
+  \item \(r^{P}_{ist}\): contractual-principal cash returned;
+  \item \(x_{ist}\): assigned non-principal success cash;
+  \item \(\rho_{ist}\): cash recovery after failure or resolution;
+  \item \(u_{is}\): continuing contractual principal at the horizon;
+  \item \(\ell_{is}\): resolved contractual-principal loss;
+  \item \(e_{is}\): evidenced conversion or other non-cash extinguishment.
+\end{itemize}
+
+For state \(s\), the unsupported investor net cash at month \(t\) is
+\begin{equation}
+CF_s(t)=-\sum_i d_{ist}-c_{st}+\sum_i\bigl(r^{P}_{ist}+x_{ist}+\rho_{ist}\bigr).
+\label{eq:cashflow}
+\end{equation}
+The cash-source identity is checked independently so that commercial, licensing/royalty, recovery and external-support sources equal the receipts assigned to the claim, without double counting principal classification.
+
+For each claim and path, contractual principal must conserve:
+\begin{equation}
+b^{\mathrm{open}}_{is}+b^{\mathrm{created}}_{is}
+=r^{P}_{is}+e_{is}+u_{is}+\ell_{is}.
+\label{eq:principal}
+\end{equation}
+Continuing principal \(u_{is}\) is exposure: it is neither a horizon cash receipt nor a resolved loss. A payment in kind is not cash. Refinancing proceeds are liquidity unless they extinguish the investor's claim with real cash.
+
+\subsection{Investor return}
+
+At annual-effective hurdle \(h\), state NPV is
+\begin{equation}
+V_s(h)=\sum_{t\in\mathcal T}\frac{CF_s(t)}{(1+h)^{t/12}}.
+\label{eq:npv}
+\end{equation}
+For probability vector \(p\), expected NPV is \(\mathbb E_p[V(h)]=\sum_s p_sV_s(h)\). The hurdle is an investor decision input, not a probability and not a model-produced fair discount rate. The experiment uses 8\% for the core/common comparison, 15\% for the funded first-loss class, and 8\% for the funded priority class. These values are synthetic and not evidence of market demand.
+
+\subsection{Physical probability ambiguity}
+
+Instead of declaring one calibrated distribution, the model defines an admissible set
+\begin{equation}
+\mathcal P=\left\{p:\ \underline p_s\le p_s\le\overline p_s,\ \sum_{s\in\mathcal S}p_s=1\right\},
+\label{eq:polytope}
+\end{equation}
+with optional event and marginal constraints in the extended engine. These are candidate \emph{physical} probability measures. They are not risk-neutral probabilities, market-implied prices, posterior confidence intervals or regulatory scenarios.
+
+For any metric linear in probabilities, robust endpoints are exact linear programs:
+\begin{equation}
+\underline M=\min_{p\in\mathcal P}\sum_s p_sM_s,
+\qquad
+\overline M=\max_{p\in\mathcal P}\sum_s p_sM_s.
+\end{equation}
+Each endpoint can have a different witness \(p\). Minimum and maximum rows in a table therefore cannot be assembled into a single composite scenario.
+
+\subsection{Loss tails and diversification}
+
+Let \(L_s=\sum_i\ell_{is}\). For confidence level \(\alpha\), loss expected shortfall is the probability-weighted mean loss in the worst \(1-\alpha\) tail, with fractional boundary-state allocation when required. The model also applies the same tail operator to NPV shortfall \(\max(-V_s,0)\).
+
+The reported diversification benefit compares pooled loss ES with the sum of standalone-claim loss ES under the same declared probability measure:
+\begin{equation}
+D_{\alpha}=\sum_i \operatorname{ES}_{\alpha}(\ell_i)-\operatorname{ES}_{\alpha}(L).
+\end{equation}
+A positive \(D_{\alpha}\) is a measured distributional effect, not newly created cash. If \(D_{0.99}=0\), the severe common tail has defeated the measured pooling benefit at that level.
+
+\subsection{Provider economics and credit}
+
+The guarantee provider's research budget separates claim cash from the other ingredients of capacity:
+\begin{equation}
+\begin{aligned}
+&\underbrace{\operatorname{PV}(G-\text{subrogation})}_{\text{net claim cash}}
++\text{administration}+\text{liquidity/capital cost}\\
+&\hspace{15mm}+\text{required provider return}
+=\text{declared funding requirement}.
+\end{aligned}
+\label{eq:provider}
+\end{equation}
+Investor premium capacity and provider requirement are computed separately. Their difference is the support gap. It is not a fair-value estimate or universal pricing equation. A credit-stress layer then distinguishes pledged collateral from unsecured provider exposure and models settlement default, including wrong-way states in which project losses and provider weakness co-occur.
+
+\section{Synthetic ten-claim experiment}
+
+\subsection{Design and boundary}
+
+The experiment contains exactly ten claims, 100 of aggregate contractual reference principal, three possible milestone draws at months 0, 12 and 24, and a 60-month horizon \citep{fca2026analysis}. Performing receipts total 164.65: 100 of principal plus 64.65 of assigned non-principal participation. Every amount, probability, recovery, factor loading, hurdle and provider term is invented. ``\demounit{}'' is a dimensionless monetary scale on a constant analysis-close basis; nominal cash is discounted only where an NPV or PV label is shown.
+
+The fixture tests dated draw stops and cash accounting. It does not model actual milestone predicates, technical certificates, executed contracts or market prices.
+
+\begin{table}[htbp]
+\centering
+\caption{Synthetic pool composition by development stage}
+\label{tab:stage}
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+\textbf{Stage} & \textbf{Claims} & \textbf{Principal} & \textbf{Share} \\
+\midrule
+Research & 2 & 13 & 13\% \\
+Pilot & 3 & 24 & 24\% \\
+Demonstration & 2 & 18 & 18\% \\
+First industrial & 2 & 29 & 29\% \\
+Repeat production & 1 & 16 & 16\% \\
+\midrule
+Total & 10 & 100 & 100\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Explicit common factors}
+
+The five factor notionals overlap and must not be added. Biology exposure totals 38, scale-up 64, supplier/media 60, regulatory/qualification 54, and buyer/acceptance 77. These figures describe reference principal touched by a factor, not loss and not separate assets.
+
+\begin{table}[htbp]
+\centering
+\caption{Shared-factor exposure by synthetic claim}
+\label{tab:factors}
+\scriptsize
+\begin{tabularx}{\textwidth}{@{}P{0.29\textwidth}rrrrr@{}}
+\toprule
+\textbf{Claim} & \textbf{Biology} & \textbf{Scale} & \textbf{Supplier} & \textbf{Regulatory} & \textbf{Buyer} \\
+\midrule
+Cell-line and media platform & \checkmark & & \checkmark & & \\
+Serum-free media platform & \checkmark & & \checkmark & & \\
+Cultivated beef pilot & \checkmark & & & \checkmark & \checkmark \\
+Cultivated poultry pilot & \checkmark & \checkmark & & & \checkmark \\
+Continuous-perfusion demonstration & & \checkmark & \checkmark & & \\
+Food-grade scaffold pilot & & & \checkmark & \checkmark & \checkmark \\
+First-industrial beef facility & & \checkmark & & \checkmark & \checkmark \\
+First-industrial poultry facility & & \checkmark & \checkmark & & \checkmark \\
+Cultivated-fat demonstration & \checkmark & & & \checkmark & \checkmark \\
+Repeat modular production line & & \checkmark & \checkmark & \checkmark & \checkmark \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Joint states}
+
+Each state specifies all ten claim outcomes. \(P\) performs; \(D\) remains continuing with no horizon receipt; \(E\) stops after the first draw; \(L\) stops after two draws; and \(C\) is fully drawn and resolves with 10\% recovery. Early-stop recoveries are stated fractions of cash actually drawn.
+
+\begin{table}[htbp]
+\centering
+\caption{Declared central joint-state measure}
+\label{tab:states}
+\scriptsize
+\begin{tabularx}{\textwidth}{@{}Y c c r r@{}}
+\toprule
+\textbf{Joint state} & \textbf{Weight} & \textbf{Ten-claim path} & \textbf{Loss} & \textbf{Continuing} \\
+\midrule
+All perform & 58\% & \texttt{PPPPPPPPPP} & 0.000 & 0 \\
+Biological/process shock & 7\% & \texttt{LDELPPPPLP} & 13.130 & 7 \\
+Scale-up/commissioning shock & 7\% & \texttt{PPPLLPLLPL} & 23.150 & 0 \\
+Supplier/media shock & 6\% & \texttt{DLPPDEPLPD} & 10.675 & 32 \\
+Regulatory/qualification delay & 5\% & \texttt{PPDPPDDPDD} & 0.000 & 54 \\
+Buyer/product-acceptance shock & 7\% & \texttt{PPDLPDLLLD} & 17.970 & 31 \\
+Biology and scale-up compound & 4\% & \texttt{LDECLPLLLL} & 35.560 & 7 \\
+Supplier/regulatory/buyer compound & 4\% & \texttt{DLDLDCCCLC} & 58.005 & 24 \\
+Systemic commercialization freeze & 2\% & \texttt{CCCCCCCCCC} & 90.000 & 0 \\
+\bottomrule
+\end{tabularx}
+\tightnote{Central pairwise realized-loss correlations range from 0.228251 to 0.938114. The admissible probability envelope moves state weights within declared bounds while preserving total probability.}
+\end{table}
+
+\section{Results}
+
+\subsection{Unsupported callable core}
+
+\Cref{tab:core} reports separately optimized probability-envelope endpoints and the declared central measure. A positive central expected NPV is not robust adequacy.
+
+\begin{table}[htbp]
+\centering
+\caption{Unsupported core results (\demounit{}, except probabilities)}
+\label{tab:core}
+\small
+\begin{tabularx}{\textwidth}{@{}Y r r r@{}}
+\toprule
+\textbf{Metric} & {\textbf{Minimum}} & {\textbf{Central}} & {\textbf{Maximum}} \\
+\midrule
+Investor cash contributed, incl. cost & 88.303000 & 94.624000 & 99.503500 \\
+Principal cash receipts & 57.989200 & 75.123400 & 88.386050 \\
+Non-principal success cash & 34.130000 & 46.525500 & 55.633000 \\
+Total investor receipts & 92.119200 & 121.648900 & 143.700550 \\
+Continuing principal exposure & 1.150000 & 8.520000 & 18.740000 \\
+Resolved principal loss & 2.152500 & 9.980600 & 21.525350 \\
+NPV at 8\% hurdle & -18.717674 & 0.661828 & 15.440326 \\
+Principal-loss ES95 & 19.074000 & 70.803000 & 90.000000 \\
+Principal-loss ES99 & 23.150000 & 90.000000 & 90.000000 \\
+Peak cumulative net outlay & 88.147600 & 94.533000 & 99.487400 \\
+\bottomrule
+\end{tabularx}
+\tightnote{Impairment probability is 16\% / 37\% / 60\%. Negative-NPV probability is 28\% / 42\% / 60\%. Each endpoint column except ``central'' is assembled metric by metric and may use a different admissible probability witness.}
+\end{table}
+
+At the central measure, expected project cash remains source-separated: 77.1490 commercial, 40.8265 licensing/royalty and 3.6734 recovery. Pool cost is 1.0. There is no project-level explicit-support cash. The minimum-NPV witness assigns only 40\% to all-perform and more mass to compound, buyer, regulatory and systemic states; it produces \(-18.717674\). Full declared success participation cannot reach robust break-even.
+
+\subsection{Pooling changes the tail, not total cash}
+
+At ES95, the sum of standalone claim tails is 78.717 versus 70.803 for the pool: a reduction of 7.914, or 10.053737\%. At ES99 both values are 90. The result is economically important in both directions. Moderate-tail pooling has measurable value, but the severe systemic state still reaches every claim and eliminates the measured diversification benefit.
+
+\begin{paperbox}{Investor reading of the core}
+Central expected NPV of \result{+0.661828} is thin relative to model uncertainty. The admissible adverse expected NPV is \result{--18.717674}, negative-NPV probability is 42\% centrally, and continuing exposure is 8.52. An investor is not being asked to accept a hidden industry bet: these are explicit reasons to reject the present terms until cash rights, evidence, price or external risk-bearing capacity change.
+\end{paperbox}
+
+\subsection{Comparison of constructions}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  xbar,
+  width=0.73\textwidth,
+  height=72mm,
+  xmin=-31,xmax=6,
+  axis x line*=bottom,
+  axis y line*=left,
+  y axis line style={draw=none},
+  ytick style={draw=none},
+  symbolic y coords={Guarantee credit-stressed,Guarantee provider performs,Funded stack aggregate,Unsupported core},
+  ytick=data,
+  yticklabel style={font=\small,align=right},
+  xtick={-30,-20,-10,0,5},
+  xlabel={Expected NPV at common 8\% comparison hurdle (\demounit{})},
+  xmajorgrids=true,
+  grid style={draw=Mist},
+  legend style={at={(0.5,1.08)},anchor=south,legend columns=2,draw=none,font=\small},
+  bar width=5pt,
+  nodes near coords,
+  nodes near coords style={font=\scriptsize},
+  every axis plot/.append style={fill opacity=.92}
+]
+\addplot[fill=Rust,draw=Rust] coordinates {
+  (-15.161094,Guarantee credit-stressed)
+  (-14.925982,Guarantee provider performs)
+  (-27.985093,Funded stack aggregate)
+  (-18.717674,Unsupported core)};
+\addplot[fill=Positive,draw=Positive] coordinates {
+  (2.617773,Guarantee credit-stressed)
+  (2.699617,Guarantee provider performs)
+  (-8.321750,Funded stack aggregate)
+  (0.661828,Unsupported core)};
+\legend{Adverse envelope witness,Central measure}
+\end{axis}
+\end{tikzpicture}
+\caption{Expected NPV comparison. The funded stack aggregate uses a common 8\% comparison; its individual classes have separate stated hurdles. Guarantee values are before investor premium.}
+\label{fig:npv}
+\end{figure}
+
+\begin{table}[htbp]
+\centering
+\caption{What each construction changes}
+\label{tab:variants}
+\small
+\begin{tabularx}{\textwidth}{@{}P{0.25\textwidth}R R Y@{}}
+\toprule
+\textbf{Construction} & \textbf{Central NPV} & \textbf{Adverse NPV} & \textbf{Financial interpretation} \\
+\midrule
+Unsupported callable core & 0.661828 & -18.717674 & Milestone stops reduce unused draws; investor bears gross project loss and delay. \\
+Funded stack, aggregate at 8\% & -8.321750 & -27.985093 & Loss priority becomes real, but full prefunding adds drag and creates no project value. \\
+30\% guarantee, provider performs & 2.699617 & -14.925982 & External provider cash reduces retained resolved loss; premium is excluded. \\
+30\% guarantee, credit-stressed & 2.617773 & -15.161094 & Wrong-way provider default reduces promised delivery in adverse states. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Funded first-loss and priority variant}
+
+The stack subscribes 101 at month zero: 100 of commitment plus 1 of pool cost. Expected prefunding drag at the pool's 8\% hurdle is 8.983578 centrally. At their own stated hurdles, the 0--20 first-loss class has central NPV \(-0.854614\) at 15\%; the 20--100 priority class has central NPV \(-13.926874\) at 8\%. Priority has negative NPV in every declared state. Aggregate stack NPV at the common 8\% hurdle is \(-27.985093/-8.321750/6.715820\) across adverse, central and favorable expected cases.
+
+The result is not an argument against subordination. It shows that subordination must be funded and priced. Loss and exposure reconcile to the unchanged gross pool at every path; rearranging the order of distributions cannot repair insufficient aggregate value.
+
+\subsection{Partial-credit guarantee and provider capacity}
+
+With full provider performance, central expected nominal guarantee payment is 2.994180 at month 60, increasing investor receipts from 121.648900 to 124.643080. Gross resolved loss stays 9.980600; investor-retained loss falls to 6.986420; continuing exposure stays 8.520000. The NPV improvement from 0.661828 to 2.699617 is the discounted value of an external transfer, not an improvement in projects.
+
+The provider payment can reach 6.457605 as an expected value over the probability envelope, while single-path payment can reach 27. The modeled all-in support gap is 28.467332. Incorporating wrong-way provider credit raises the gap to 28.702444 and reduces central/adverse investor NPV to 2.617773/\(-15.161094\). The guarantee therefore fails both sides of the proposed market: it does not make the investor robustly adequate, and the investor cannot fund the provider's declared requirement with a non-negative premium consistent with its own target.
+
+\section{Investor value, risk and exposure}
+
+\subsection{What could make the asset valuable}
+
+The candidate can become attractive only through real economic changes, not labels. Five channels are legitimate:
+
+\begin{enumerate}
+  \item \textbf{Stronger assigned cash rights.} Enforceable commercial, licensing, royalty, capacity or offtake payments can increase expected and adverse cash without relying on company valuation.
+  \item \textbf{Better milestone control.} Earlier, independently verified stopping rules can reduce expected draws and downside liquidity while preserving value-producing paths.
+  \item \textbf{True diversification.} Projects using materially different technical routes, suppliers, jurisdictions and buyers can reduce common-tail concentration if the data support it.
+  \item \textbf{A lower issue price or different participation.} Price and success-cash sharing can align expected NPV with the buyer's hurdle, subject to issuer viability and source budgets.
+  \item \textbf{Explicit risk-bearing support.} A funded first-loss investor or capable guarantor can transfer a defined loss layer if its cost, authority, liquidity and return requirement are transparently financed.
+\end{enumerate}
+
+These channels can be compared because the standard holds accounting constant. If a proposed term improves NPV while receipts, price, timing and external transfers are unchanged, the improvement is suspect.
+
+\subsection{Exposure is multi-dimensional}
+
+No single rating-like number is appropriate at the present stage. Investors should receive at least:
+
+\begin{itemize}
+  \item dated contribution and receipt distributions;
+  \item expected NPV and probability of negative NPV at independently supported hurdles;
+  \item resolved-loss and NPV-shortfall VaR/ES at disclosed levels;
+  \item continuing exposure, duration or weighted-average life where defined;
+  \item project, stage, source, factor, buyer and provider concentrations;
+  \item simultaneous-draw and peak cumulative liquidity requirements;
+  \item adverse probability witnesses and factor attribution;
+  \item provider expected payment, tail payment, collateral, unsecured exposure and wrong-way credit sensitivity; and
+  \item separate mission additionality and impact evidence.
+\end{itemize}
+
+Expected return without these exposures is not an institutional description of the asset. Likewise, a low expected loss does not imply a tolerable tail, liquid price or small capital requirement.
+
+\section{Conditions for a live issue}
+
+\subsection{Contractual minimum}
+
+A live instrument requires a named issuer or vehicle, fixed reference claims, eligibility and substitution rules, commitment and termination dates, milestone verifier, payment agent, bank accounts, cash waterfall, loss and recovery definition, servicer replacement, reporting, audit rights, conflicts policy, security and perfection, insolvency treatment, transfer restrictions and dispute mechanism. Any support provider requires independent authority, appropriation or funding basis, claims procedure, settlement timing, cap, collateral and subrogation rules.
+
+The economic label may ultimately map to a security, loan, participation, fund interest, derivative, insurance arrangement, public contingent liability or another regulated product depending on facts and jurisdiction. The paper deliberately does not select that classification.
+
+\subsection{Evidence minimum}
+
+Before solicitation, synthetic inputs must be retired by evidence with explicit lineage:
+
+\begin{enumerate}
+  \item executed project cash rights and source budgets;
+  \item authenticated draw conditions and milestone histories;
+  \item project-stage transition, stop, delay, recovery and timing records;
+  \item joint-factor evidence rather than unsupported independence;
+  \item binding buyer, licensing, royalty, capacity or offtake terms;
+  \item current investor price/hurdle evidence that is not inferred from the same model;
+  \item provider mandate, capacity, pricing, collateral and credit evidence; and
+  \item legal, tax, accounting, prudential and insolvency opinions appropriate to the participants.
+\end{enumerate}
+
+Two retained public transaction packages in the repository are useful for question formation but fail the current evidence protocol and do not calibrate this model. No live project is admitted by this paper.
+
+\subsection{Issuance decision rule}
+
+The instrument should proceed only if all of the following hold under a frozen data room and model release:
+
+\begin{itemize}
+  \item cash and principal reconcile in every path;
+  \item all cash rights are unique, enforceable and transfer-compatible;
+  \item milestones can actually stop later draws;
+  \item adverse expected NPV and tail exposure satisfy identified investors at an evidenced price and hurdle;
+  \item draw liquidity and continuing exposure are funded or explicitly retained;
+  \item any support is authorized, financeable and additional;
+  \item the provider remains capable under joint project/provider stress;
+  \item concessions are the minimum necessary and are separately disclosed; and
+  \item the financing causes incremental qualified capacity or knowledge relative to a documented counterfactual.
+\end{itemize}
+
+\section{Falsification conditions and limitations}
+
+The investment thesis is falsified if any material condition below persists:
+
+\begin{enumerate}
+  \item Named cash rights are absent, unenforceable, overlapping or insufficient.
+  \item Milestones cannot verifiably stop later draws.
+  \item Material shared shocks are omitted or results depend on silent independence.
+  \item Full contractual success participation still fails robust NPV.
+  \item Simultaneous draws or continuing exposure create an unfunded liquidity need.
+  \item Provider requirements exceed investor premium capacity.
+  \item Guarantee authority, funding, collateral control or enforceability is absent.
+  \item Market-hurdle evidence is circular, stale or incomparable.
+  \item Transferability, legal perfection, limited recourse or insolvency remoteness fails.
+  \item Concessionary support is hidden or is not demonstrably additional.
+  \item The financing does not cause incremental qualified capacity or credible animal displacement.
+\end{enumerate}
+
+The current model is deliberately incomplete. It does not estimate live probabilities, fair value, liquidity discounts, tax, accounting classification, regulatory capital, endogenous behavior, strategic default, servicer failure, construction cost escalation, foreign exchange, commodity basis, dynamic refinancing, secondary-market price, moral hazard or investor demand. Joint states are finite and manually specified. Recovery is stylized. The 60-month horizon can classify economically valuable but unresolved claims as continuing exposure. Tail metrics are sensitive to state design and probability bounds. These limitations prevent the paper from supporting an issuance; they do not prevent it from defining what evidence an issuance would require.
+
+\section{Implementation and reproducibility}
+
+The analytical core is written in C++ and uses strict text configurations, deterministic scenario evaluation, exact cash-source and principal reconciliations, bounded-probability optimization, loss/NPV tails, tranche waterfalls, guarantee payment, provider price decomposition and provider-credit stress. The maintained research repository includes model specifications, fixtures, command-line reporters, adversarial tests and verification records \citep{fca2026brief,fca2026term,fca2026analysis}.
+
+For the paper's reported snapshot:
+
+\begin{itemize}
+  \item model date: 30 August 2026;
+  \item exact portfolio: ten synthetic claims and nine complete joint states;
+  \item monetary convention: synthetic \demounit{}, constant analysis-close basis;
+  \item discounting: annual-effective, monthly exponents;
+  \item reconciliation tolerance: \(10^{-9}\) for modeled floating identities;
+  \item verification status: 68 of 68 declared Debug/Release tests passed in the retained reports;
+  \item paper toolchain: \texttt{latexmk} inside the Debian-based \texttt{documents-latex:bookworm} container.
+\end{itemize}
+
+The public browser interface is a readable analytical view of frozen synthetic results. A future WebAssembly build may compile the same C++ kernel for interactive use, but it must not be described as parity-verified until Linux-native and WebAssembly structured outputs pass golden-result tests with the same input hashes.
+
+\section{Open-standard and responsibility commitments}
+
+Naturalehia retains no protocol fee, carried interest, instrument royalty or share of financed-company receipts for publishing or adopting this open standard. Underlying project claims may still assign capped commercial, licensing, royalty, capacity, offtake or exit cash to investors; without such rights there may be no investable asset. The zero-rent commitment reduces one conflict but does not improve cash flows or prove investment value.
+
+The governing charter requires underwriting before advocacy, full visibility of risk transfer, transparent subsidy, no stronger claim than evidence, sponsor accountability, safety and food-integrity protection, conservative animal-impact attribution and an auditable go/no-go decision \citep{fca2026charter}. If rigorous analysis rejects a transaction, the mission is served by not spending scarce capital on terms that conceal failure.
+
+\section{Conclusion}
+
+The proposed Multi-Project Milestone Participation is a financial standard before it is a product. It defines a real candidate asset as a limited-recourse claim on dated, source-budgeted project cash and recoveries; represents unresolved exposure separately from loss; encodes shared shocks directly; and lets funded subordination or guarantee support be evaluated without confusing transfer with value creation.
+
+The synthetic experiment gives the appropriate first conclusion. Pooling provides some ES95 benefit, but common risk dominates ES99. The central core NPV is slightly positive, yet the adverse permitted NPV is materially negative. Fully funded priority creates drag, and the guarantee adds useful external cash but still cannot satisfy both investor and provider constraints. None of the current constructions is shown financeable.
+
+The next serious step is empirical, not cosmetic: acquire enforceable project cash rights, milestone and recovery data, joint-risk evidence, investor price/hurdle observations and provider capacity terms in the common interface. With those facts, the same machinery can test whether a revised instrument is valuable, what risks it distributes across projects and institutions, and how much explicit catalytic support is genuinely required. That is the path from moral intention to finance capable of helping cellular agriculture reach industry.
+
+\section*{Declarations}
+\addcontentsline{toc}{section}{Declarations}
+
+\textbf{Funding.} No external funding is represented for this paper.\\
+\textbf{Author economics.} Naturalehia retains no protocol fee, carried interest, instrument royalty or share of financed-company receipts from adoption of the published standard.\\
+\textbf{Conflicts.} No issuer, investor, guarantor or project is endorsed or admitted.\\
+\textbf{Data and code.} Source, configurations, documentation and tests are available in the \href{https://github.com/savethebeesandseeds/naturalehia/tree/main/projects/fostering-cellular-agriculture}{project repository}. The numerical case is synthetic.\\
+\textbf{Responsibility.} The paper is research, not professional advice or an offer. Independent qualified review is required before any transaction.
+
+\bibliographystyle{plainnat}
+\begingroup
+\small
+\bibliography{references}
+\endgroup
+
+\clearpage
+\appendix
+
+\section{Notation}
+
+\begin{longtable}{@{}P{0.18\textwidth}P{0.73\textwidth}@{}}
+\caption{Principal notation}\label{tab:notation}\\
+\toprule
+\textbf{Symbol} & \textbf{Definition} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Symbol} & \textbf{Definition} \\
+\midrule
+\endhead
+\(i,s,t\) & Project, complete joint state and month. \\
+\(d_{ist}\) & Project draw funded by investors. \\
+\(b_{ist}\) & Contractual-principal balance. \\
+\(r^P_{ist}\) & Contractual-principal cash returned. \\
+\(x_{ist}\) & Assigned non-principal success cash. \\
+\(\rho_{ist}\) & Recovery cash. \\
+\(\ell_{is}\) & Resolved contractual-principal loss. \\
+\(u_{is}\) & Continuing contractual principal at horizon. \\
+\(e_{is}\) & Evidenced conversion or other non-cash extinguishment. \\
+\(CF_s(t)\) & Investor net cash at month \(t\) in state \(s\). \\
+\(V_s(h)\) & State NPV at annual-effective investor hurdle \(h\). \\
+\(p\in\mathcal P\) & Admissible physical probability measure. \\
+\(q\) & Participation share in assigned success cash. \\
+\(A\) & Funded first-loss amount. \\
+\(B\) & Priority lifetime non-principal cash cap. \\
+\(g\) & Guarantee share of final resolved loss. \\
+\(\Gamma\) & Guarantee provider's legal cash cap. \\
+\(G_s\) & Provider payment in state \(s\). \\
+\(P_0\) & Issue price or investor premium, when applicable. \\
+\(D_\alpha\) & Pooling diversification benefit at tail level \(\alpha\). \\
+\bottomrule
+\end{longtable}
+
+\section{Complete synthetic claim schedule}
+
+\begin{longtable}{@{}rP{0.29\textwidth}P{0.12\textwidth}rP{0.17\textwidth}P{0.16\textwidth}@{}}
+\caption{Ten synthetic claims}\label{tab:claims}\\
+\toprule
+\# & \textbf{Claim} & \textbf{Stage} & \textbf{Limit} & \textbf{Draws m0/12/24} & \textbf{Performing receipt} \\
+\midrule
+\endfirsthead
+\toprule
+\# & \textbf{Claim} & \textbf{Stage} & \textbf{Limit} & \textbf{Draws m0/12/24} & \textbf{Performing receipt} \\
+\midrule
+\endhead
+1 & Cell-line and media platform & Research & 6 & 2.4 / 1.8 / 1.8 & 11.40 at m60 \\
+2 & Serum-free media platform & Research & 7 & 2.8 / 2.1 / 2.1 & 12.95 at m60 \\
+3 & Cultivated beef pilot & Pilot & 8 & 2.8 / 2.8 / 2.4 & 14.00 at m54 \\
+4 & Cultivated poultry pilot & Pilot & 9 & 3.15 / 3.15 / 2.7 & 15.75 at m54 \\
+5 & Continuous-perfusion demonstration & Demo & 10 & 3.0 / 3.0 / 4.0 & 16.50 at m48 \\
+6 & Food-grade scaffold pilot & Pilot & 7 & 2.45 / 2.45 / 2.1 & 11.90 at m54 \\
+7 & First-industrial beef facility & First industrial & 15 & 3.75 / 5.25 / 6.0 & 23.25 at m48 \\
+8 & First-industrial poultry facility & First industrial & 14 & 3.5 / 4.9 / 5.6 & 21.70 at m48 \\
+9 & Cultivated-fat demonstration & Demo & 8 & 2.4 / 2.4 / 3.2 & 13.20 at m48 \\
+10 & Repeat modular production line & Repeat & 16 & 3.2 / 4.8 / 8.0 & 24.00 at m42 \\
+\midrule
+ & \textbf{Total} & & \textbf{100} & & \textbf{164.65} \\
+\bottomrule
+\end{longtable}
+
+\section{Accounting and waterfall controls}
+
+Every evaluated state is subject to the following controls before reporting:
+
+\begin{enumerate}
+  \item investor contributions equal project draws plus explicit pool cost, reserve subscription and any separately stated premium;
+  \item project receipts equal commercial plus licensing/royalty plus recovery plus other named project-source cash;
+  \item provider payments are external and never included in project-source cash;
+  \item principal returned, extinguished, continuing and lost equals opening plus created principal;
+  \item tranche loss and continuing exposure sum to the unchanged gross pool amounts;
+  \item tranche distributions do not exceed cash available under the waterfall;
+  \item guarantee retained loss plus delivered provider payment equals gross resolved loss when full coverage terms apply, subject to the cap;
+  \item probability weights remain non-negative, within bounds and sum to one; and
+  \item each robust endpoint retains its optimizing probability witness.
+\end{enumerate}
+
+The consolidated model reports zero residual for the declared source, principal, tranche and protection reconciliations in the ten-claim fixture. A zero accounting residual proves internal conservation only; it does not validate an economic input.
+
+\section{Live-issuance diligence checklist}
+
+\begin{longtable}{@{}P{0.22\textwidth}P{0.47\textwidth}P{0.22\textwidth}@{}}
+\caption{Institutional work required beyond the research model}\label{tab:diligence}\\
+\toprule
+\textbf{Domain} & \textbf{Required evidence or decision} & \textbf{Failure consequence} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Domain} & \textbf{Required evidence or decision} & \textbf{Failure consequence} \\
+\midrule
+\endhead
+Reference assets & Executed claim schedule, unique rights, eligibility, substitution, transfer and servicing & Asset pool is undefined or double counted \\
+Technical milestones & Objective predicates, verifier authority, cure, dispute and stop-draw mechanics & Milestone control has no economic force \\
+Cash sources & Named payer, amount, date, source budget, priority and enforceability & Expected return is not an owned cash right \\
+Dependence & Common-factor taxonomy, project mappings, joint observations and expert challenge & Pooling benefit is overstated \\
+Recovery & Security, collateral, asset control, costs, timing and historical support & Loss is understated \\
+Investor market & Comparable expected cash, issue price, constraints and evidenced hurdle & Adequacy test is circular \\
+Protection provider & Authority, appropriation/funding, cap, collateral, claims and credit & Support may fail when needed \\
+Legal structure & Classification, perfection, bankruptcy remoteness, limited recourse and tax & Waterfall or transfer may be unenforceable \\
+Public purpose & Additionality, minimum concessionality, beneficiary, monitoring and clawback & Subsidy is hidden or unjustified \\
+Animal impact & Qualified output, substitution baseline, attribution and assurance & Welfare claim is not permitted \\
+\bottomrule
+\end{longtable}
+
+\section{Interpretive boundary}
+
+This white paper is the concise technical synthesis of a larger open research program. Detailed format specifications, test fixtures, verification reports and candidate transaction dossiers remain in the repository. They are intentionally not reproduced here. The paper controls the public financial argument; the machine-readable sources control the implemented mechanics. If the two conflict, the stricter evidence boundary and the reproducible source calculations govern until the paper is corrected.
+
+\end{document}
