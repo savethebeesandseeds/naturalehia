@@ -1,6 +1,6 @@
 # Financial Architecture for Fostering Cellular Agriculture
 
-**Public north-star summary — version 0.1**
+**Public north-star summary — version 1.0**
 
 ## Aim
 
@@ -61,6 +61,15 @@ public instrument. Other completion, insurance, procurement, price, or input
 hedges stay research possibilities rather than version-1 variants. The two
 selected variants are alternatives; combining them requires a separately
 tested no-double-recovery waterfall.
+
+The current ten-claim synthetic fixture is mechanically implemented but fails
+the robust adverse-NPV and support-feasibility tests. It is defined,
+measurable, and rejectable; it is not shown attractive or financeable.
+
+Naturalehia retains no protocol fee, carried interest, instrument royalty, or
+share of financed-company receipts. This open-standard commitment does not
+remove the investor's need for enforceable repayment and success cash from the
+underlying project claims.
 
 ## How an instrument can create value
 

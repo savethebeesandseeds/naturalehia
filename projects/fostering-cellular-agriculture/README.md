@@ -9,7 +9,10 @@ failure recovery, and shared risks into comparable financial terms.
 Start with [The Financial Instrument in Brief](docs/FINANCIAL_INSTRUMENT_IN_BRIEF.md),
 the short explanation of what investors own, where returns come from, and how
 loss and diversification work. The [Financial Architecture](docs/FINANCIAL_ARCHITECTURE.md)
-is the project’s public north star. The technical
+is the project’s public north star. The browser-facing
+[Investor View](investor-view.html) makes the validated ten-claim synthetic
+case explorable through cash sources, NPV, tail loss, shared factors, joint
+states, protection variants, and the remaining investability gap. The technical
 [Project Financial Interface v0.1](docs/PROJECT_FINANCIAL_INTERFACE_V0_1.md)
 defines how initiatives connect to the instrument and portfolio models. The
 [Project Claim Ledger v0.1](docs/PROJECT_CLAIM_LEDGER_V0_1.md) is the upstream
@@ -26,6 +29,11 @@ one untranched core and only two alternatives, funded first loss or a
 failure-contingent partial-credit guarantee. The
 [ten-claim analysis](docs/TEN_CLAIM_INSTRUMENT_ANALYSIS_V1.md) applies the same
 fixed project paths and probability set to all three.
+
+Naturalehia retains no protocol fee, carried interest, instrument royalty, or
+share of financed-company receipts for publication or adoption of the open
+standard. Investors still require enforceable repayment and success cash from
+the underlying project claims.
 
 The consolidated C++ comparison is `naturalehia-instrument-family`; its seven
 reproducible inputs and invocation are documented with the

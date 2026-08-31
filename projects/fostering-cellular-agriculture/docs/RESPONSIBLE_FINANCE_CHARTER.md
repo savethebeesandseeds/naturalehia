@@ -256,6 +256,12 @@ fees, ownership, funding sources, and material relationships with sponsors,
 vendors, buyers, capital providers, and verifiers. Compensation should not
 depend solely on transaction closing, modeled impact, or favorable validation.
 
+Naturalehia will retain no protocol fee, carried interest, instrument royalty,
+or share of financed-company receipts for publication or adoption of this open
+standard. This commitment concerns the standard's authors. It does not prevent
+an underlying project claim from assigning disclosed, capped commercial,
+licensing, royalty, capacity, offtake, or exit cash to its investors.
+
 Related-party terms must be identified and assessed against a defensible
 arm's-length comparison.
 

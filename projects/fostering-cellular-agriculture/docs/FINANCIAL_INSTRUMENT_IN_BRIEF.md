@@ -14,6 +14,11 @@ This is financial engineering, not fund-management design. The instrument
 defines what the investor owns, where cash can come from, what counts as loss,
 and how shared failures are measured.
 
+Naturalehia retains no protocol fee, carried interest, instrument royalty, or
+share of financed-company receipts for publication or adoption of the open
+standard. This does not remove the investor's need for enforceable repayment
+and success cash from the financed project claims.
+
 ## The asset
 
 An investor owns a pro-rata, limited-recourse right to:
