@@ -107,7 +107,8 @@ void require_safe_text(
         throw std::invalid_argument(
             std::string(description) + " must be non-empty and bounded");
     }
-    for (const unsigned char character : value) {
+    for (const char raw_character : value) {
+        const auto character = static_cast<unsigned char>(raw_character);
         if (character < 0x20U || character == 0x7FU) {
             throw std::invalid_argument(
                 std::string(description) + " contains a control character");

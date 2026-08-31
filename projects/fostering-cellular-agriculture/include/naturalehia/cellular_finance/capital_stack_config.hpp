@@ -9,8 +9,9 @@
 
 namespace naturalehia::cellular_finance {
 
-// Closed v0.1 key=value parser. Unknown, duplicate, and missing keys are
-// errors; normalized output contains every field and is reloadable.
+// Closed, version-aware key=value parser. Unknown, duplicate, and missing
+// keys are errors within each supported version; normalized output contains
+// every field defined by that version and is reloadable.
 [[nodiscard]] CapitalStackConfig parse_capital_stack_config(
     std::istream& input);
 

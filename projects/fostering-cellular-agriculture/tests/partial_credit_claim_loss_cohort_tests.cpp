@@ -10,6 +10,7 @@
 #include <fstream>
 #include <functional>
 #include <iostream>
+#include <memory>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -331,27 +332,32 @@ void make_zero_draw_fixture(const std::filesystem::path& fixture) {
     const cf::ClaimLedgerPackage& shifted) {
     cf::PartialCreditClaimLossCohortPackage package;
     package.config = base_config();
-    package.observations = {
-        included_observation("resolved-performing", first,
+    // Avoid an initializer_list: its const elements keep four complete claim
+    // package copies alive at once, which exhausts the default Wasm stack.
+    package.observations.reserve(5U);
+    package.observations.push_back(included_observation(
+        "resolved-performing", first,
             cf::PartialCreditClaimLossDisposition::Resolved,
             cf::PartialCreditClaimTriggerStatus::NotTriggered,
             "2027-01-01", "performing-maturity",
-            "synthetic-provider-claim"),
-        included_observation("resolved-loss", second,
+            "synthetic-provider-claim"));
+    package.observations.push_back(included_observation(
+        "resolved-loss", second,
             cf::PartialCreditClaimLossDisposition::Resolved,
             cf::PartialCreditClaimTriggerStatus::Triggered,
             "2027-01-01", "failure-with-provider",
-            "synthetic-provider-claim"),
-        included_observation("triggered-unresolved", rare,
+            "synthetic-provider-claim"));
+    package.observations.push_back(included_observation(
+        "triggered-unresolved", rare,
             cf::PartialCreditClaimLossDisposition::Unresolved,
             cf::PartialCreditClaimTriggerStatus::Triggered,
-            "2027-01-01", "NONE", "synthetic-provider-claim"),
-        included_observation("not-yet-matured", shifted,
+            "2027-01-01", "NONE", "synthetic-provider-claim"));
+    package.observations.push_back(included_observation(
+        "not-yet-matured", shifted,
             cf::PartialCreditClaimLossDisposition::NotYetMatured,
             cf::PartialCreditClaimTriggerStatus::Unknown,
-            "2028-01-01", "NONE", "synthetic-provider-claim"),
-        excluded_observation(),
-    };
+            "2028-01-01", "NONE", "synthetic-provider-claim"));
+    package.observations.push_back(excluded_observation());
     return package;
 }
 
@@ -373,8 +379,10 @@ void test_complete_candidate_book(
     const cf::ClaimLedgerPackage& second,
     const cf::ClaimLedgerPackage& rare,
     const cf::ClaimLedgerPackage& shifted) {
-    const auto result = cf::evaluate_partial_credit_claim_loss_cohort(
-        base_package(first, second, rare, shifted));
+    const cf::PartialCreditClaimLossCohortPackage package =
+        base_package(first, second, rare, shifted);
+    const auto result =
+        cf::evaluate_partial_credit_claim_loss_cohort(package);
     check(result.candidate_only &&
             !result.calibrated_execution_authorized &&
             !result.portfolio_export_authorized &&
@@ -941,30 +949,33 @@ int main(int argc, char** argv) {
         return 2;
     }
     try {
-        const cf::ClaimLedgerPackage first =
-            cf::load_claim_ledger_package(std::filesystem::path(argv[1]));
-        const cf::ClaimLedgerPackage second =
-            cf::load_claim_ledger_package(std::filesystem::path(argv[2]));
-        const cf::ClaimLedgerPackage rare =
-            cf::load_claim_ledger_package(std::filesystem::path(argv[3]));
-        const cf::ClaimLedgerPackage shifted =
-            cf::load_claim_ledger_package(std::filesystem::path(argv[4]));
-        test_complete_candidate_book(first, second, rare, shifted);
+        // Reverification deliberately makes bounded working copies. Keep the
+        // four input packages off the small default Wasm stack.
+        const auto first = std::make_unique<cf::ClaimLedgerPackage>(
+            cf::load_claim_ledger_package(std::filesystem::path(argv[1])));
+        const auto second = std::make_unique<cf::ClaimLedgerPackage>(
+            cf::load_claim_ledger_package(std::filesystem::path(argv[2])));
+        const auto rare = std::make_unique<cf::ClaimLedgerPackage>(
+            cf::load_claim_ledger_package(std::filesystem::path(argv[3])));
+        const auto shifted = std::make_unique<cf::ClaimLedgerPackage>(
+            cf::load_claim_ledger_package(std::filesystem::path(argv[4])));
+        test_complete_candidate_book(*first, *second, *rare, *shifted);
         test_reverification_ignores_mutable_caller_summary(
-            first, second, rare, shifted);
-        test_resolved_requires_explicit_complete_path_status(first);
+            *first, *second, *rare, *shifted);
+        test_resolved_requires_explicit_complete_path_status(*first);
         test_fail_closed_population_controls(
-            first, second, rare, shifted);
-        test_open_provider_identity_cannot_erase_or_invent_support(shifted);
-        test_contractual_face_is_not_principal_created(first);
-        test_unknown_open_provider_amount_widens_frequency(shifted);
+            *first, *second, *rare, *shifted);
+        test_open_provider_identity_cannot_erase_or_invent_support(*shifted);
+        test_contractual_face_is_not_principal_created(*first);
+        test_unknown_open_provider_amount_widens_frequency(*shifted);
         test_late_face_stays_unknown_and_provider_identity_still_fails_closed(
-            shifted);
-        test_zero_coverage_cannot_create_provider_cash(shifted);
-        test_triggered_zero_face_open_claim_is_rejected(shifted);
+            *shifted);
+        test_zero_coverage_cannot_create_provider_cash(*shifted);
+        test_triggered_zero_face_open_claim_is_rejected(*shifted);
         test_exact_small_contractual_values_are_not_materiality_zeros(
-            shifted);
-        test_metadata_and_resource_guards(first, second, rare, shifted);
+            *shifted);
+        test_metadata_and_resource_guards(
+            *first, *second, *rare, *shifted);
     } catch (const std::exception& error) {
         std::cerr << "FAIL: unexpected exception: " << error.what() << '\n';
         ++failures;

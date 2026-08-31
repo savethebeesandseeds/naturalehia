@@ -7,7 +7,6 @@
 #include <naturalehia/cellular_finance/robust_market_priority_cap_config.hpp>
 #include <naturalehia/cellular_finance/success_participation_config.hpp>
 
-#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <filesystem>
@@ -52,14 +51,14 @@ void print_usage(std::string_view program) {
     return *value ? "pass" : "fail";
 }
 
-[[nodiscard]] bool contains_index(
-    const std::vector<std::size_t>& indices, std::size_t target) {
-    return std::find(indices.begin(), indices.end(), target) != indices.end();
-}
-
 [[nodiscard]] bool matches_index(
     const std::optional<std::size_t>& index, std::size_t target) noexcept {
     return index.has_value() && *index == target;
+}
+
+[[nodiscard]] bool uses_principal_cash_shortfall_v02(
+    const cf::CapitalStackConfig& base_stack) noexcept {
+    return base_stack.model_version == cf::kCapitalStackModelVersion;
 }
 
 void print_optional_term(std::string_view label,
@@ -276,23 +275,31 @@ void print_work_and_eligibility(const cf::PortfolioConfig& portfolio,
 }
 
 void print_mandates(const cf::RobustMarketPriorityCapConfig& terms,
-    std::string_view currency) {
+    std::string_view currency, bool cash_shortfall_v02) {
     const auto& limits = terms.constraints;
     const std::string monetary_unit = std::string(currency) + " million";
     std::cout << "Declared mandates by economic role\n"
               << "  Fixed-structure eligibility mandates\n";
     print_optional_term("minimum robust aggregate NPV",
         limits.minimum_robust_aggregate_npv_million, monetary_unit);
-    print_optional_term("maximum market expected principal loss",
+    print_optional_term(cash_shortfall_v02
+            ? "maximum market expected issued-principal cash shortfall Q"
+            : "maximum market expected principal loss",
         limits.maximum_market_expected_loss_fraction,
         "fraction of market notional M");
-    print_optional_term("maximum market principal-loss ES95",
+    print_optional_term(cash_shortfall_v02
+            ? "maximum market issued-principal cash shortfall Q ES95"
+            : "maximum market principal-loss ES95",
         limits.maximum_market_principal_loss_es95_fraction,
         "fraction of market notional M");
-    print_optional_term("maximum market principal-loss ES99",
+    print_optional_term(cash_shortfall_v02
+            ? "maximum market issued-principal cash shortfall Q ES99"
+            : "maximum market principal-loss ES99",
         limits.maximum_market_principal_loss_es99_fraction,
         "fraction of market notional M");
-    print_optional_term("maximum market principal impairment probability",
+    print_optional_term(cash_shortfall_v02
+            ? "maximum market issued-principal cash shortfall probability Pr[Q>0]"
+            : "maximum market principal impairment probability",
         limits.maximum_market_principal_impairment_probability,
         "probability");
     print_optional_term("maximum market WAL",
@@ -379,21 +386,34 @@ void print_candidate_tags(std::size_t index,
 }
 
 void print_candidate_constraint_results(
-    const cf::RobustMarketPriorityCapConstraintPasses& passes) {
+    const cf::RobustMarketPriorityCapConstraintPasses& passes,
+    bool cash_shortfall_v02) {
     std::cout << "  declared mandate results\n"
               << "    minimum robust aggregate NPV: "
               << pass_text(passes.robust_aggregate_npv) << '\n'
               << "    minimum market robust NPV margin: "
               << pass_text(passes.market_robust_npv_margin) << '\n'
-              << "    maximum market expected principal loss: "
+              << "    "
+              << (cash_shortfall_v02
+                      ? "maximum market expected issued-principal cash shortfall Q: "
+                      : "maximum market expected principal loss: ")
               << pass_text(passes.market_expected_loss_fraction) << '\n'
-              << "    maximum market principal-loss ES95: "
+              << "    "
+              << (cash_shortfall_v02
+                      ? "maximum market issued-principal cash shortfall Q ES95: "
+                      : "maximum market principal-loss ES95: ")
               << pass_text(passes.market_principal_loss_es95_fraction)
               << '\n'
-              << "    maximum market principal-loss ES99: "
+              << "    "
+              << (cash_shortfall_v02
+                      ? "maximum market issued-principal cash shortfall Q ES99: "
+                      : "maximum market principal-loss ES99: ")
               << pass_text(passes.market_principal_loss_es99_fraction)
               << '\n'
-              << "    maximum market principal impairment probability: "
+              << "    "
+              << (cash_shortfall_v02
+                      ? "maximum market issued-principal cash shortfall probability Pr[Q>0]: "
+                      : "maximum market principal impairment probability: ")
               << pass_text(passes.market_principal_impairment_probability)
               << '\n'
               << "    maximum market negative-NPV probability: "
@@ -489,7 +509,7 @@ void print_candidate_audit(
 void print_candidate(std::size_t index,
     const cf::RobustMarketPriorityCapCandidate& candidate,
     const cf::RobustMarketPriorityCapSummary& summary,
-    std::string_view currency) {
+    std::string_view currency, bool cash_shortfall_v02) {
     const std::string monetary_unit = std::string(currency) + " million";
     std::cout << "Candidate " << index << " | B="
               << candidate.market_priority_nonprincipal_cap_million
@@ -544,27 +564,41 @@ void print_candidate(std::size_t index,
         candidate.market_expired_priority_cap_capacity_million,
         monetary_unit);
 
-    print_range("market expected principal-loss fraction",
+    print_range(cash_shortfall_v02
+            ? "market expected issued-principal cash shortfall Q fraction"
+            : "market expected principal-loss fraction",
         candidate.market_expected_loss_fraction, "percent of M", 100.0);
     std::cout
-        << "  worst expected market principal loss: "
+        << "  "
+        << (cash_shortfall_v02
+                ? "worst expected market issued-principal cash shortfall Q: "
+                : "worst expected market principal loss: ")
         << candidate.worst_market_expected_loss_fraction * 100.0
-        << " percent of M\n"
-        << "  worst market principal-loss ES95: "
+        << " percent of M\n  "
+        << (cash_shortfall_v02
+                ? "worst market issued-principal cash shortfall Q ES95: "
+                : "worst market principal-loss ES95: ")
         << candidate.worst_market_principal_loss_es95_fraction * 100.0
         << " percent of M | "
         << candidate.market_principal_loss_es95_million.maximum.value << ' '
-        << currency << " million\n"
-        << "  worst market principal-loss ES99: "
+        << currency << " million\n  "
+        << (cash_shortfall_v02
+                ? "worst market issued-principal cash shortfall Q ES99: "
+                : "worst market principal-loss ES99: ")
         << candidate.worst_market_principal_loss_es99_fraction * 100.0
         << " percent of M | "
         << candidate.market_principal_loss_es99_million.maximum.value << ' '
         << currency << " million\n";
-    print_range("market principal impairment probability",
+    print_range(cash_shortfall_v02
+            ? "market issued-principal cash shortfall probability Pr[Q>0]"
+            : "market principal impairment probability",
         candidate.market_principal_impairment_probability, "percent",
         100.0);
     std::cout
-        << "  worst market principal impairment probability: "
+        << "  "
+        << (cash_shortfall_v02
+                ? "worst market issued-principal cash shortfall probability Pr[Q>0]: "
+                : "worst market principal impairment probability: ")
         << candidate.worst_market_principal_impairment_probability * 100.0
         << " percent\n";
     print_range("market negative-NPV probability",
@@ -602,7 +636,8 @@ void print_candidate(std::size_t index,
         << yes_no(candidate.junior_concession_limit_passes) << '\n'
         << "  balanced (market adequate and junior limit passes): "
         << yes_no(candidate.balanced) << '\n';
-    print_candidate_constraint_results(candidate.constraint_passes);
+    print_candidate_constraint_results(
+        candidate.constraint_passes, cash_shortfall_v02);
     print_candidate_audit(candidate.audit, currency);
     std::cout << '\n';
 }
@@ -682,7 +717,7 @@ void print_wal_witness(std::size_t candidate_index,
 
 void print_candidate_witnesses(std::size_t index,
     const cf::RobustMarketPriorityCapCandidate& candidate,
-    std::string_view currency) {
+    std::string_view currency, bool cash_shortfall_v02) {
     const auto& scenarios =
         candidate.market_principal_loss_es95_million.scenario_probabilities;
     print_range_witnesses(index, "aggregate fully funded NPV",
@@ -718,14 +753,21 @@ void print_candidate_witnesses(std::size_t index,
         index, "market NPV", candidate.market_npv_million, scenarios);
     print_range_witnesses(index, "market expired priority-cap capacity",
         candidate.market_expired_priority_cap_capacity_million, scenarios);
-    print_range_witnesses(index, "market expected principal-loss fraction",
+    print_range_witnesses(index, cash_shortfall_v02
+            ? "market expected issued-principal cash shortfall Q fraction"
+            : "market expected principal-loss fraction",
         candidate.market_expected_loss_fraction, scenarios);
-    print_tail_witnesses(index, "market principal-loss ES95",
+    print_tail_witnesses(index, cash_shortfall_v02
+            ? "market issued-principal cash shortfall Q ES95"
+            : "market principal-loss ES95",
         candidate.market_principal_loss_es95_million, scenarios, currency);
-    print_tail_witnesses(index, "market principal-loss ES99",
+    print_tail_witnesses(index, cash_shortfall_v02
+            ? "market issued-principal cash shortfall Q ES99"
+            : "market principal-loss ES99",
         candidate.market_principal_loss_es99_million, scenarios, currency);
-    print_range_witnesses(index,
-        "market principal impairment probability",
+    print_range_witnesses(index, cash_shortfall_v02
+            ? "market issued-principal cash shortfall probability Pr[Q>0]"
+            : "market principal impairment probability",
         candidate.market_principal_impairment_probability, scenarios);
     print_range_witnesses(index, "market negative-NPV probability",
         candidate.market_negative_npv_probability, scenarios);
@@ -875,6 +917,8 @@ void print_interpretation_boundary(const cf::PortfolioConfig& portfolio,
     const cf::CapitalStackConfig& base_stack,
     const cf::RobustMarketPriorityCapConfig& terms,
     const cf::RobustMarketPriorityCapSummary& summary) {
+    const bool cash_shortfall_v02 =
+        uses_principal_cash_shortfall_v02(base_stack);
     std::cout
         << "Interpretation boundary and false-claim ledger\n"
         << "  The result holds q, A, K, M, project cash, probability set, "
@@ -884,13 +928,13 @@ void print_interpretation_boundary(const cf::PortfolioConfig& portfolio,
            "sensitivities, not promised or annualized investor returns.\n"
         << "  Each endpoint retains its own adverse measure. Different "
            "witness vectors are not one combined stress or forecast.\n"
-        << "  Principal-loss and NPV-shortfall fractions use fixed funded "
-           "market principal notional M, not all-in contributions.\n"
-        << "  Principal-loss metrics and WAL are structurally invariant to B; "
-           "B only reallocates available non-principal cash after the modeled "
-           "cash exists.\n"
-        << "  Physical expected principal loss is not IFRS 9 ECL, Basel "
-           "regulatory EL, accounting impairment, or legal default.\n"
+        << (cash_shortfall_v02
+                ? "  Issued-principal cash shortfall Q and NPV-shortfall fractions use fixed funded market principal notional M, not all-in contributions.\n"
+                  "  Q metrics and WAL are structurally invariant to B; B only reallocates available non-principal cash after the modeled cash exists.\n"
+                  "  Physical issued-principal cash shortfall Q is not contractual asset loss, IFRS 9 ECL, Basel regulatory EL, accounting impairment, or legal default.\n"
+                : "  Principal-loss and NPV-shortfall fractions use fixed funded market principal notional M, not all-in contributions.\n"
+                  "  Principal-loss metrics and WAL are structurally invariant to B; B only reallocates available non-principal cash after the modeled cash exists.\n"
+                  "  Physical expected principal loss is not IFRS 9 ECL, Basel regulatory EL, accounting impairment, or legal default.\n")
         << "  Core model limitation: " << summary.model_limitation << '\n'
         << "  Portfolio source note: " << portfolio.source_note << '\n'
         << "  Event-polytope source note: " << polytope.source_note << '\n'
@@ -935,6 +979,8 @@ void print_report(const cf::PortfolioConfig& portfolio,
     const cf::RobustMarketPriorityCapConfig& terms,
     const cf::RobustMarketPriorityCapSummary& summary) {
     const std::string_view currency = portfolio.currency_label;
+    const bool cash_shortfall_v02 =
+        uses_principal_cash_shortfall_v02(base_stack);
     std::cout
         << std::fixed << std::setprecision(6)
         << "SYNTHETIC ROBUST MARKET PRIORITY-CAP ADEQUACY TERM\n"
@@ -943,11 +989,12 @@ void print_report(const cf::PortfolioConfig& portfolio,
     print_fixed_structure(portfolio, base_stack, terms, summary);
     print_analysis_basis(portfolio, polytope, participation);
     print_work_and_eligibility(portfolio, polytope, summary);
-    print_mandates(terms, currency);
+    print_mandates(terms, currency, cash_shortfall_v02);
 
     std::cout << "Every tested priority-cap candidate\n";
     for (std::size_t index = 0U; index < summary.candidates.size(); ++index) {
-        print_candidate(index, summary.candidates[index], summary, currency);
+        print_candidate(index, summary.candidates[index], summary, currency,
+            cash_shortfall_v02);
     }
 
     print_selections(summary, currency);
@@ -958,7 +1005,8 @@ void print_report(const cf::PortfolioConfig& portfolio,
            "probability measure and, for ES, its own tail mass. Different "
            "rows are not one combined stress.\n";
     for (std::size_t index = 0U; index < summary.candidates.size(); ++index) {
-        print_candidate_witnesses(index, summary.candidates[index], currency);
+        print_candidate_witnesses(index, summary.candidates[index], currency,
+            cash_shortfall_v02);
     }
     std::cout << '\n';
 

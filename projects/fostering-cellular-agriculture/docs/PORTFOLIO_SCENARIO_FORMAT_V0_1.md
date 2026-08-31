@@ -374,14 +374,27 @@ version or by putting purchase cash in a legacy draw. Conversion between modes
 requires a complete economic mapping of cash and contractual principal.
 
 Capital Stack v0.1 rejects every portfolio containing an
-`explicit-contractual-ledger` project. Its current reserve and subscription
+`explicit-contractual-ledger` project. Its legacy reserve and subscription
 mechanics require commitment cash, subscription cash, asset purchase price,
 and asset principal to coincide at par. Above- or below-par claims, buyer-direct
 costs, opening principal, and non-cash principal additions violate that
-identity. Downstream capital-stack evaluation remains blocked until those
-amounts have separate contractual fields and reconciliations. Pooled-loss
-protection, by contrast, references aggregate principal limit rather than
-aggregate investor outlay, as detailed in the explicit-ledger specification.
+identity.
+
+Capital Stack v0.2 accepts Portfolio v0.2 explicit ledgers under its separate
+asset-to-liability assertions. Its reserve and issued-principal basis is the
+sum, by project, of maximum declared claim-purchase-price plus primary-funding
+uses; buyer-direct cost is an additional pro-rata call; contractual asset
+principal remains separate; and issued-capital shortfall is divided between
+resolved impairment and continuing exposure. Principal-base cash above unpaid
+issued principal is conserved as source-labelled surplus cash in the
+non-principal waterfall. The exact contract is specified in
+[`CAPITAL_STACK_ASSET_LIABILITY_BRIDGE_V0_2.md`](CAPITAL_STACK_ASSET_LIABILITY_BRIDGE_V0_2.md).
+Acceptance does not establish fair value, probability calibration,
+enforceability, ratings, or issuance readiness.
+
+Pooled-loss protection, by contrast, references aggregate principal limit
+rather than aggregate investor outlay, as detailed in the explicit-ledger
+specification.
 
 ## Legacy v0.1 synthetic fixture hand calculations
 

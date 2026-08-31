@@ -65,10 +65,28 @@ private:
     return std::abs(left - right);
 }
 
+[[nodiscard]] double reconciliation_tolerance(double scale) noexcept {
+    return kReconciliationAbsoluteTolerance +
+        kReconciliationRelativeTolerance * std::max(1.0, std::abs(scale));
+}
+
+[[nodiscard]] double canonical_nonnegative_residual(
+    double value, double scale) noexcept {
+    const double nonnegative = std::max(0.0, value);
+    return nonnegative <= reconciliation_tolerance(scale) ? 0.0 : nonnegative;
+}
+
+[[nodiscard]] bool is_material_positive(double value, double scale) noexcept {
+    return value > reconciliation_tolerance(scale);
+}
+
+[[nodiscard]] bool is_material_negative(double value, double scale) noexcept {
+    return value < -reconciliation_tolerance(scale);
+}
+
 void enforce_reconciliation(
     double error, double scale, std::string_view description) {
-    const double tolerance = kReconciliationAbsoluteTolerance +
-        kReconciliationRelativeTolerance * std::max(1.0, std::abs(scale));
+    const double tolerance = reconciliation_tolerance(scale);
     if (!std::isfinite(error) || error > tolerance) {
         throw std::logic_error(std::string(description));
     }
@@ -105,7 +123,8 @@ void require_safe_text(std::string_view value, std::string_view description) {
         throw std::invalid_argument(
             std::string(description) + " must be non-empty and bounded");
     }
-    for (const unsigned char character : value) {
+    for (const char raw_character : value) {
+        const auto character = static_cast<unsigned char>(raw_character);
         if (character < 0x20U || character == 0x7FU) {
             throw std::invalid_argument(
                 std::string(description) + " contains a control character");
@@ -116,7 +135,7 @@ void require_safe_text(std::string_view value, std::string_view description) {
 void require_true(bool value, std::string_view description) {
     if (!value) {
         throw std::invalid_argument(
-            std::string(description) + " must be explicitly true in v0.1");
+            std::string(description) + " must be explicitly true");
     }
 }
 
@@ -146,6 +165,90 @@ void require_true(bool value, std::string_view description) {
         sum.add(static_cast<long double>(project.commitment_million));
     }
     return checked_double(sum.value(), "capital-stack aggregate commitment");
+}
+
+[[nodiscard]] bool is_v02(const CapitalStackConfig& stack) noexcept {
+    return stack.model_version == kCapitalStackModelVersion;
+}
+
+[[nodiscard]] long double path_acquisition_and_primary_funding(
+    const ProjectJointPath& path,
+    PrincipalAccountingMode accounting_mode) noexcept {
+    CompensatedSum sum;
+    if (accounting_mode == PrincipalAccountingMode::DrawEqualsPrincipalLegacy) {
+        for (const MonthlyAmount& draw : path.capital_draws) {
+            sum.add(static_cast<long double>(draw.amount_million));
+        }
+        return sum.value();
+    }
+    for (const InvestorOutlay& outlay : path.investor_outlays) {
+        if (outlay.purpose == InvestorOutlayPurpose::PrimaryProjectFunding ||
+            outlay.purpose == InvestorOutlayPurpose::ClaimPurchasePrice) {
+            sum.add(static_cast<long double>(outlay.amount_million));
+        }
+    }
+    return sum.value();
+}
+
+struct CapitalStackFundingBasis {
+    double project_outlay_limit_million{0.0};
+    double contractual_asset_principal_limit_million{0.0};
+    double funded_reserve_limit_million{0.0};
+    bool uses_explicit_asset_liability_accounting{false};
+};
+
+[[nodiscard]] CapitalStackFundingBasis capital_stack_funding_basis(
+    const PortfolioConfig& portfolio, const CapitalStackConfig& stack) {
+    CapitalStackFundingBasis result;
+    result.project_outlay_limit_million = aggregate_commitment(portfolio);
+    result.contractual_asset_principal_limit_million =
+        portfolio_aggregate_reference_principal(portfolio);
+
+    if (!is_v02(stack)) {
+        result.funded_reserve_limit_million =
+            result.project_outlay_limit_million;
+        return result;
+    }
+
+    std::unordered_map<std::string, std::size_t> project_indices;
+    project_indices.reserve(portfolio.projects.size());
+    std::vector<long double> project_funding_limits(
+        portfolio.projects.size(), 0.0L);
+    for (std::size_t index = 0U; index < portfolio.projects.size(); ++index) {
+        const PortfolioProject& project = portfolio.projects[index];
+        project_indices.emplace(project.id, index);
+        if (project.principal_accounting_mode ==
+            PrincipalAccountingMode::DrawEqualsPrincipalLegacy) {
+            project_funding_limits[index] =
+                static_cast<long double>(project.commitment_million);
+        } else {
+            result.uses_explicit_asset_liability_accounting = true;
+        }
+    }
+    for (const JointScenario& scenario : portfolio.joint_scenarios) {
+        for (const ProjectJointPath& path : scenario.project_paths) {
+            const auto found = project_indices.find(path.project_id);
+            if (found == project_indices.end()) {
+                throw std::logic_error(
+                    "capital-stack funding basis lost a project");
+            }
+            const PortfolioProject& project = portfolio.projects[found->second];
+            if (project.principal_accounting_mode ==
+                PrincipalAccountingMode::ExplicitContractualLedger) {
+                project_funding_limits[found->second] = std::max(
+                    project_funding_limits[found->second],
+                    path_acquisition_and_primary_funding(path,
+                        project.principal_accounting_mode));
+            }
+        }
+    }
+    CompensatedSum funded_reserve;
+    for (const long double limit : project_funding_limits) {
+        funded_reserve.add(limit);
+    }
+    result.funded_reserve_limit_million = checked_double(
+        funded_reserve.value(), "capital-stack acquisition funding limit");
+    return result;
 }
 
 [[nodiscard]] double tranche_loss(
@@ -225,22 +328,67 @@ void add_monthly_amounts(const std::vector<MonthlyAmount>& amounts,
 }
 
 struct MonthlyPoolCash {
-    std::vector<CompensatedSum> draws{};
-    std::vector<CompensatedSum> costs{};
+    std::vector<CompensatedSum> acquisition_and_primary_funding_uses{};
+    std::vector<CompensatedSum> claim_purchase_price_uses{};
+    std::vector<CompensatedSum> primary_project_funding_uses{};
+    std::vector<CompensatedSum> buyer_direct_costs{};
+    std::vector<CompensatedSum> pool_costs{};
     std::vector<CompensatedSum> principal{};
     std::vector<CompensatedSum> nonprincipal{};
 };
 
 [[nodiscard]] MonthlyPoolCash build_monthly_pool_cash(
-    const JointScenario& scenario, std::size_t month_count) {
+    const PortfolioConfig& portfolio, const JointScenario& scenario,
+    std::size_t month_count, const CapitalStackConfig& stack) {
     MonthlyPoolCash cash;
-    cash.draws.resize(month_count);
-    cash.costs.resize(month_count);
+    cash.acquisition_and_primary_funding_uses.resize(month_count);
+    cash.claim_purchase_price_uses.resize(month_count);
+    cash.primary_project_funding_uses.resize(month_count);
+    cash.buyer_direct_costs.resize(month_count);
+    cash.pool_costs.resize(month_count);
     cash.principal.resize(month_count);
     cash.nonprincipal.resize(month_count);
-    add_monthly_amounts(scenario.pool_costs, cash.costs);
+    add_monthly_amounts(scenario.pool_costs, cash.pool_costs);
+
+    std::unordered_map<std::string, PrincipalAccountingMode> accounting_modes;
+    accounting_modes.reserve(portfolio.projects.size());
+    for (const PortfolioProject& project : portfolio.projects) {
+        accounting_modes.emplace(project.id, project.principal_accounting_mode);
+    }
     for (const ProjectJointPath& path : scenario.project_paths) {
-        add_monthly_amounts(path.capital_draws, cash.draws);
+        const auto found = accounting_modes.find(path.project_id);
+        if (found == accounting_modes.end()) {
+            throw std::logic_error(
+                "capital-stack monthly cash lost a configured project");
+        }
+        if (!is_v02(stack) || found->second ==
+                PrincipalAccountingMode::DrawEqualsPrincipalLegacy) {
+            add_monthly_amounts(path.capital_draws,
+                cash.acquisition_and_primary_funding_uses);
+            add_monthly_amounts(path.capital_draws,
+                cash.primary_project_funding_uses);
+        } else {
+            for (const InvestorOutlay& outlay : path.investor_outlays) {
+                std::vector<CompensatedSum>* destination = nullptr;
+                switch (outlay.purpose) {
+                case InvestorOutlayPurpose::PrimaryProjectFunding:
+                    destination = &cash.primary_project_funding_uses;
+                    break;
+                case InvestorOutlayPurpose::ClaimPurchasePrice:
+                    destination = &cash.claim_purchase_price_uses;
+                    break;
+                case InvestorOutlayPurpose::BuyerDirectCost:
+                    destination = &cash.buyer_direct_costs;
+                    break;
+                }
+                (*destination)[outlay.month].add(
+                    static_cast<long double>(outlay.amount_million));
+                if (outlay.purpose != InvestorOutlayPurpose::BuyerDirectCost) {
+                    cash.acquisition_and_primary_funding_uses[outlay.month].add(
+                        static_cast<long double>(outlay.amount_million));
+                }
+            }
+        }
         for (const InvestorReceipt& receipt : path.investor_receipts) {
             cash.principal[receipt.month].add(
                 static_cast<long double>(receipt.principal_component_million));
@@ -259,16 +407,20 @@ struct MonthlyPoolCash {
 
 struct RunningTranche {
     CapitalStackTrancheScenarioResult result{};
+    CompensatedSum pro_rata_buyer_direct_cost_calls{};
     CompensatedSum pro_rata_pool_cost_calls{};
     CompensatedSum underlying_principal_cash{};
     CompensatedSum reserve_principal_cash{};
     CompensatedSum principal_cash{};
+    CompensatedSum contractual_principal_surplus_cash{};
+    CompensatedSum reserve_surplus_cash{};
+    CompensatedSum underlying_nonprincipal_cash{};
     CompensatedSum nonprincipal_cash{};
     CompensatedSum npv_at_tranche_hurdle{};
     CompensatedSum principal_month_numerator{};
 };
 
-void allocate_principal(long double available,
+[[nodiscard]] long double allocate_principal(long double available,
     const CapitalStackConfig& config, std::vector<RunningTranche>& tranches,
     std::vector<long double>& allocation) {
     CompensatedSum paid_total;
@@ -285,12 +437,7 @@ void allocate_principal(long double available,
         allocation[index] = paid;
         paid_total.add(paid);
     }
-    const long double residual = available - paid_total.value();
-    enforce_reconciliation(checked_double(std::abs(residual),
-                               "capital-stack principal waterfall residual"),
-        checked_double(available,
-            "capital-stack principal waterfall scale"),
-        "capital-stack principal waterfall left cash unallocated");
+    return paid_total.value();
 }
 
 void allocate_nonprincipal(long double available,
@@ -319,30 +466,80 @@ void allocate_nonprincipal(long double available,
     const JointScenario& source_scenario, const CapitalStackConfig& config,
     double commitment, CapitalStackSummary& summary) {
     const std::size_t month_count = selected_portfolio.horizon_months + 1U;
-    MonthlyPoolCash pool = build_monthly_pool_cash(source_scenario, month_count);
+    const CapitalStackFundingBasis funding =
+        capital_stack_funding_basis(selected_portfolio, config);
+    MonthlyPoolCash pool = build_monthly_pool_cash(
+        selected_portfolio, source_scenario, month_count, config);
+
+    CompensatedSum acquisition_uses;
+    CompensatedSum claim_purchase_price_uses;
+    CompensatedSum primary_project_funding_uses;
+    CompensatedSum buyer_direct_costs;
+    for (std::size_t month = 0U; month < month_count; ++month) {
+        acquisition_uses.add(
+            pool.acquisition_and_primary_funding_uses[month].value());
+        claim_purchase_price_uses.add(
+            pool.claim_purchase_price_uses[month].value());
+        primary_project_funding_uses.add(
+            pool.primary_project_funding_uses[month].value());
+        buyer_direct_costs.add(pool.buyer_direct_costs[month].value());
+    }
+    const double total_acquisition_uses = checked_double(
+        acquisition_uses.value(), "capital-stack acquisition uses");
+    const double total_buyer_direct_costs = checked_double(
+        buyer_direct_costs.value(), "capital-stack buyer direct costs");
     const double unused_commitment = std::max(
-        0.0, commitment - underlying.total_draws_million);
+        0.0, commitment - total_acquisition_uses);
+    const double principal_base_cash =
+        underlying.principal_returned_million + unused_commitment;
+    const double distributable_principal =
+        std::min(commitment, principal_base_cash);
+    const double principal_base_surplus =
+        std::max(0.0, principal_base_cash - commitment);
+    const double underlying_nonprincipal =
+        underlying.total_receipts_million -
+        underlying.principal_returned_million;
 
     CapitalStackScenarioResult scenario;
     scenario.scenario_id = underlying.scenario_id;
     scenario.central_weight = underlying.normalized_weight;
+    scenario.model_version = config.model_version;
+    scenario.uses_explicit_asset_liability_accounting =
+        funding.uses_explicit_asset_liability_accounting;
+    scenario.aggregate_project_outlay_limit_million =
+        funding.project_outlay_limit_million;
+    scenario.aggregate_contractual_asset_principal_limit_million =
+        funding.contractual_asset_principal_limit_million;
     scenario.aggregate_commitment_million = commitment;
     scenario.total_project_draws_million = underlying.total_draws_million;
+    scenario.total_asset_acquisition_and_primary_funding_uses_million =
+        total_acquisition_uses;
+    scenario.total_claim_purchase_price_million = checked_double(
+        claim_purchase_price_uses.value(),
+        "capital-stack claim purchase-price uses");
+    scenario.total_primary_project_funding_million = checked_double(
+        primary_project_funding_uses.value(),
+        "capital-stack primary-project-funding uses");
+    scenario.total_buyer_direct_costs_million = total_buyer_direct_costs;
+    scenario.contractual_principal_limit_minus_funding_uses_million =
+        funding.contractual_asset_principal_limit_million -
+        total_acquisition_uses;
     scenario.unused_commitment_returned_at_horizon_million = unused_commitment;
     scenario.underlying_principal_cash_million =
         underlying.principal_returned_million;
-    scenario.distributable_principal_cash_million =
-        underlying.principal_returned_million + unused_commitment;
+    scenario.distributable_principal_cash_million = distributable_principal;
+    scenario.underlying_nonprincipal_cash_million = underlying_nonprincipal;
     scenario.distributable_nonprincipal_cash_million =
-        underlying.total_receipts_million - underlying.principal_returned_million;
+        underlying_nonprincipal + principal_base_surplus;
     scenario.total_pool_costs_million = underlying.total_pool_costs_million;
-    scenario.gross_realized_principal_loss_million =
+    scenario.contractual_asset_principal_loss_million =
         underlying.principal_loss_million;
-    scenario.unresolved_principal_exposure_million =
+    scenario.contractual_asset_outstanding_principal_million =
         underlying.outstanding_principal_million;
     scenario.underlying_on_demand_npv_million = underlying.npv_million;
     scenario.underlying_nominal_net_cash_million =
-        underlying.total_receipts_million - underlying.total_draws_million -
+        underlying.total_receipts_million -
+        underlying.total_investor_outlays_million -
         underlying.total_pool_costs_million;
 
     std::vector<RunningTranche> running(config.tranches.size());
@@ -350,6 +547,8 @@ void allocate_nonprincipal(long double available,
         const CapitalStackTrancheConfig& term = config.tranches[index];
         RunningTranche& tranche = running[index];
         tranche.result.tranche_id = term.id;
+        tranche.result.legacy_v01_loss_layering_metrics_are_applicable =
+            !is_v02(config);
         tranche.result.notional_million =
             term.detachment_million - term.attachment_million;
         tranche.result.par_subscription_million = tranche.result.notional_million;
@@ -370,10 +569,13 @@ void allocate_nonprincipal(long double available,
     double scenario_maximum_reserve_roll_forward_error_million = 0.0;
     double scenario_maximum_reserve_shortfall_million = 0.0;
     for (std::size_t month = 0U; month < month_count; ++month) {
-        const long double monthly_draw = pool.draws[month].value();
-        const long double monthly_cost = pool.costs[month].value();
+        const long double monthly_acquisition =
+            pool.acquisition_and_primary_funding_uses[month].value();
+        const long double monthly_buyer_direct_cost =
+            pool.buyer_direct_costs[month].value();
+        const long double monthly_cost = pool.pool_costs[month].value();
         const long double monthly_principal = pool.principal[month].value();
-        const long double monthly_nonprincipal =
+        const long double monthly_underlying_nonprincipal =
             pool.nonprincipal[month].value();
         std::fill(principal_allocation.begin(), principal_allocation.end(), 0.0L);
         std::fill(underlying_principal_allocation.begin(),
@@ -383,10 +585,10 @@ void allocate_nonprincipal(long double available,
         std::fill(
             nonprincipal_allocation.begin(), nonprincipal_allocation.end(), 0.0L);
         const long double reserve_before_draw = reserve_balance.value();
-        reserve_balance.add(-monthly_draw);
+        reserve_balance.add(-monthly_acquisition);
         const long double reserve_after_draw = reserve_balance.value();
         const long double reserve_roll_forward_error = std::abs(
-            reserve_before_draw - monthly_draw - reserve_after_draw);
+            reserve_before_draw - monthly_acquisition - reserve_after_draw);
         scenario_maximum_reserve_roll_forward_error_million = std::max(
             scenario_maximum_reserve_roll_forward_error_million,
             checked_double(reserve_roll_forward_error,
@@ -401,8 +603,17 @@ void allocate_nonprincipal(long double available,
             : 0.0L;
         const long double combined_principal =
             monthly_principal + reserve_return;
-        allocate_principal(
+        const long double principal_paid_total = allocate_principal(
             combined_principal, config, running, principal_allocation);
+        const long double principal_surplus =
+            std::max(0.0L, combined_principal - principal_paid_total);
+        if (!is_v02(config)) {
+            enforce_reconciliation(checked_double(principal_surplus,
+                                       "capital-stack v0.1 principal residual"),
+                checked_double(combined_principal,
+                    "capital-stack v0.1 principal scale"),
+                "capital-stack v0.1 principal waterfall left cash unallocated");
+        }
         // Project principal and the reserve return have equal seniority. When
         // both arrive in one month, attribute each tranche's principal cash
         // pro rata to the two sources rather than letting processing order
@@ -423,6 +634,12 @@ void allocate_nonprincipal(long double available,
                 running[index].principal_cash.add(principal_allocation[index]);
             }
         }
+        const long double contractual_principal_surplus =
+            combined_principal > 0.0L
+            ? principal_surplus * monthly_principal / combined_principal
+            : 0.0L;
+        const long double reserve_surplus =
+            principal_surplus - contractual_principal_surplus;
         if (month == selected_portfolio.horizon_months) {
             const double reserve_error = absolute_difference(
                 checked_double(reserve_balance.value(),
@@ -437,13 +654,17 @@ void allocate_nonprincipal(long double available,
                 checked_double(std::abs(reserve_balance.value()),
                     "capital-stack reserve close-out error"));
         }
-        allocate_nonprincipal(
-            monthly_nonprincipal, config, running, nonprincipal_allocation);
+        const long double monthly_nonprincipal =
+            monthly_underlying_nonprincipal +
+            contractual_principal_surplus + reserve_surplus;
+        allocate_nonprincipal(monthly_nonprincipal, config, running,
+            nonprincipal_allocation);
 
         const double pool_discount = discount_factor(
             selected_portfolio.annual_physical_hurdle_rate, month);
         const long double pool_net = monthly_principal + reserve_return +
-            monthly_nonprincipal - monthly_cost;
+            monthly_underlying_nonprincipal - monthly_cost -
+            monthly_buyer_direct_cost;
         direct_stack_npv_at_pool_hurdle.add(
             pool_net / static_cast<long double>(pool_discount));
 
@@ -453,6 +674,8 @@ void allocate_nonprincipal(long double available,
             const long double share =
                 static_cast<long double>(tranche.result.notional_million) /
                 static_cast<long double>(commitment);
+            const long double buyer_direct_cost_call =
+                monthly_buyer_direct_cost * share;
             const long double cost_call = monthly_cost * share;
             const long double subscription = month == 0U
                 ? static_cast<long double>(tranche.result.notional_million)
@@ -463,10 +686,30 @@ void allocate_nonprincipal(long double available,
                 reserve_principal_allocation[index];
             const long double principal_paid = principal_allocation[index];
             const long double nonprincipal_paid = nonprincipal_allocation[index];
+            const long double underlying_nonprincipal_paid =
+                monthly_nonprincipal > 0.0L
+                ? nonprincipal_paid * monthly_underlying_nonprincipal /
+                    monthly_nonprincipal
+                : 0.0L;
+            const long double contractual_principal_surplus_paid =
+                monthly_nonprincipal > 0.0L
+                ? nonprincipal_paid * contractual_principal_surplus /
+                    monthly_nonprincipal
+                : 0.0L;
+            const long double reserve_surplus_paid = nonprincipal_paid -
+                underlying_nonprincipal_paid -
+                contractual_principal_surplus_paid;
             const long double net = principal_paid + nonprincipal_paid -
-                subscription - cost_call;
+                subscription - buyer_direct_cost_call - cost_call;
 
+            tranche.pro_rata_buyer_direct_cost_calls.add(
+                buyer_direct_cost_call);
             tranche.pro_rata_pool_cost_calls.add(cost_call);
+            tranche.contractual_principal_surplus_cash.add(
+                contractual_principal_surplus_paid);
+            tranche.reserve_surplus_cash.add(reserve_surplus_paid);
+            tranche.underlying_nonprincipal_cash.add(
+                underlying_nonprincipal_paid);
             tranche.nonprincipal_cash.add(nonprincipal_paid);
             tranche.principal_month_numerator.add(
                 static_cast<long double>(month) * principal_paid);
@@ -478,12 +721,15 @@ void allocate_nonprincipal(long double available,
             allocated_stack_npv_at_pool_hurdle.add(
                 net / static_cast<long double>(pool_discount));
 
-            if (subscription != 0.0L || cost_call != 0.0L ||
+            if (subscription != 0.0L || buyer_direct_cost_call != 0.0L ||
+                cost_call != 0.0L ||
                 principal_paid != 0.0L || nonprincipal_paid != 0.0L) {
                 tranche.result.monthly_cash_flows.push_back(
                     CapitalStackMonthlyTrancheCashFlow{month,
                         checked_double(subscription,
                             "capital-stack monthly subscription"),
+                        checked_double(buyer_direct_cost_call,
+                            "capital-stack monthly buyer direct-cost call"),
                         checked_double(cost_call,
                             "capital-stack monthly cost call"),
                         checked_double(underlying_principal_paid,
@@ -492,6 +738,12 @@ void allocate_nonprincipal(long double available,
                             "capital-stack monthly reserve principal"),
                         checked_double(principal_paid,
                             "capital-stack monthly principal distribution"),
+                        checked_double(contractual_principal_surplus_paid,
+                            "capital-stack monthly contractual-principal surplus"),
+                        checked_double(reserve_surplus_paid,
+                            "capital-stack monthly reserve surplus"),
+                        checked_double(underlying_nonprincipal_paid,
+                            "capital-stack monthly underlying non-principal"),
                         checked_double(nonprincipal_paid,
                             "capital-stack monthly non-principal distribution"),
                         checked_double(net, "capital-stack monthly net cash")});
@@ -500,20 +752,31 @@ void allocate_nonprincipal(long double available,
     }
 
     CompensatedSum subscriptions;
+    CompensatedSum buyer_direct_cost_calls;
     CompensatedSum cost_calls;
     CompensatedSum underlying_principal_distributions;
     CompensatedSum reserve_principal_distributions;
     CompensatedSum principal_distributions;
+    CompensatedSum contractual_principal_surplus_distributions;
+    CompensatedSum reserve_surplus_distributions;
+    CompensatedSum underlying_nonprincipal_distributions;
     CompensatedSum nonprincipal_distributions;
-    CompensatedSum layer_losses;
-    CompensatedSum layer_outstanding;
+    CompensatedSum layer_v01_losses;
+    CompensatedSum layer_v01_outstanding;
+    CompensatedSum layer_principal_cash_shortfalls;
     CompensatedSum stack_net_cash;
     scenario.tranches.reserve(config.tranches.size());
-    const double total_principal_shortfall = underlying.principal_loss_million +
-        underlying.outstanding_principal_million;
+    const double total_principal_shortfall = canonical_nonnegative_residual(
+        commitment - scenario.distributable_principal_cash_million,
+        commitment);
+    scenario.issued_principal_cash_shortfall_million =
+        total_principal_shortfall;
     for (std::size_t index = 0U; index < config.tranches.size(); ++index) {
         const CapitalStackTrancheConfig& term = config.tranches[index];
         CapitalStackTrancheScenarioResult& tranche = running[index].result;
+        tranche.pro_rata_buyer_direct_cost_calls_million = checked_double(
+            running[index].pro_rata_buyer_direct_cost_calls.value(),
+            "capital-stack tranche buyer direct-cost calls");
         tranche.pro_rata_pool_cost_calls_million = checked_double(
             running[index].pro_rata_pool_cost_calls.value(),
             "capital-stack tranche pool-cost calls");
@@ -526,6 +789,16 @@ void allocate_nonprincipal(long double available,
         tranche.principal_cash_distribution_million = checked_double(
             running[index].principal_cash.value(),
             "capital-stack tranche principal cash");
+        tranche.contractual_principal_surplus_cash_distribution_million =
+            checked_double(
+                running[index].contractual_principal_surplus_cash.value(),
+                "capital-stack tranche contractual-principal surplus");
+        tranche.unused_reserve_surplus_cash_distribution_million =
+            checked_double(running[index].reserve_surplus_cash.value(),
+                "capital-stack tranche unused-reserve surplus");
+        tranche.underlying_nonprincipal_cash_distribution_million =
+            checked_double(running[index].underlying_nonprincipal_cash.value(),
+                "capital-stack tranche underlying non-principal cash");
         tranche.nonprincipal_cash_distribution_million = checked_double(
             running[index].nonprincipal_cash.value(),
             "capital-stack tranche non-principal cash");
@@ -533,18 +806,32 @@ void allocate_nonprincipal(long double available,
             running[index].npv_at_tranche_hurdle.value(),
             "capital-stack tranche NPV");
         tranche.total_contributions_million = tranche.par_subscription_million +
+            tranche.pro_rata_buyer_direct_cost_calls_million +
             tranche.pro_rata_pool_cost_calls_million;
         tranche.total_distributions_million =
             tranche.principal_cash_distribution_million +
             tranche.nonprincipal_cash_distribution_million;
-        tranche.realized_principal_loss_million =
-            tranche_loss(underlying.principal_loss_million, term);
-        const double combined_shortfall = tranche_loss(total_principal_shortfall, term);
-        tranche.unresolved_principal_exposure_million = std::max(
-            0.0, combined_shortfall - tranche.realized_principal_loss_million);
-        tranche.principal_cash_shortfall_million = std::max(
-            0.0, tranche.notional_million -
-                     tranche.principal_cash_distribution_million);
+        tranche.principal_cash_shortfall_million =
+            tranche_loss(total_principal_shortfall, term);
+        enforce_reconciliation(absolute_difference(
+                                   tranche.principal_cash_shortfall_million,
+                                   std::max(0.0,
+                                       tranche.notional_million -
+                                           tranche
+                                               .principal_cash_distribution_million)),
+            commitment,
+            "capital-stack tranche cash shortfall disagrees with principal allocation");
+        if (!is_v02(config)) {
+            tranche.realized_principal_loss_million =
+                tranche_loss(underlying.principal_loss_million, term);
+            const double loss_and_outstanding = tranche_loss(
+                underlying.principal_loss_million +
+                    underlying.outstanding_principal_million,
+                term);
+            tranche.unresolved_principal_exposure_million = std::max(
+                0.0, loss_and_outstanding -
+                    tranche.realized_principal_loss_million);
+        }
         tranche.unused_priority_nonprincipal_capacity_million =
             term.is_first_loss_residual
             ? 0.0
@@ -569,15 +856,19 @@ void allocate_nonprincipal(long double available,
                 "capital-stack weighted-average principal cash month");
         }
 
-        const double shortfall_error = absolute_difference(
-            tranche.principal_cash_shortfall_million,
-            tranche.realized_principal_loss_million +
-                tranche.unresolved_principal_exposure_million);
-        enforce_reconciliation(shortfall_error, tranche.notional_million,
-            "capital-stack tranche principal shortfall does not reconcile");
+        if (!is_v02(config)) {
+            const double shortfall_error = absolute_difference(
+                tranche.principal_cash_shortfall_million,
+                tranche.realized_principal_loss_million +
+                    tranche.unresolved_principal_exposure_million);
+            enforce_reconciliation(shortfall_error, tranche.notional_million,
+                "capital-stack v0.1 tranche principal shortfall does not reconcile");
+        }
 
         subscriptions.add(
             static_cast<long double>(tranche.par_subscription_million));
+        buyer_direct_cost_calls.add(static_cast<long double>(
+            tranche.pro_rata_buyer_direct_cost_calls_million));
         cost_calls.add(static_cast<long double>(
             tranche.pro_rata_pool_cost_calls_million));
         underlying_principal_distributions.add(static_cast<long double>(
@@ -586,12 +877,21 @@ void allocate_nonprincipal(long double available,
             tranche.unused_reserve_principal_return_million));
         principal_distributions.add(static_cast<long double>(
             tranche.principal_cash_distribution_million));
+        contractual_principal_surplus_distributions.add(
+            static_cast<long double>(
+                tranche.contractual_principal_surplus_cash_distribution_million));
+        reserve_surplus_distributions.add(static_cast<long double>(
+            tranche.unused_reserve_surplus_cash_distribution_million));
+        underlying_nonprincipal_distributions.add(static_cast<long double>(
+            tranche.underlying_nonprincipal_cash_distribution_million));
         nonprincipal_distributions.add(static_cast<long double>(
             tranche.nonprincipal_cash_distribution_million));
-        layer_losses.add(
+        layer_v01_losses.add(
             static_cast<long double>(tranche.realized_principal_loss_million));
-        layer_outstanding.add(static_cast<long double>(
+        layer_v01_outstanding.add(static_cast<long double>(
             tranche.unresolved_principal_exposure_million));
+        layer_principal_cash_shortfalls.add(static_cast<long double>(
+            tranche.principal_cash_shortfall_million));
         stack_net_cash.add(
             static_cast<long double>(tranche.nominal_net_cash_million));
         scenario.tranches.push_back(std::move(tranche));
@@ -606,38 +906,78 @@ void allocate_nonprincipal(long double available,
         scenario.underlying_on_demand_npv_million -
         scenario.fully_funded_stack_npv_at_pool_hurdle_million;
 
+    scenario.contractual_principal_surplus_cash_million = checked_double(
+        contractual_principal_surplus_distributions.value(),
+        "capital-stack scenario contractual-principal surplus");
+    scenario.unused_reserve_surplus_cash_million = checked_double(
+        reserve_surplus_distributions.value(),
+        "capital-stack scenario unused-reserve surplus");
+
     const double commitment_identity_error = absolute_difference(commitment,
-        underlying.total_draws_million + unused_commitment);
+        total_acquisition_uses + unused_commitment);
     const double principal_identity_error = absolute_difference(commitment,
-        underlying.principal_returned_million + unused_commitment +
-            underlying.principal_loss_million +
-            underlying.outstanding_principal_million);
+        scenario.distributable_principal_cash_million +
+            total_principal_shortfall);
+    const double layer_shortfall_reconciliation_error = absolute_difference(
+        checked_double(layer_principal_cash_shortfalls.value(),
+            "capital-stack layer principal cash shortfalls"),
+        total_principal_shortfall);
+    const double investor_outlay_separation_error = absolute_difference(
+        underlying.total_investor_outlays_million,
+        total_acquisition_uses + total_buyer_direct_costs);
     const double maximum_commitment_identity_error =
-        std::max(commitment_identity_error, principal_identity_error);
+        std::max({commitment_identity_error, principal_identity_error,
+            investor_outlay_separation_error,
+            layer_shortfall_reconciliation_error});
     const double subscription_reconciliation_error = absolute_difference(
         checked_double(subscriptions.value(), "capital-stack subscriptions"),
         commitment);
     const double pool_cost_call_reconciliation_error = absolute_difference(
         checked_double(cost_calls.value(), "capital-stack cost calls"),
         underlying.total_pool_costs_million);
+    const double buyer_direct_cost_call_reconciliation_error =
+        absolute_difference(checked_double(buyer_direct_cost_calls.value(),
+                                "capital-stack buyer direct-cost calls"),
+            total_buyer_direct_costs);
     const double principal_distribution_reconciliation_error = std::max(
         {absolute_difference(
-             checked_double(underlying_principal_distributions.value(),
-                 "capital-stack underlying principal distributions"),
+             checked_double(underlying_principal_distributions.value() +
+                     contractual_principal_surplus_distributions.value(),
+                 "capital-stack underlying principal cash allocation"),
              underlying.principal_returned_million),
             absolute_difference(
-                checked_double(reserve_principal_distributions.value(),
-                    "capital-stack reserve principal distributions"),
+                checked_double(reserve_principal_distributions.value() +
+                        reserve_surplus_distributions.value(),
+                    "capital-stack reserve cash allocation"),
                 unused_commitment),
             absolute_difference(
                 checked_double(principal_distributions.value(),
                     "capital-stack principal distributions"),
                 scenario.distributable_principal_cash_million)});
+    const double contractual_principal_surplus_reconciliation_error =
+        absolute_difference(checked_double(
+                                contractual_principal_surplus_distributions.value(),
+                                "capital-stack contractual-principal surplus distributions"),
+            scenario.contractual_principal_surplus_cash_million);
+    const double unused_reserve_surplus_reconciliation_error =
+        absolute_difference(checked_double(
+                                reserve_surplus_distributions.value(),
+                                "capital-stack reserve-surplus distributions"),
+            scenario.unused_reserve_surplus_cash_million);
     const double nonprincipal_distribution_reconciliation_error =
-        absolute_difference(
+        std::max({absolute_difference(
+                      checked_double(
+                          underlying_nonprincipal_distributions.value(),
+                          "capital-stack underlying non-principal distributions"),
+                      underlying_nonprincipal),
+            absolute_difference(
             checked_double(nonprincipal_distributions.value(),
                 "capital-stack non-principal distributions"),
-            scenario.distributable_nonprincipal_cash_million);
+            scenario.distributable_nonprincipal_cash_million),
+            absolute_difference(
+                scenario.contractual_principal_surplus_cash_million +
+                    scenario.unused_reserve_surplus_cash_million,
+                principal_base_surplus)});
     double priority_nonprincipal_cap_violation = 0.0;
     for (std::size_t index = 1U; index < config.tranches.size(); ++index) {
         priority_nonprincipal_cap_violation = std::max(
@@ -648,14 +988,25 @@ void allocate_nonprincipal(long double available,
                     config.tranches[index]
                         .priority_nonprincipal_cap_million));
     }
-    const double realized_loss_reconciliation_error = absolute_difference(
-        checked_double(layer_losses.value(), "capital-stack layer losses"),
-        underlying.principal_loss_million);
-    const double unresolved_exposure_reconciliation_error =
+    const double realized_loss_reconciliation_error = is_v02(config)
+        ? 0.0
+        : absolute_difference(
+              checked_double(layer_v01_losses.value(),
+                  "capital-stack v0.1 layer losses"),
+              underlying.principal_loss_million);
+    const double contractual_asset_loss_preservation_error =
+        absolute_difference(scenario.contractual_asset_principal_loss_million,
+            underlying.principal_loss_million);
+    const double contractual_asset_outstanding_preservation_error =
         absolute_difference(
-            checked_double(layer_outstanding.value(),
-                "capital-stack layer outstanding exposure"),
+            scenario.contractual_asset_outstanding_principal_million,
             underlying.outstanding_principal_million);
+    const double unresolved_exposure_reconciliation_error = is_v02(config)
+        ? 0.0
+        : absolute_difference(
+              checked_double(layer_v01_outstanding.value(),
+                  "capital-stack v0.1 layer outstanding exposure"),
+              underlying.outstanding_principal_million);
     const double nominal_net_cash_reconciliation_error = absolute_difference(
         scenario.stack_nominal_net_cash_million,
         scenario.underlying_nominal_net_cash_million);
@@ -674,18 +1025,29 @@ void allocate_nonprincipal(long double available,
     enforce_reconciliation(
         pool_cost_call_reconciliation_error, scale,
         "capital-stack pool-cost reconciliation failed");
+    enforce_reconciliation(buyer_direct_cost_call_reconciliation_error, scale,
+        "capital-stack buyer direct-cost reconciliation failed");
     enforce_reconciliation(
         principal_distribution_reconciliation_error,
         scale, "capital-stack principal distribution reconciliation failed");
     enforce_reconciliation(
         nonprincipal_distribution_reconciliation_error,
         scale, "capital-stack non-principal distribution reconciliation failed");
+    enforce_reconciliation(contractual_principal_surplus_reconciliation_error,
+        scale,
+        "capital-stack contractual-principal surplus reconciliation failed");
+    enforce_reconciliation(unused_reserve_surplus_reconciliation_error, scale,
+        "capital-stack unused-reserve surplus reconciliation failed");
     enforce_reconciliation(
         priority_nonprincipal_cap_violation, scale,
         "capital-stack priority non-principal cap was exceeded");
     enforce_reconciliation(
         realized_loss_reconciliation_error, scale,
         "capital-stack realized loss reconciliation failed");
+    enforce_reconciliation(contractual_asset_loss_preservation_error, scale,
+        "capital-stack changed contractual asset principal loss");
+    enforce_reconciliation(contractual_asset_outstanding_preservation_error,
+        scale, "capital-stack changed contractual asset outstanding principal");
     enforce_reconciliation(
         unresolved_exposure_reconciliation_error, scale,
         "capital-stack unresolved exposure reconciliation failed");
@@ -720,10 +1082,22 @@ void allocate_nonprincipal(long double available,
     summary.maximum_pool_cost_call_reconciliation_error_million = std::max(
         summary.maximum_pool_cost_call_reconciliation_error_million,
         pool_cost_call_reconciliation_error);
+    summary.maximum_buyer_direct_cost_call_reconciliation_error_million =
+        std::max(summary
+                     .maximum_buyer_direct_cost_call_reconciliation_error_million,
+            buyer_direct_cost_call_reconciliation_error);
     summary.maximum_principal_distribution_reconciliation_error_million =
         std::max(
             summary.maximum_principal_distribution_reconciliation_error_million,
             principal_distribution_reconciliation_error);
+    summary.maximum_contractual_principal_surplus_reconciliation_error_million =
+        std::max(summary
+                     .maximum_contractual_principal_surplus_reconciliation_error_million,
+            contractual_principal_surplus_reconciliation_error);
+    summary.maximum_unused_reserve_surplus_reconciliation_error_million =
+        std::max(summary
+                     .maximum_unused_reserve_surplus_reconciliation_error_million,
+            unused_reserve_surplus_reconciliation_error);
     summary.maximum_nonprincipal_distribution_reconciliation_error_million =
         std::max(summary
                      .maximum_nonprincipal_distribution_reconciliation_error_million,
@@ -734,6 +1108,14 @@ void allocate_nonprincipal(long double available,
     summary.maximum_realized_loss_reconciliation_error_million = std::max(
         summary.maximum_realized_loss_reconciliation_error_million,
         realized_loss_reconciliation_error);
+    summary.maximum_contractual_asset_loss_preservation_error_million =
+        std::max(summary
+                     .maximum_contractual_asset_loss_preservation_error_million,
+            contractual_asset_loss_preservation_error);
+    summary.maximum_contractual_asset_outstanding_preservation_error_million =
+        std::max(summary
+                     .maximum_contractual_asset_outstanding_preservation_error_million,
+            contractual_asset_outstanding_preservation_error);
     summary.maximum_unresolved_exposure_reconciliation_error_million = std::max(
         summary.maximum_unresolved_exposure_reconciliation_error_million,
         unresolved_exposure_reconciliation_error);
@@ -927,7 +1309,10 @@ void validate_capital_stack_config(const PortfolioConfig& portfolio,
     const SuccessParticipationConfig& participation,
     const CapitalStackConfig& stack) {
     validate_success_participation_config(portfolio, ambiguity, participation);
-    if (stack.model_version != kCapitalStackModelVersion) {
+    const bool legacy_v01 =
+        stack.model_version == kCapitalStackLegacyModelVersion;
+    const bool explicit_v02 = is_v02(stack);
+    if (!legacy_v01 && !explicit_v02) {
         throw std::invalid_argument(
             "unsupported capital-stack model version");
     }
@@ -936,18 +1321,48 @@ void validate_capital_stack_config(const PortfolioConfig& portfolio,
     if (!stack.synthetic_inputs || !portfolio.synthetic_inputs ||
         !ambiguity.synthetic_inputs || !participation.synthetic_inputs) {
         throw std::invalid_argument(
-            "capital-stack v0.1 accepts synthetic inputs only");
+            "capital-stack v0.1 and v0.2 accept synthetic inputs only");
     }
-    if (std::any_of(portfolio.projects.begin(), portfolio.projects.end(),
+    const bool portfolio_has_explicit_ledger = std::any_of(
+        portfolio.projects.begin(), portfolio.projects.end(),
             [](const PortfolioProject& project) {
                 return project.principal_accounting_mode ==
                     PrincipalAccountingMode::ExplicitContractualLedger;
-            })) {
+            });
+    if (legacy_v01 && portfolio_has_explicit_ledger) {
         throw std::invalid_argument(
             "capital-stack v0.1 cannot consume explicit contractual principal ledgers because subscription cash, reserve cash, purchase price and asset principal are not yet separated");
     }
-    require_true(stack.aggregate_commitment_is_fully_funded_at_par_at_month_zero,
-        "aggregate commitment fully funded at par at month zero assertion");
+    if (legacy_v01) {
+        require_true(
+            stack.aggregate_commitment_is_fully_funded_at_par_at_month_zero,
+            "aggregate commitment fully funded at par at month zero assertion");
+        if (stack
+                .asset_acquisition_and_primary_funding_limit_is_fully_funded_at_par_at_month_zero ||
+            stack.buyer_direct_costs_are_additional_pro_rata_calls ||
+            stack.principal_base_cash_above_issued_principal_is_nonprincipal ||
+            stack
+                .principal_limit_capacity_difference_is_reported_without_valuation_claim) {
+            throw std::invalid_argument(
+                "capital-stack v0.1 cannot enable v0.2 asset-liability assertions");
+        }
+    } else {
+        if (stack.aggregate_commitment_is_fully_funded_at_par_at_month_zero) {
+            throw std::invalid_argument(
+                "capital-stack v0.2 must not conflate aggregate project outlay limits with the acquisition funding reserve");
+        }
+        require_true(stack
+                         .asset_acquisition_and_primary_funding_limit_is_fully_funded_at_par_at_month_zero,
+            "asset acquisition and primary-funding limit fully funded at par at month zero assertion");
+        require_true(stack.buyer_direct_costs_are_additional_pro_rata_calls,
+            "buyer direct costs additional pro-rata calls assertion");
+        require_true(
+            stack.principal_base_cash_above_issued_principal_is_nonprincipal,
+            "principal-base cash above issued principal enters the non-principal waterfall assertion");
+        require_true(stack
+                         .principal_limit_capacity_difference_is_reported_without_valuation_claim,
+            "principal-limit capacity difference reported without valuation claim assertion");
+    }
     require_true(stack.subscription_reserve_is_zero_yield_and_lossless,
         "zero-yield lossless subscription reserve assertion");
     require_true(stack.undrawn_commitment_cancels_and_returns_only_at_horizon,
@@ -962,7 +1377,7 @@ void validate_capital_stack_config(const PortfolioConfig& portfolio,
         "unchanged project cash and gross loss assertion");
     if (stack.premium_discount_or_fair_value_is_claimed) {
         throw std::invalid_argument(
-            "capital-stack v0.1 cannot claim premium, discount, or fair value");
+            "capital-stack cannot claim premium, discount, or fair value");
     }
     if (!std::isfinite(stack.underlying_success_participation_fraction) ||
         stack.underlying_success_participation_fraction < 0.0 ||
@@ -989,8 +1404,14 @@ void validate_capital_stack_config(const PortfolioConfig& portfolio,
             "capital-stack scenario-tranche-month work exceeds the resource bound");
     }
 
+    const CapitalStackFundingBasis funding =
+        capital_stack_funding_basis(portfolio, stack);
     const long double commitment =
-        static_cast<long double>(aggregate_commitment(portfolio));
+        static_cast<long double>(funding.funded_reserve_limit_million);
+    if (!(commitment > 0.0L)) {
+        throw std::invalid_argument(
+            "capital-stack funded reserve limit must be positive");
+    }
     std::unordered_set<std::string> ids;
     ids.reserve(stack.tranches.size());
     long double expected_attachment = 0.0L;
@@ -1011,7 +1432,7 @@ void validate_capital_stack_config(const PortfolioConfig& portfolio,
                 static_cast<long double>(tranche.detachment_million),
                 commitment)) {
             throw std::invalid_argument(
-                "capital-stack tranche bounds must lie within aggregate commitment and each notional must be at least one base currency unit");
+                "capital-stack tranche bounds must lie within the funded reserve limit and each notional must be at least one base currency unit");
         }
         if (static_cast<long double>(tranche.attachment_million) !=
             expected_attachment) {
@@ -1048,35 +1469,43 @@ void validate_capital_stack_config(const PortfolioConfig& portfolio,
     }
     if (!near_input_money(expected_attachment, commitment)) {
         throw std::invalid_argument(
-            "capital-stack tranches must end at aggregate commitment");
+            "capital-stack tranches must end at the funded reserve limit");
     }
 
+    std::unordered_map<std::string, PrincipalAccountingMode> accounting_modes;
+    accounting_modes.reserve(portfolio.projects.size());
+    for (const PortfolioProject& project : portfolio.projects) {
+        accounting_modes.emplace(project.id, project.principal_accounting_mode);
+    }
     for (const JointScenario& scenario : portfolio.joint_scenarios) {
-        CompensatedSum scenario_draws;
+        CompensatedSum scenario_funding_uses;
         CompensatedSum scenario_raw_principal;
         CompensatedSum scenario_effective_principal;
         for (const ProjectJointPath& path : scenario.project_paths) {
-            CompensatedSum path_draws;
-            CompensatedSum path_principal;
-            for (const MonthlyAmount& draw : path.capital_draws) {
-                path_draws.add(
-                    static_cast<long double>(draw.amount_million));
+            const auto found = accounting_modes.find(path.project_id);
+            if (found == accounting_modes.end()) {
+                throw std::logic_error(
+                    "capital-stack validation lost a configured project");
             }
+            CompensatedSum path_funding_uses;
+            CompensatedSum path_principal;
+            path_funding_uses.add(path_acquisition_and_primary_funding(
+                path, found->second));
             for (const InvestorReceipt& receipt : path.investor_receipts) {
                 path_principal.add(static_cast<long double>(
                     receipt.principal_component_million));
             }
-            scenario_draws.add(path_draws.value());
+            scenario_funding_uses.add(path_funding_uses.value());
             scenario_raw_principal.add(path_principal.value());
-            scenario_effective_principal.add(
-                std::min(path_principal.value(), path_draws.value()));
+            scenario_effective_principal.add(std::min(
+                path_principal.value(), path_funding_uses.value()));
         }
         if (exceeds_with_input_tolerance(
-                scenario_draws.value(), commitment)) {
+                scenario_funding_uses.value(), commitment)) {
             throw std::invalid_argument(
-                "capital-stack aggregate scenario draws exceed the funded reserve");
+                "capital-stack aggregate scenario acquisition and primary-funding uses exceed the funded reserve");
         }
-        if (!near_input_money(scenario_raw_principal.value(),
+        if (legacy_v01 && !near_input_money(scenario_raw_principal.value(),
                 scenario_effective_principal.value())) {
             throw std::invalid_argument(
                 "capital-stack aggregate raw principal classification does not reconcile to effective returned principal");
@@ -1096,16 +1525,26 @@ CapitalStackSummary evaluate_capital_stack(const PortfolioConfig& portfolio,
         portfolio, participation,
         stack.underlying_success_participation_fraction);
     const PortfolioSummary underlying = evaluate_portfolio(selected);
-    const double commitment = aggregate_commitment(selected);
+    const CapitalStackFundingBasis funding =
+        capital_stack_funding_basis(selected, stack);
+    const double commitment = funding.funded_reserve_limit_million;
 
     CapitalStackSummary summary;
+    summary.model_version = stack.model_version;
+    summary.uses_explicit_asset_liability_accounting =
+        funding.uses_explicit_asset_liability_accounting;
+    summary.legacy_v01_loss_layering_metrics_are_applicable =
+        !is_v02(stack);
     summary.underlying_success_participation_fraction =
         stack.underlying_success_participation_fraction;
+    summary.aggregate_project_outlay_limit_million =
+        funding.project_outlay_limit_million;
+    summary.aggregate_contractual_asset_principal_limit_million =
+        funding.contractual_asset_principal_limit_million;
     summary.aggregate_commitment_million = commitment;
-    summary.model_limitation =
-        "Synthetic physical-scenario cash allocation only. No fair value, "
-        "market spread, rating, legal enforceability, reserve custody risk, "
-        "tax, regulatory capital, or empirical calibration is established.";
+    summary.model_limitation = is_v02(stack)
+        ? "Synthetic physical-scenario asset-to-liability cash allocation only. Purchase/funding basis, contractual asset principal and issued tranche principal are separated, but no fair value, market spread, rating, legal enforceability, reserve custody risk, tax, regulatory capital, or empirical calibration is established."
+        : "Synthetic physical-scenario cash allocation only. No fair value, market spread, rating, legal enforceability, reserve custody risk, tax, regulatory capital, or empirical calibration is established.";
 
     std::unordered_map<std::string, const JointScenario*> source_scenarios;
     source_scenarios.reserve(selected.joint_scenarios.size());
@@ -1154,6 +1593,35 @@ CapitalStackSummary evaluate_capital_stack(const PortfolioConfig& portfolio,
     summary.expected_prefunding_drag_npv_million = prefunding_drag.expectation;
     update_projection_error(
         prefunding_drag.maximum_endpoint_probability_error, summary);
+    const auto contractual_asset_loss = project_metric(
+        projector, summary.scenarios,
+        [](const CapitalStackScenarioResult& scenario) {
+            return scenario.contractual_asset_principal_loss_million;
+        });
+    summary.expected_contractual_asset_principal_loss_million =
+        contractual_asset_loss.expectation;
+    update_projection_error(
+        contractual_asset_loss.maximum_endpoint_probability_error, summary);
+    const auto contractual_asset_outstanding = project_metric(
+        projector, summary.scenarios,
+        [](const CapitalStackScenarioResult& scenario) {
+            return scenario.contractual_asset_outstanding_principal_million;
+        });
+    summary.expected_contractual_asset_outstanding_principal_million =
+        contractual_asset_outstanding.expectation;
+    update_projection_error(
+        contractual_asset_outstanding.maximum_endpoint_probability_error,
+        summary);
+    const auto issued_principal_shortfall = project_metric(
+        projector, summary.scenarios,
+        [](const CapitalStackScenarioResult& scenario) {
+            return scenario.issued_principal_cash_shortfall_million;
+        });
+    summary.expected_issued_principal_cash_shortfall_million =
+        issued_principal_shortfall.expectation;
+    update_projection_error(
+        issued_principal_shortfall.maximum_endpoint_probability_error,
+        summary);
 
     summary.tranches.reserve(stack.tranches.size());
     for (std::size_t index = 0U; index < stack.tranches.size(); ++index) {
@@ -1169,6 +1637,8 @@ CapitalStackSummary evaluate_capital_stack(const PortfolioConfig& portfolio,
         tranche.annual_physical_hurdle_rate =
             term.annual_physical_hurdle_rate;
         tranche.is_first_loss_residual = term.is_first_loss_residual;
+        tranche.legacy_v01_loss_layering_metrics_are_applicable =
+            summary.legacy_v01_loss_layering_metrics_are_applicable;
 
         const auto project = [&](auto selector) {
             return project_metric(projector, summary.scenarios,
@@ -1186,6 +1656,10 @@ CapitalStackSummary evaluate_capital_stack(const PortfolioConfig& portfolio,
         assign(tranche.expected_contributions_million,
             project([](const CapitalStackTrancheScenarioResult& value) {
                 return value.total_contributions_million;
+            }));
+        assign(tranche.expected_buyer_direct_cost_calls_million,
+            project([](const CapitalStackTrancheScenarioResult& value) {
+                return value.pro_rata_buyer_direct_cost_calls_million;
             }));
         assign(tranche.expected_underlying_principal_cash_distribution_million,
             project([](const CapitalStackTrancheScenarioResult& value) {
@@ -1207,19 +1681,21 @@ CapitalStackSummary evaluate_capital_stack(const PortfolioConfig& portfolio,
             project([](const CapitalStackTrancheScenarioResult& value) {
                 return value.total_distributions_million;
             }));
-        assign(tranche.expected_realized_principal_loss_million,
-            project([](const CapitalStackTrancheScenarioResult& value) {
-                return value.realized_principal_loss_million;
-            }));
-        assign(tranche.expected_realized_principal_loss_fraction,
-            project([](const CapitalStackTrancheScenarioResult& value) {
-                return value.realized_principal_loss_million /
-                    value.notional_million;
-            }));
-        assign(tranche.expected_unresolved_principal_exposure_million,
-            project([](const CapitalStackTrancheScenarioResult& value) {
-                return value.unresolved_principal_exposure_million;
-            }));
+        if (tranche.legacy_v01_loss_layering_metrics_are_applicable) {
+            assign(tranche.expected_realized_principal_loss_million,
+                project([](const CapitalStackTrancheScenarioResult& value) {
+                    return value.realized_principal_loss_million;
+                }));
+            assign(tranche.expected_realized_principal_loss_fraction,
+                project([](const CapitalStackTrancheScenarioResult& value) {
+                    return value.realized_principal_loss_million /
+                        value.notional_million;
+                }));
+            assign(tranche.expected_unresolved_principal_exposure_million,
+                project([](const CapitalStackTrancheScenarioResult& value) {
+                    return value.unresolved_principal_exposure_million;
+                }));
+        }
         assign(tranche.expected_principal_cash_shortfall_million,
             project([](const CapitalStackTrancheScenarioResult& value) {
                 return value.principal_cash_shortfall_million;
@@ -1240,40 +1716,95 @@ CapitalStackSummary evaluate_capital_stack(const PortfolioConfig& portfolio,
             project([](const CapitalStackTrancheScenarioResult& value) {
                 return value.net_return_fraction;
             }));
-        assign(tranche.principal_impairment_probability,
+        if (tranche.legacy_v01_loss_layering_metrics_are_applicable) {
+            assign(tranche.principal_impairment_probability,
+                project([](const CapitalStackTrancheScenarioResult& value) {
+                    return is_material_positive(
+                               value.realized_principal_loss_million,
+                               value.notional_million)
+                        ? 1.0
+                        : 0.0;
+                }));
+            assign(tranche.principal_exhaustion_probability,
+                project([](const CapitalStackTrancheScenarioResult& value) {
+                    return value.realized_principal_loss_million >=
+                            value.notional_million -
+                                reconciliation_tolerance(
+                                    value.notional_million)
+                        ? 1.0
+                        : 0.0;
+                }));
+        }
+        assign(tranche.principal_cash_shortfall_probability,
             project([](const CapitalStackTrancheScenarioResult& value) {
-                return value.realized_principal_loss_million > 0.0 ? 1.0 : 0.0;
+                return is_material_positive(
+                           value.principal_cash_shortfall_million,
+                           value.notional_million)
+                    ? 1.0
+                    : 0.0;
             }));
-        assign(tranche.principal_exhaustion_probability,
+        assign(tranche.full_principal_cash_shortfall_probability,
             project([](const CapitalStackTrancheScenarioResult& value) {
-                return value.realized_principal_loss_million >=
-                        value.notional_million
+                return value.principal_cash_shortfall_million >=
+                        value.notional_million -
+                            reconciliation_tolerance(value.notional_million)
                     ? 1.0
                     : 0.0;
             }));
         assign(tranche.negative_npv_probability,
             project([](const CapitalStackTrancheScenarioResult& value) {
-                return value.npv_at_tranche_hurdle_million < 0.0 ? 1.0 : 0.0;
+                return is_material_negative(value.npv_at_tranche_hurdle_million,
+                           value.total_contributions_million)
+                    ? 1.0
+                    : 0.0;
             }));
 
-        const auto loss_es95 = project_es(projector, summary.scenarios,
+        if (tranche.legacy_v01_loss_layering_metrics_are_applicable) {
+            const auto loss_es95 = project_es(projector, summary.scenarios,
+                [index](const CapitalStackScenarioResult& scenario) {
+                    return scenario.tranches[index]
+                        .realized_principal_loss_million;
+                },
+                0.05);
+            tranche.principal_loss_expected_shortfall_95_million =
+                loss_es95.upper_expected_shortfall;
+            update_projection_error(
+                loss_es95.maximum_endpoint_probability_error, summary);
+            const auto loss_es99 = project_es(projector, summary.scenarios,
+                [index](const CapitalStackScenarioResult& scenario) {
+                    return scenario.tranches[index]
+                        .realized_principal_loss_million;
+                },
+                0.01);
+            tranche.principal_loss_expected_shortfall_99_million =
+                loss_es99.upper_expected_shortfall;
+            update_projection_error(
+                loss_es99.maximum_endpoint_probability_error, summary);
+        }
+        const auto principal_cash_shortfall_es95 = project_es(
+            projector, summary.scenarios,
             [index](const CapitalStackScenarioResult& scenario) {
-                return scenario.tranches[index].realized_principal_loss_million;
+                return scenario.tranches[index]
+                    .principal_cash_shortfall_million;
             },
             0.05);
-        tranche.principal_loss_expected_shortfall_95_million =
-            loss_es95.upper_expected_shortfall;
+        tranche.principal_cash_shortfall_expected_shortfall_95_million =
+            principal_cash_shortfall_es95.upper_expected_shortfall;
         update_projection_error(
-            loss_es95.maximum_endpoint_probability_error, summary);
-        const auto loss_es99 = project_es(projector, summary.scenarios,
+            principal_cash_shortfall_es95.maximum_endpoint_probability_error,
+            summary);
+        const auto principal_cash_shortfall_es99 = project_es(
+            projector, summary.scenarios,
             [index](const CapitalStackScenarioResult& scenario) {
-                return scenario.tranches[index].realized_principal_loss_million;
+                return scenario.tranches[index]
+                    .principal_cash_shortfall_million;
             },
             0.01);
-        tranche.principal_loss_expected_shortfall_99_million =
-            loss_es99.upper_expected_shortfall;
+        tranche.principal_cash_shortfall_expected_shortfall_99_million =
+            principal_cash_shortfall_es99.upper_expected_shortfall;
         update_projection_error(
-            loss_es99.maximum_endpoint_probability_error, summary);
+            principal_cash_shortfall_es99.maximum_endpoint_probability_error,
+            summary);
         const auto npv_es95 = project_es(projector, summary.scenarios,
             [index](const CapitalStackScenarioResult& scenario) {
                 return std::max(0.0,

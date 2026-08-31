@@ -1,3 +1,5 @@
+include("${CMAKE_CURRENT_LIST_DIR}/resolve_program_command.cmake")
+
 if(NOT DEFINED PROGRAM OR NOT DEFINED PORTFOLIO OR
         NOT DEFINED AMBIGUITY OR NOT DEFINED PARTICIPATION OR
         NOT DEFINED PROTECTION OR NOT DEFINED PROVIDER_PRICE OR
@@ -7,7 +9,7 @@ if(NOT DEFINED PROGRAM OR NOT DEFINED PORTFOLIO OR
 endif()
 
 execute_process(
-    COMMAND "${PROGRAM}" "${PORTFOLIO}" "${AMBIGUITY}"
+    COMMAND ${PROGRAM_COMMAND} "${PORTFOLIO}" "${AMBIGUITY}"
         "${PARTICIPATION}" "${PROTECTION}" "${PROVIDER_PRICE}"
         "${PROVIDER_CREDIT}"
     RESULT_VARIABLE result
@@ -106,7 +108,7 @@ foreach(fragment IN LISTS required_fragments)
 endforeach()
 
 execute_process(
-    COMMAND "${PROGRAM}" "${PORTFOLIO}" "${AMBIGUITY}"
+    COMMAND ${PROGRAM_COMMAND} "${PORTFOLIO}" "${AMBIGUITY}"
         "${PARTICIPATION}" "${PROTECTION}" "${PROVIDER_PRICE}"
         "${PROVIDER_CREDIT}" --print-normalized
     RESULT_VARIABLE normalized_result
@@ -207,7 +209,7 @@ foreach(scenario_index RANGE 1 4)
 endforeach()
 
 execute_process(
-    COMMAND "${PROGRAM}" "${PORTFOLIO}" "${AMBIGUITY}"
+    COMMAND ${PROGRAM_COMMAND} "${PORTFOLIO}" "${AMBIGUITY}"
         "${PARTICIPATION}" "${PROTECTION}" "${PROVIDER_PRICE}"
         "${PROVIDER_CREDIT}" --unknown-option
     RESULT_VARIABLE bad_option_result
@@ -224,7 +226,7 @@ if(bad_option_usage_position EQUAL -1)
 endif()
 
 execute_process(
-    COMMAND "${PROGRAM}" "${PORTFOLIO}" "${AMBIGUITY}"
+    COMMAND ${PROGRAM_COMMAND} "${PORTFOLIO}" "${AMBIGUITY}"
         "${PARTICIPATION}" "${PROTECTION}" "${PROVIDER_PRICE}"
     RESULT_VARIABLE missing_credit_result
     OUTPUT_VARIABLE missing_credit_output

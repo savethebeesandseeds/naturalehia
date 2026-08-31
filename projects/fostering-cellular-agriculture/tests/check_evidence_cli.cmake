@@ -1,5 +1,7 @@
 # SPDX-License-Identifier: MIT
 
+include("${CMAKE_CURRENT_LIST_DIR}/resolve_program_command.cmake")
+
 if(NOT DEFINED PROGRAM OR NOT DEFINED DOSSIER OR NOT DEFINED MANIFEST)
     message(FATAL_ERROR "PROGRAM, DOSSIER, and MANIFEST are required")
 endif()
@@ -40,7 +42,7 @@ else()
 endif()
 
 execute_process(
-    COMMAND "${PROGRAM}" ${arguments}
+    COMMAND ${PROGRAM_COMMAND} ${arguments}
     RESULT_VARIABLE actual_result
     OUTPUT_VARIABLE actual_output
     ERROR_VARIABLE actual_error

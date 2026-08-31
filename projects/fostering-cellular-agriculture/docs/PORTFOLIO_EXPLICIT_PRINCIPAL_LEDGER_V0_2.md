@@ -280,7 +280,7 @@ principal; it is not aggregate investor cash commitment.
 ## Capital-stack boundary
 
 Capital Stack v0.1 rejects every portfolio containing an
-`explicit-contractual-ledger` project. That engine currently assumes:
+`explicit-contractual-ledger` project. Its legacy contract assumes:
 
 - the aggregate commitment is subscribed fully at par in month zero;
 - subscription cash becomes a zero-yield, lossless reserve;
@@ -289,9 +289,25 @@ Capital Stack v0.1 rejects every portfolio containing an
 
 Those mechanics require cash commitment, tranche subscription cash, reserve
 cash, asset purchase price, and asset principal to be the same amount. They are
-not valid for an above- or below-par acquired claim. Capital-stack support must
-remain blocked until those quantities have separate contractual fields and
-reconciliations.
+not valid for an acquired claim whose purchase or funding cash differs from
+contractual principal.
+
+Capital Stack v0.2 now accepts Portfolio v0.2 explicit ledgers under a separate
+asset-to-liability contract. It fully funds a reserve and issued-tranche basis
+equal to the sum, by project, of maximum declared claim-purchase-price plus
+primary-project-funding uses. Buyer-direct cost remains an additional dated
+pro-rata call. Contractual asset principal, writeoff, and continuing exposure
+remain separate from issued tranche principal, capital impairment, and
+continuing capital exposure. Principal-base cash above unpaid issued principal
+is disclosed by source and enters the non-principal waterfall rather than
+manufacturing more liability principal.
+
+The detailed identities, exact 8-for-10 and 12-for-10 hand cases, and honest
+limitations are in
+[`CAPITAL_STACK_ASSET_LIABILITY_BRIDGE_V0_2.md`](CAPITAL_STACK_ASSET_LIABILITY_BRIDGE_V0_2.md).
+V0.2 acceptance is an accounting result only; it does not establish fair
+value, calibrated probabilities, enforceability, reserve safety, rating, or
+issuance readiness.
 
 ## Version compatibility
 

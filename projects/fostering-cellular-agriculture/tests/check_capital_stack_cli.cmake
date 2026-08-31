@@ -1,5 +1,7 @@
+include("${CMAKE_CURRENT_LIST_DIR}/resolve_program_command.cmake")
+
 execute_process(
-    COMMAND "${PROGRAM}" "${PORTFOLIO}" "${AMBIGUITY}" "${PARTICIPATION}" "${STACK}"
+    COMMAND ${PROGRAM_COMMAND} "${PORTFOLIO}" "${AMBIGUITY}" "${PARTICIPATION}" "${STACK}"
     RESULT_VARIABLE result
     OUTPUT_VARIABLE output
     ERROR_VARIABLE error

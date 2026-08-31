@@ -794,7 +794,8 @@ void test_authoritative_probability_lineage(
 
     const auto result = cf::assemble_claim_ledger_joint_portfolio(
         asset_inputs(first, second), terms);
-    bool observed_final_normalization = false;
+    double configured_weight_sum = 0.0;
+    double evaluated_weight_sum = 0.0;
     for (const cf::ClaimLedgerJointScenarioLineage& lineage :
          result.joint_scenario_lineage) {
         const cf::JointScenario& configured = configured_scenario(
@@ -809,9 +810,8 @@ void test_authoritative_probability_lineage(
         check(lineage.declared_physical_probability !=
                 lineage.configured_physical_probability,
             "declared near-one weights remain distinct from assembler normalization");
-        observed_final_normalization = observed_final_normalization ||
-            lineage.configured_physical_probability !=
-                lineage.physical_probability;
+        configured_weight_sum += lineage.configured_physical_probability;
+        evaluated_weight_sum += lineage.physical_probability;
     }
     for (const cf::ClaimLedgerJointSelectionLineage& lineage :
          result.selection_lineage) {
@@ -821,8 +821,9 @@ void test_authoritative_probability_lineage(
                     evaluated.normalized_weight,
             "selection lineage uses the authoritative evaluated joint weight");
     }
-    check(observed_final_normalization,
-        "rounding fixture exercises Portfolio's final normalization step");
+    check(near(configured_weight_sum, 1.0, 1.0e-14) &&
+            near(evaluated_weight_sum, 1.0, 1.0e-14),
+        "rounding fixture reaches Portfolio's authoritative unit measure even when its final normalization is exactly representable");
 }
 
 void test_marginal_reconciliation_uses_authoritative_final_measure(
@@ -865,7 +866,7 @@ void test_marginal_reconciliation_uses_authoritative_final_measure(
     const auto result = cf::assemble_claim_ledger_joint_portfolio(
         rounding_asset_inputs(first, rounding), terms);
     const auto& retained_rounding = marginal_asset(result, "rounding-claim");
-    bool observed_marginal_final_normalization = false;
+    std::size_t reconciled_marginals = 0U;
     for (const cf::JointScenario& configured :
          retained_rounding.portfolio.joint_scenarios) {
         const auto bridge = std::find_if(retained_rounding.paths.begin(),
@@ -875,9 +876,10 @@ void test_marginal_reconciliation_uses_authoritative_final_measure(
         check(bridge != retained_rounding.paths.end(),
             "rounding fixture retains every authoritative marginal bridge");
         if (bridge == retained_rounding.paths.end()) continue;
-        if (configured.weight != bridge->physical_probability) {
-            observed_marginal_final_normalization = true;
-        }
+        const cf::JointScenarioResult& evaluated = evaluated_scenario(
+            retained_rounding.portfolio_summary, configured.id);
+        check(bridge->physical_probability == evaluated.normalized_weight,
+            "rounding fixture bridge retains Portfolio's authoritative marginal measure");
         const auto reconciliation = std::find_if(
             result.marginal_reconciliations.begin(),
             result.marginal_reconciliations.end(), [&](const auto& row) {
@@ -887,6 +889,7 @@ void test_marginal_reconciliation_uses_authoritative_final_measure(
         check(reconciliation != result.marginal_reconciliations.end(),
             "rounding fixture retains every marginal reconciliation row");
         if (reconciliation == result.marginal_reconciliations.end()) continue;
+        ++reconciled_marginals;
         check(reconciliation->configured_marginal_probability ==
                 configured.weight,
             "marginal reconciliation separately retains configured weight");
@@ -901,8 +904,9 @@ void test_marginal_reconciliation_uses_authoritative_final_measure(
                     bridge->physical_probability,
             "marginal reconciliation error uses the authoritative target");
     }
-    check(observed_marginal_final_normalization,
-        "four-state fixture exercises marginal Portfolio final normalization");
+    check(reconciled_marginals ==
+            retained_rounding.portfolio.joint_scenarios.size(),
+        "four-state fixture reconciles every authoritative marginal Portfolio weight");
 }
 
 void test_factor_provenance_and_union_bounds(

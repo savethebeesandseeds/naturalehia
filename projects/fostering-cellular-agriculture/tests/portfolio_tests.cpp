@@ -267,6 +267,80 @@ void test_continuing_balloon_is_exposure_not_realized_loss() {
         "pool, project, probability, and layer outputs preserve the exposure/loss boundary");
 }
 
+void test_split_decimal_full_repayment_is_not_impairment() {
+    cf::PortfolioConfig config;
+    config.scenario_label = "split-decimal legacy principal boundary";
+    config.source_note = "synthetic numeric-boundary regression";
+    config.currency_label = "TEST";
+    config.monetary_basis = "test units";
+    config.horizon_months = 1U;
+    config.projects = {cf::PortfolioProject{
+        "split-funded-note", cf::ProjectStage::Pilot, 7.0}};
+
+    cf::ProjectJointPath path;
+    path.project_id = "split-funded-note";
+    path.resolution = cf::ProjectPathResolution::Resolved;
+    path.capital_draws = {
+        cf::MonthlyAmount{0U, 2.45},
+        cf::MonthlyAmount{0U, 2.45},
+        cf::MonthlyAmount{0U, 2.10},
+    };
+    path.investor_receipts = {cf::InvestorReceipt{
+        1U, "principal-repayment", 7.0, 7.0}};
+
+    cf::JointScenario scenario;
+    scenario.id = "full-repayment";
+    scenario.weight = 1.0;
+    scenario.project_paths = {path};
+    scenario.cash_sources = {make_source("principal-repayment",
+        cf::PortfolioCashSource::Commercial, 7.0, 1U)};
+    config.joint_scenarios = {scenario};
+
+    const cf::PortfolioSummary legacy = cf::evaluate_portfolio(config);
+    const cf::ProjectPathResult& legacy_project =
+        legacy.scenarios.front().projects.front();
+    check(legacy_project.principal_returned_million == 7.0 &&
+            legacy_project.principal_loss_million == 0.0 &&
+            legacy.scenarios.front().principal_loss_million == 0.0 &&
+            legacy.principal_impairment_probability == 0.0 &&
+            legacy.projects.front().principal_impairment_probability == 0.0,
+        "split decimal draws and their full legacy repayment cannot create a roundoff impairment event");
+
+    constexpr double declared_writeoff =
+        std::numeric_limits<double>::epsilon();
+    cf::PortfolioConfig explicit_config = config;
+    explicit_config.scenario_label =
+        "explicit writeoff below the legacy numeric boundary";
+    cf::PortfolioProject& explicit_project =
+        explicit_config.projects.front();
+    explicit_project.principal_accounting_mode =
+        cf::PrincipalAccountingMode::ExplicitContractualLedger;
+    explicit_project.principal_limit_million = 7.0;
+    cf::ProjectJointPath& explicit_path =
+        explicit_config.joint_scenarios.front().project_paths.front();
+    explicit_path.capital_draws.clear();
+    explicit_path.investor_outlays = {cf::InvestorOutlay{0U,
+        cf::InvestorOutlayPurpose::ClaimPurchasePrice, 7.0}};
+    explicit_path.principal_movements = {
+        cf::PrincipalMovement{0U,
+            cf::PrincipalMovementKind::FundedPrincipalAddition, 7.0},
+        cf::PrincipalMovement{1U,
+            cf::PrincipalMovementKind::Writeoff, declared_writeoff},
+    };
+
+    const cf::PortfolioSummary explicit_summary =
+        cf::evaluate_portfolio(explicit_config);
+    const cf::ProjectPathResult& explicit_result =
+        explicit_summary.scenarios.front().projects.front();
+    check(explicit_result.principal_loss_million == declared_writeoff &&
+            explicit_summary.scenarios.front().principal_loss_million ==
+                declared_writeoff &&
+            explicit_summary.principal_impairment_probability == 1.0 &&
+            explicit_summary.projects.front()
+                    .principal_impairment_probability == 1.0,
+        "an explicitly declared writeoff remains a loss and impairment event regardless of size");
+}
+
 void test_shared_cash_budget_prevents_double_use() {
     cf::PortfolioConfig config = hand_table_config();
     config.scenario_label = "shared guarantee budget";
@@ -750,6 +824,7 @@ void test_layer_synthetic_and_finite_validation() {
 int main() {
     test_hand_table_and_reconciliations();
     test_continuing_balloon_is_exposure_not_realized_loss();
+    test_split_decimal_full_repayment_is_not_impairment();
     test_shared_cash_budget_prevents_double_use();
     test_same_month_liquidity_is_gross_not_netted();
     test_dependence_and_diversification_metrics();

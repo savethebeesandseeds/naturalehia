@@ -99,7 +99,8 @@ void require_normalized_text(
         throw std::invalid_argument(
             std::string(name) + " must be normalized single-line text");
     }
-    for (const unsigned char character : value) {
+    for (const char raw_character : value) {
+        const auto character = static_cast<unsigned char>(raw_character);
         if (character < 0x20U || character == 0x7FU) {
             throw std::invalid_argument(
                 std::string(name) + " must not contain control characters");
@@ -110,7 +111,8 @@ void require_normalized_text(
 void require_safe_identifier(const std::string& value,
     std::string_view name, std::size_t maximum_length) {
     require_normalized_text(value, name, maximum_length);
-    for (const unsigned char character : value) {
+    for (const char raw_character : value) {
+        const auto character = static_cast<unsigned char>(raw_character);
         const bool ascii_alphanumeric =
             (character >= 'A' && character <= 'Z') ||
             (character >= 'a' && character <= 'z') ||
@@ -407,9 +409,12 @@ void finalize_path_invariants(StagedCapitalPathResult& result) {
     const auto quantile = [&values, total_weight](long double probability) {
         long double cumulative = 0.0L;
         const long double threshold = probability * total_weight;
+        const long double boundary_tolerance =
+            static_cast<long double>(kProbabilityTolerance) *
+            std::max(1.0L, std::abs(total_weight));
         for (const auto& [value, weight] : values) {
             cumulative += static_cast<long double>(weight);
-            if (cumulative >= threshold) {
+            if (cumulative + boundary_tolerance >= threshold) {
                 return value;
             }
         }

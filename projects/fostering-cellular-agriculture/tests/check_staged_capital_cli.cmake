@@ -1,9 +1,11 @@
+include("${CMAKE_CURRENT_LIST_DIR}/resolve_program_command.cmake")
+
 if(NOT DEFINED PROGRAM OR NOT DEFINED SCENARIO)
     message(FATAL_ERROR "PROGRAM and SCENARIO are required")
 endif()
 
 execute_process(
-    COMMAND "${PROGRAM}" "${SCENARIO}"
+    COMMAND ${PROGRAM_COMMAND} "${SCENARIO}"
     RESULT_VARIABLE result
     OUTPUT_VARIABLE output
     ERROR_VARIABLE error_output

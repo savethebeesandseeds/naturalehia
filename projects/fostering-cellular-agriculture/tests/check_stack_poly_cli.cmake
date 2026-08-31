@@ -1,5 +1,7 @@
 # SPDX-License-Identifier: MIT
 
+include("${CMAKE_CURRENT_LIST_DIR}/resolve_program_command.cmake")
+
 if(NOT DEFINED PROGRAM OR NOT DEFINED PORTFOLIO OR NOT DEFINED POLYTOPE OR
         NOT DEFINED PARTICIPATION OR NOT DEFINED STACK OR
         NOT DEFINED AMBIGUITY)
@@ -8,7 +10,7 @@ if(NOT DEFINED PROGRAM OR NOT DEFINED PORTFOLIO OR NOT DEFINED POLYTOPE OR
 endif()
 
 execute_process(
-    COMMAND "${PROGRAM}" --event-polytope "${PORTFOLIO}" "${POLYTOPE}"
+    COMMAND ${PROGRAM_COMMAND} --event-polytope "${PORTFOLIO}" "${POLYTOPE}"
         "${PARTICIPATION}" "${STACK}"
     RESULT_VARIABLE result
     OUTPUT_VARIABLE output
@@ -67,7 +69,7 @@ foreach(fragment IN ITEMS
 endforeach()
 
 execute_process(
-    COMMAND "${PROGRAM}" --event-polytope "${PORTFOLIO}" "${POLYTOPE}"
+    COMMAND ${PROGRAM_COMMAND} --event-polytope "${PORTFOLIO}" "${POLYTOPE}"
         "${PARTICIPATION}" "${STACK}" --print-normalized
     RESULT_VARIABLE normalized_result
     OUTPUT_VARIABLE normalized_output
@@ -131,7 +133,7 @@ file(WRITE "${temp_polytope}" "${normalized_polytope}\n")
 file(WRITE "${temp_participation}" "${normalized_participation}\n")
 file(WRITE "${temp_stack}" "${normalized_stack}\n")
 execute_process(
-    COMMAND "${PROGRAM}" --event-polytope "${temp_portfolio}"
+    COMMAND ${PROGRAM_COMMAND} --event-polytope "${temp_portfolio}"
         "${temp_polytope}" "${temp_participation}" "${temp_stack}"
     RESULT_VARIABLE reload_result
     OUTPUT_VARIABLE reload_output
@@ -151,7 +153,7 @@ endif()
 
 # The opt-in mode must not alter the established positional v0.1 report.
 execute_process(
-    COMMAND "${PROGRAM}" "${PORTFOLIO}" "${AMBIGUITY}"
+    COMMAND ${PROGRAM_COMMAND} "${PORTFOLIO}" "${AMBIGUITY}"
         "${PARTICIPATION}" "${STACK}"
     RESULT_VARIABLE legacy_result
     OUTPUT_VARIABLE legacy_output
@@ -174,7 +176,7 @@ foreach(fragment IN ITEMS
 endforeach()
 
 execute_process(
-    COMMAND "${PROGRAM}" --event-polytope "${PORTFOLIO}" "${POLYTOPE}"
+    COMMAND ${PROGRAM_COMMAND} --event-polytope "${PORTFOLIO}" "${POLYTOPE}"
         "${PARTICIPATION}" "${STACK}" --unknown-option
     RESULT_VARIABLE unknown_result
     ERROR_VARIABLE unknown_error
@@ -188,7 +190,7 @@ if(usage_position EQUAL -1)
 endif()
 
 execute_process(
-    COMMAND "${PROGRAM}" --event-polytope "${PORTFOLIO}" "${POLYTOPE}"
+    COMMAND ${PROGRAM_COMMAND} --event-polytope "${PORTFOLIO}" "${POLYTOPE}"
         "${PARTICIPATION}"
     RESULT_VARIABLE missing_result
     ERROR_VARIABLE missing_error
@@ -198,7 +200,7 @@ if(NOT missing_result EQUAL 2)
 endif()
 
 execute_process(
-    COMMAND "${PROGRAM}" --joint-cohort "${PORTFOLIO}" "${PARTICIPATION}"
+    COMMAND ${PROGRAM_COMMAND} --joint-cohort "${PORTFOLIO}" "${PARTICIPATION}"
     RESULT_VARIABLE joint_grammar_result
     ERROR_VARIABLE joint_grammar_error
 )
@@ -207,7 +209,7 @@ if(NOT joint_grammar_result EQUAL 2)
 endif()
 
 execute_process(
-    COMMAND "${PROGRAM}" --event-polytope "${PORTFOLIO}.missing"
+    COMMAND ${PROGRAM_COMMAND} --event-polytope "${PORTFOLIO}.missing"
         "${POLYTOPE}" "${PARTICIPATION}" "${STACK}"
     RESULT_VARIABLE runtime_result
     ERROR_VARIABLE runtime_error

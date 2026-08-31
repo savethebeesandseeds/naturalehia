@@ -210,6 +210,13 @@ void test_hand_waterfalls_and_cash_conservation() {
     const cf::CapitalStackSummary summary = cf::evaluate_capital_stack(
         four_state_portfolio(), four_state_ambiguity(),
         participation_terms(), stack_terms());
+    check(summary.legacy_v01_loss_layering_metrics_are_applicable &&
+            std::all_of(summary.tranches.begin(), summary.tranches.end(),
+                [](const auto& tranche) {
+                    return tranche
+                        .legacy_v01_loss_layering_metrics_are_applicable;
+                }),
+        "v0.1 marks its tranche loss-layering metrics applicable");
 
     const auto& success = find_scenario(summary, "common-success");
     const auto& success_junior =

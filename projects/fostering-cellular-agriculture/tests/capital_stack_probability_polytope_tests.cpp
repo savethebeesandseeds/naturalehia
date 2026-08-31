@@ -239,7 +239,13 @@ void test_event_free_matches_v01_for_every_stack_metric() {
             portfolio, component_polytope(), participation, terms);
 
     check(current.events.empty() && current.tranches.size() ==
-            prior.tranches.size(),
+            prior.tranches.size() &&
+            current.legacy_v01_loss_layering_metrics_are_applicable &&
+            std::all_of(current.tranches.begin(), current.tranches.end(),
+                [](const auto& tranche) {
+                    return tranche
+                        .legacy_v01_loss_layering_metrics_are_applicable;
+                }),
         "event-free bridge preserves the stack and declares no events");
     check_range_matches(current.expected_underlying_on_demand_npv_million,
         prior.expected_underlying_on_demand_npv_million,

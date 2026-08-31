@@ -1,9 +1,11 @@
+include("${CMAKE_CURRENT_LIST_DIR}/resolve_program_command.cmake")
+
 if(NOT DEFINED PROGRAM OR NOT DEFINED PORTFOLIO OR NOT DEFINED AMBIGUITY)
     message(FATAL_ERROR "PROGRAM, PORTFOLIO, and AMBIGUITY are required")
 endif()
 
 execute_process(
-    COMMAND "${PROGRAM}" "${PORTFOLIO}" "${AMBIGUITY}"
+    COMMAND ${PROGRAM_COMMAND} "${PORTFOLIO}" "${AMBIGUITY}"
     RESULT_VARIABLE result
     OUTPUT_VARIABLE output
     ERROR_VARIABLE error_output
@@ -66,7 +68,7 @@ foreach(fragment IN LISTS required_fragments)
 endforeach()
 
 execute_process(
-    COMMAND "${PROGRAM}" "${PORTFOLIO}" "${AMBIGUITY}"
+    COMMAND ${PROGRAM_COMMAND} "${PORTFOLIO}" "${AMBIGUITY}"
         --print-normalized
     RESULT_VARIABLE normalized_result
     OUTPUT_VARIABLE normalized_output
@@ -87,7 +89,7 @@ foreach(heading IN ITEMS
 endforeach()
 
 execute_process(
-    COMMAND "${PROGRAM}" "${PORTFOLIO}" "${AMBIGUITY}" --unknown-option
+    COMMAND ${PROGRAM_COMMAND} "${PORTFOLIO}" "${AMBIGUITY}" --unknown-option
     RESULT_VARIABLE bad_option_result
     OUTPUT_VARIABLE bad_option_output
     ERROR_VARIABLE bad_option_error
@@ -102,7 +104,7 @@ if(bad_option_usage_position EQUAL -1)
 endif()
 
 execute_process(
-    COMMAND "${PROGRAM}" "${PORTFOLIO}"
+    COMMAND ${PROGRAM_COMMAND} "${PORTFOLIO}"
     RESULT_VARIABLE missing_ambiguity_result
     OUTPUT_VARIABLE missing_ambiguity_output
     ERROR_VARIABLE missing_ambiguity_error

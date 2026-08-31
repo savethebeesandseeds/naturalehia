@@ -1,5 +1,7 @@
 # SPDX-License-Identifier: MIT
 
+include("${CMAKE_CURRENT_LIST_DIR}/resolve_program_command.cmake")
+
 if(NOT DEFINED PROGRAM OR NOT DEFINED FIXTURE)
     message(FATAL_ERROR "PROGRAM and FIXTURE are required")
 endif()
@@ -7,7 +9,7 @@ endif()
 set(config "${FIXTURE}/hurdle-evidence.cfg")
 
 execute_process(
-    COMMAND "${PROGRAM}" "${config}" --print-normalized
+    COMMAND ${PROGRAM_COMMAND} "${config}" --print-normalized
     RESULT_VARIABLE result
     OUTPUT_VARIABLE output
     ERROR_VARIABLE error_output
@@ -71,7 +73,7 @@ set(temp_config
 file(WRITE "${temp_config}" "${normalized_config}")
 
 execute_process(
-    COMMAND "${PROGRAM}" "${temp_config}" --print-normalized
+    COMMAND ${PROGRAM_COMMAND} "${temp_config}" --print-normalized
     RESULT_VARIABLE replay_result
     OUTPUT_VARIABLE replay_output
     ERROR_VARIABLE replay_error
@@ -96,7 +98,7 @@ endif()
 # Exit codes are part of the operational boundary: invocation errors differ
 # from rejected evidence/configuration.
 execute_process(
-    COMMAND "${PROGRAM}"
+    COMMAND ${PROGRAM_COMMAND}
     RESULT_VARIABLE usage_result
     OUTPUT_QUIET
     ERROR_QUIET
@@ -106,7 +108,7 @@ if(NOT usage_result EQUAL 1)
 endif()
 
 execute_process(
-    COMMAND "${PROGRAM}" "${FIXTURE}/does-not-exist.cfg"
+    COMMAND ${PROGRAM_COMMAND} "${FIXTURE}/does-not-exist.cfg"
     RESULT_VARIABLE missing_result
     OUTPUT_QUIET
     ERROR_VARIABLE missing_error

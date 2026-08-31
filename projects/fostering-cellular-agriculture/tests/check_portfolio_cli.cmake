@@ -1,9 +1,11 @@
+include("${CMAKE_CURRENT_LIST_DIR}/resolve_program_command.cmake")
+
 if(NOT DEFINED PROGRAM OR NOT DEFINED SCENARIO)
     message(FATAL_ERROR "PROGRAM and SCENARIO are required")
 endif()
 
 execute_process(
-    COMMAND "${PROGRAM}" "${SCENARIO}"
+    COMMAND ${PROGRAM_COMMAND} "${SCENARIO}"
     RESULT_VARIABLE result
     OUTPUT_VARIABLE output
     ERROR_VARIABLE error_output
@@ -64,7 +66,7 @@ foreach(fragment IN LISTS required_fragments)
 endforeach()
 
 execute_process(
-    COMMAND "${PROGRAM}" "${SCENARIO}" --print-normalized
+    COMMAND ${PROGRAM_COMMAND} "${SCENARIO}" --print-normalized
     RESULT_VARIABLE normalized_result
     OUTPUT_VARIABLE normalized_output
     ERROR_VARIABLE normalized_error
@@ -82,7 +84,7 @@ if(normalized_heading_position EQUAL -1)
 endif()
 
 execute_process(
-    COMMAND "${PROGRAM}" "${SCENARIO}" --unknown-option
+    COMMAND ${PROGRAM_COMMAND} "${SCENARIO}" --unknown-option
     RESULT_VARIABLE bad_option_result
     OUTPUT_VARIABLE bad_option_output
     ERROR_VARIABLE bad_option_error
@@ -97,7 +99,7 @@ if(bad_option_usage_position EQUAL -1)
 endif()
 
 execute_process(
-    COMMAND "${PROGRAM}"
+    COMMAND ${PROGRAM_COMMAND}
     RESULT_VARIABLE missing_scenario_result
     OUTPUT_VARIABLE missing_scenario_output
     ERROR_VARIABLE missing_scenario_error

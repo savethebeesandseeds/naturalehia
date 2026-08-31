@@ -58,8 +58,13 @@ struct CapitalStackProbabilityPolytopeTrancheSummary {
     double priority_nonprincipal_cap_million{0.0};
     double annual_physical_hurdle_rate{0.0};
     bool is_first_loss_residual{false};
+    // When false, legacy loss/exposure/impairment/exhaustion and legacy-loss
+    // tail fields are inapplicable zero placeholders. Use v0.2 cash-shortfall
+    // fields for liability risk.
+    bool legacy_v01_loss_layering_metrics_are_applicable{false};
 
     ProbabilityPolytopeMetricRange expected_contributions_million{};
+    ProbabilityPolytopeMetricRange expected_buyer_direct_cost_calls_million{};
     ProbabilityPolytopeMetricRange
         expected_underlying_principal_cash_distribution_million{};
     ProbabilityPolytopeMetricRange
@@ -69,6 +74,7 @@ struct CapitalStackProbabilityPolytopeTrancheSummary {
     ProbabilityPolytopeMetricRange
         expected_nonprincipal_cash_distribution_million{};
     ProbabilityPolytopeMetricRange expected_total_distributions_million{};
+    // V0.1-only fields; consult the applicability flag above.
     ProbabilityPolytopeMetricRange
         expected_realized_principal_loss_million{};
     ProbabilityPolytopeMetricRange
@@ -85,14 +91,22 @@ struct CapitalStackProbabilityPolytopeTrancheSummary {
     // optimized aggregate cash endpoints.
     ProbabilityPolytopeMetricRange expected_scenario_cash_multiple{};
     ProbabilityPolytopeMetricRange expected_scenario_net_return_fraction{};
+    // V0.1-only event fields; consult the applicability flag above.
     ProbabilityPolytopeMetricRange principal_impairment_probability{};
     ProbabilityPolytopeMetricRange principal_exhaustion_probability{};
+    ProbabilityPolytopeMetricRange principal_cash_shortfall_probability{};
+    ProbabilityPolytopeMetricRange full_principal_cash_shortfall_probability{};
     ProbabilityPolytopeMetricRange negative_npv_probability{};
 
+    // V0.1-only tail fields; consult the applicability flag above.
     ProbabilityPolytopeUpperExpectedShortfallProjection
         principal_loss_expected_shortfall_95_million{};
     ProbabilityPolytopeUpperExpectedShortfallProjection
         principal_loss_expected_shortfall_99_million{};
+    ProbabilityPolytopeUpperExpectedShortfallProjection
+        principal_cash_shortfall_expected_shortfall_95_million{};
+    ProbabilityPolytopeUpperExpectedShortfallProjection
+        principal_cash_shortfall_expected_shortfall_99_million{};
     ProbabilityPolytopeUpperExpectedShortfallProjection
         npv_shortfall_expected_shortfall_95_million{};
     ProbabilityPolytopeUpperExpectedShortfallProjection
@@ -108,14 +122,19 @@ struct CapitalStackProbabilityPolytopeTrancheSummary {
 };
 
 // Event-constrained risk results over the fixed deterministic cash paths
-// produced by the v0.1 stack waterfall. All probability endpoints below are
-// new v0.2 projections. No v0.1 ambiguity range or target conclusion is
-// coerced into this type.
+// produced by the selected deterministic stack waterfall. All probability
+// endpoints below are event-polytope projections. No ambiguity-range endpoint
+// or target conclusion is coerced into this type.
 struct CapitalStackProbabilityPolytopeSummary {
+    std::string model_version{};
+    bool uses_explicit_asset_liability_accounting{false};
+    bool legacy_v01_loss_layering_metrics_are_applicable{false};
     double underlying_success_participation_fraction{0.0};
     double underlying_target_worst_expected_npv_million{0.0};
     double selected_underlying_target_gap_million{0.0};
     bool selected_underlying_success_participation_meets_target{false};
+    double aggregate_project_outlay_limit_million{0.0};
+    double aggregate_contractual_asset_principal_limit_million{0.0};
     double aggregate_commitment_million{0.0};
 
     std::vector<ProbabilityPolytopeScenario> scenario_probabilities{};
@@ -128,6 +147,12 @@ struct CapitalStackProbabilityPolytopeSummary {
     ProbabilityPolytopeMetricRange
         expected_fully_funded_stack_npv_at_pool_hurdle_million{};
     ProbabilityPolytopeMetricRange expected_prefunding_drag_npv_million{};
+    ProbabilityPolytopeMetricRange
+        expected_contractual_asset_principal_loss_million{};
+    ProbabilityPolytopeMetricRange
+        expected_contractual_asset_outstanding_principal_million{};
+    ProbabilityPolytopeMetricRange
+        expected_issued_principal_cash_shortfall_million{};
 
     bool gross_project_principal_loss_is_changed{false};
     bool project_cash_is_changed_by_tranching{false};
@@ -143,10 +168,17 @@ struct CapitalStackProbabilityPolytopeSummary {
     double maximum_reserve_shortfall_million{0.0};
     double maximum_subscription_reconciliation_error_million{0.0};
     double maximum_pool_cost_call_reconciliation_error_million{0.0};
+    double maximum_buyer_direct_cost_call_reconciliation_error_million{0.0};
     double maximum_principal_distribution_reconciliation_error_million{0.0};
+    double maximum_contractual_principal_surplus_reconciliation_error_million{
+        0.0};
+    double maximum_unused_reserve_surplus_reconciliation_error_million{0.0};
     double maximum_nonprincipal_distribution_reconciliation_error_million{0.0};
     double maximum_priority_nonprincipal_cap_violation_million{0.0};
     double maximum_realized_loss_reconciliation_error_million{0.0};
+    double maximum_contractual_asset_loss_preservation_error_million{0.0};
+    double maximum_contractual_asset_outstanding_preservation_error_million{
+        0.0};
     double maximum_unresolved_exposure_reconciliation_error_million{0.0};
     double maximum_nominal_net_cash_reconciliation_error_million{0.0};
     double maximum_stack_npv_reconciliation_error_million{0.0};
@@ -175,10 +207,11 @@ void validate_capital_stack_probability_polytope(
     const CapitalStackConfig& stack);
 
 // Applies the stack's one declared participation fraction, evaluates the
-// deterministic v0.1 waterfall once under private ledger-only [0,1] bounds,
-// then independently projects every reported financial metric over the
-// supplied scenario/event probability polytope. The private bounds have no
-// financial interpretation and none of their v0.1 risk outputs are consumed.
+// deterministic v0.1 or v0.2 waterfall once under private ledger-only [0,1]
+// bounds, then independently projects every applicable financial metric over
+// the supplied scenario/event probability polytope. The private bounds have
+// no financial interpretation and none of their probability projections are
+// consumed.
 [[nodiscard]] CapitalStackProbabilityPolytopeSummary
 evaluate_capital_stack_probability_polytope(
     const PortfolioConfig& portfolio,

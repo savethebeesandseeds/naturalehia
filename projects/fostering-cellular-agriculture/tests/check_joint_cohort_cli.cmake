@@ -1,9 +1,11 @@
+include("${CMAKE_CURRENT_LIST_DIR}/resolve_program_command.cmake")
+
 if(NOT DEFINED PROGRAM OR NOT DEFINED COHORT OR NOT DEFINED BLOCKED)
     message(FATAL_ERROR "PROGRAM, COHORT, and BLOCKED are required")
 endif()
 
 execute_process(
-    COMMAND "${PROGRAM}" "${COHORT}" --print-normalized
+    COMMAND ${PROGRAM_COMMAND} "${COHORT}" --print-normalized
     RESULT_VARIABLE result
     OUTPUT_VARIABLE output
     ERROR_VARIABLE error_output
@@ -76,7 +78,7 @@ foreach(fragment IN ITEMS
 endforeach()
 
 execute_process(
-    COMMAND "${PROGRAM}" "${COHORT}" --unknown-option
+    COMMAND ${PROGRAM_COMMAND} "${COHORT}" --unknown-option
     RESULT_VARIABLE bad_result
     OUTPUT_VARIABLE bad_output
     ERROR_VARIABLE bad_error
@@ -90,7 +92,7 @@ if(usage_position EQUAL -1)
 endif()
 
 execute_process(
-    COMMAND "${PROGRAM}"
+    COMMAND ${PROGRAM_COMMAND}
     RESULT_VARIABLE missing_result
     OUTPUT_VARIABLE missing_output
     ERROR_VARIABLE missing_error
@@ -109,7 +111,7 @@ if(missing_boundary_position EQUAL -1)
 endif()
 
 execute_process(
-    COMMAND "${PROGRAM}" "${BLOCKED}"
+    COMMAND ${PROGRAM_COMMAND} "${BLOCKED}"
     RESULT_VARIABLE blocked_result
     OUTPUT_VARIABLE blocked_output
     ERROR_VARIABLE blocked_error
@@ -131,7 +133,7 @@ foreach(fragment IN ITEMS
 endforeach()
 
 execute_process(
-    COMMAND "${PROGRAM}" "${COHORT}.missing"
+    COMMAND ${PROGRAM_COMMAND} "${COHORT}.missing"
     RESULT_VARIABLE error_result
     OUTPUT_VARIABLE runtime_output
     ERROR_VARIABLE runtime_error

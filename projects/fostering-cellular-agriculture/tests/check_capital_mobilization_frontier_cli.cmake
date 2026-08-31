@@ -1,5 +1,7 @@
 # SPDX-License-Identifier: MIT
 
+include("${CMAKE_CURRENT_LIST_DIR}/resolve_program_command.cmake")
+
 if(NOT DEFINED PROGRAM OR NOT DEFINED FIXTURE)
     message(FATAL_ERROR "PROGRAM and FIXTURE are required")
 endif()
@@ -10,7 +12,7 @@ set(participation "${FIXTURE}/success-participation.cfg")
 set(frontier "${FIXTURE}/frontier.cfg")
 
 execute_process(
-    COMMAND "${PROGRAM}" "${portfolio}" "${polytope}"
+    COMMAND ${PROGRAM_COMMAND} "${portfolio}" "${polytope}"
         "${participation}" "${frontier}"
     RESULT_VARIABLE result
     OUTPUT_VARIABLE output
@@ -150,7 +152,7 @@ endforeach()
 # Normalized output must contain all four reloadable inputs. Re-run it and
 # prove the frontier semantic rendering is byte stable.
 execute_process(
-    COMMAND "${PROGRAM}" "${portfolio}" "${polytope}"
+    COMMAND ${PROGRAM_COMMAND} "${portfolio}" "${polytope}"
         "${participation}" "${frontier}" --print-normalized
     RESULT_VARIABLE normalized_result
     OUTPUT_VARIABLE normalized_output
@@ -216,7 +218,7 @@ file(WRITE "${temp_polytope}" "${normalized_polytope}\n")
 file(WRITE "${temp_participation}" "${normalized_participation}\n")
 file(WRITE "${temp_frontier}" "${normalized_frontier}\n")
 execute_process(
-    COMMAND "${PROGRAM}" "${temp_portfolio}" "${temp_polytope}"
+    COMMAND ${PROGRAM_COMMAND} "${temp_portfolio}" "${temp_polytope}"
         "${temp_participation}" "${temp_frontier}" --print-normalized
     RESULT_VARIABLE replay_result
     OUTPUT_VARIABLE replay_output
@@ -242,7 +244,7 @@ set(no_feasible_frontier
     "${CMAKE_CURRENT_BINARY_DIR}/frontier-${suffix}-none.cfg")
 file(WRITE "${no_feasible_frontier}" "${no_feasible_terms}")
 execute_process(
-    COMMAND "${PROGRAM}" "${portfolio}" "${polytope}"
+    COMMAND ${PROGRAM_COMMAND} "${portfolio}" "${polytope}"
         "${participation}" "${no_feasible_frontier}"
     RESULT_VARIABLE no_feasible_result
     OUTPUT_VARIABLE no_feasible_output
@@ -265,7 +267,7 @@ endforeach()
 
 # Exit taxonomy: 1 grammar, 2 input/parser, 3 compatible-input analysis.
 execute_process(
-    COMMAND "${PROGRAM}" "${portfolio}" "${polytope}" "${participation}"
+    COMMAND ${PROGRAM_COMMAND} "${portfolio}" "${polytope}" "${participation}"
     RESULT_VARIABLE usage_result
     ERROR_VARIABLE usage_error
 )
@@ -278,7 +280,7 @@ if(position EQUAL -1)
 endif()
 
 execute_process(
-    COMMAND "${PROGRAM}" "${portfolio}" "${polytope}"
+    COMMAND ${PROGRAM_COMMAND} "${portfolio}" "${polytope}"
         "${participation}" "${frontier}" --unknown-option
     RESULT_VARIABLE option_result
     ERROR_VARIABLE option_error
@@ -288,7 +290,7 @@ if(NOT option_result EQUAL 1)
 endif()
 
 execute_process(
-    COMMAND "${PROGRAM}" "${portfolio}.missing" "${polytope}"
+    COMMAND ${PROGRAM_COMMAND} "${portfolio}.missing" "${polytope}"
         "${participation}" "${frontier}"
     RESULT_VARIABLE input_result
     ERROR_VARIABLE input_error
@@ -311,7 +313,7 @@ set(invalid_analysis_frontier
     "${CMAKE_CURRENT_BINARY_DIR}/frontier-${suffix}-analysis.cfg")
 file(WRITE "${invalid_analysis_frontier}" "${invalid_analysis_terms}")
 execute_process(
-    COMMAND "${PROGRAM}" "${portfolio}" "${polytope}"
+    COMMAND ${PROGRAM_COMMAND} "${portfolio}" "${polytope}"
         "${participation}" "${invalid_analysis_frontier}"
     RESULT_VARIABLE analysis_result
     ERROR_VARIABLE analysis_error

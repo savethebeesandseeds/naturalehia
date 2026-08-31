@@ -275,11 +275,13 @@ void require_safe_text(std::string_view value, std::string_view description) {
         throw std::invalid_argument(
             "ambiguity central weights must sum to one within tolerance");
     }
-    if (lower_sum.value() > 1.0L) {
+    if (lower_sum.value() - 1.0L >
+        static_cast<long double>(kWeightSumTolerance)) {
         throw std::invalid_argument(
             "ambiguity lower weights leave no feasible probability measure");
     }
-    if (upper_sum.value() < 1.0L) {
+    if (1.0L - upper_sum.value() >
+        static_cast<long double>(kWeightSumTolerance)) {
         throw std::invalid_argument(
             "ambiguity upper weights leave no feasible probability measure");
     }

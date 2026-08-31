@@ -1,3 +1,5 @@
+include("${CMAKE_CURRENT_LIST_DIR}/resolve_program_command.cmake")
+
 if(NOT DEFINED PROGRAM OR NOT DEFINED PORTFOLIO OR
         NOT DEFINED AMBIGUITY OR NOT DEFINED PARTICIPATION)
     message(FATAL_ERROR
@@ -5,7 +7,7 @@ if(NOT DEFINED PROGRAM OR NOT DEFINED PORTFOLIO OR
 endif()
 
 execute_process(
-    COMMAND "${PROGRAM}" "${PORTFOLIO}" "${AMBIGUITY}" "${PARTICIPATION}"
+    COMMAND ${PROGRAM_COMMAND} "${PORTFOLIO}" "${AMBIGUITY}" "${PARTICIPATION}"
     RESULT_VARIABLE result
     OUTPUT_VARIABLE output
     ERROR_VARIABLE error_output
@@ -60,7 +62,7 @@ foreach(fragment IN LISTS required_fragments)
 endforeach()
 
 execute_process(
-    COMMAND "${PROGRAM}" "${PORTFOLIO}" "${AMBIGUITY}" "${PARTICIPATION}"
+    COMMAND ${PROGRAM_COMMAND} "${PORTFOLIO}" "${AMBIGUITY}" "${PARTICIPATION}"
         --print-normalized
     RESULT_VARIABLE normalized_result
     OUTPUT_VARIABLE normalized_output
@@ -82,7 +84,7 @@ foreach(heading IN ITEMS
 endforeach()
 
 execute_process(
-    COMMAND "${PROGRAM}" "${PORTFOLIO}" "${AMBIGUITY}" "${PARTICIPATION}"
+    COMMAND ${PROGRAM_COMMAND} "${PORTFOLIO}" "${AMBIGUITY}" "${PARTICIPATION}"
         --unknown-option
     RESULT_VARIABLE bad_option_result
     OUTPUT_VARIABLE bad_option_output
@@ -98,7 +100,7 @@ if(bad_option_usage_position EQUAL -1)
 endif()
 
 execute_process(
-    COMMAND "${PROGRAM}" "${PORTFOLIO}" "${AMBIGUITY}"
+    COMMAND ${PROGRAM_COMMAND} "${PORTFOLIO}" "${AMBIGUITY}"
     RESULT_VARIABLE missing_term_result
     OUTPUT_VARIABLE missing_term_output
     ERROR_VARIABLE missing_term_error

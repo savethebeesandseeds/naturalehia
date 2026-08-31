@@ -1,3 +1,5 @@
+include("${CMAKE_CURRENT_LIST_DIR}/resolve_program_command.cmake")
+
 if(NOT DEFINED PROGRAM OR NOT DEFINED SYNTHETIC OR
         NOT DEFINED LIBERATION OR NOT DEFINED SOLAR)
     message(FATAL_ERROR
@@ -18,7 +20,7 @@ function(assert_report_number report key minimum maximum)
 endfunction()
 
 execute_process(
-    COMMAND "${PROGRAM}" "${SYNTHETIC}"
+    COMMAND ${PROGRAM_COMMAND} "${SYNTHETIC}"
     RESULT_VARIABLE synthetic_result
     OUTPUT_VARIABLE synthetic_output
     ERROR_VARIABLE synthetic_error
@@ -69,7 +71,7 @@ assert_report_number("${synthetic_output}"
     "annual_effective_rate_preimage" 0.123595504 0.123595507)
 
 execute_process(
-    COMMAND "${PROGRAM}" "${SYNTHETIC}" --require-rate-preimage
+    COMMAND ${PROGRAM_COMMAND} "${SYNTHETIC}" --require-rate-preimage
     RESULT_VARIABLE synthetic_rate_result
     OUTPUT_VARIABLE synthetic_rate_output
     ERROR_VARIABLE synthetic_rate_error
@@ -80,7 +82,7 @@ if(NOT synthetic_rate_result EQUAL 0)
 endif()
 
 execute_process(
-    COMMAND "${PROGRAM}" "${SYNTHETIC}" --require-expected-return
+    COMMAND ${PROGRAM_COMMAND} "${SYNTHETIC}" --require-expected-return
     RESULT_VARIABLE synthetic_return_result
     OUTPUT_VARIABLE synthetic_return_output
     ERROR_VARIABLE synthetic_return_error
@@ -91,7 +93,7 @@ if(NOT synthetic_return_result EQUAL 3)
 endif()
 
 execute_process(
-    COMMAND "${PROGRAM}" "${SYNTHETIC}" --require-observation-admission
+    COMMAND ${PROGRAM_COMMAND} "${SYNTHETIC}" --require-observation-admission
     RESULT_VARIABLE synthetic_admission_result
     OUTPUT_VARIABLE synthetic_admission_output
     ERROR_VARIABLE synthetic_admission_error
@@ -103,7 +105,7 @@ endif()
 
 foreach(public_claim IN ITEMS "${LIBERATION}" "${SOLAR}")
     execute_process(
-        COMMAND "${PROGRAM}" "${public_claim}"
+        COMMAND ${PROGRAM_COMMAND} "${public_claim}"
         RESULT_VARIABLE public_result
         OUTPUT_VARIABLE public_output
         ERROR_VARIABLE public_error
@@ -130,7 +132,7 @@ foreach(public_claim IN ITEMS "${LIBERATION}" "${SOLAR}")
     endforeach()
 
     execute_process(
-        COMMAND "${PROGRAM}" "${public_claim}"
+        COMMAND ${PROGRAM_COMMAND} "${public_claim}"
             --require-observation-admission
         RESULT_VARIABLE public_admission_result
         OUTPUT_VARIABLE public_admission_output
@@ -143,7 +145,7 @@ foreach(public_claim IN ITEMS "${LIBERATION}" "${SOLAR}")
 
 
     execute_process(
-        COMMAND "${PROGRAM}" "${public_claim}" --require-expected-return
+        COMMAND ${PROGRAM_COMMAND} "${public_claim}" --require-expected-return
         RESULT_VARIABLE public_return_result
         OUTPUT_VARIABLE public_return_output
         ERROR_VARIABLE public_return_error
@@ -155,7 +157,7 @@ foreach(public_claim IN ITEMS "${LIBERATION}" "${SOLAR}")
 endforeach()
 
 execute_process(
-    COMMAND "${PROGRAM}" "${SYNTHETIC}" --unknown-option
+    COMMAND ${PROGRAM_COMMAND} "${SYNTHETIC}" --unknown-option
     RESULT_VARIABLE bad_option_result
     OUTPUT_VARIABLE bad_option_output
     ERROR_VARIABLE bad_option_error

@@ -70,16 +70,34 @@ void print_report(const cf::PortfolioConfig& portfolio,
     const cf::CapitalStackConfig& terms,
     const cf::CapitalStackSummary& summary) {
     const std::string_view currency = portfolio.currency_label;
+    const bool asset_liability_v02 =
+        terms.model_version == cf::kCapitalStackModelVersion;
     std::cout << std::fixed << std::setprecision(6)
-              << "SYNTHETIC FULLY FUNDED CAPITAL STACK\n"
+              << "SYNTHETIC FULLY FUNDED CAPITAL STACK v"
+              << terms.model_version << "\n"
               << "Physical-scenario cash allocation only; not fair value, a "
                  "market quote, spread, rating, legal opinion, capital ruling, "
                  "offer, or recommendation.\n\n"
               << "Contract boundary\n"
-              << "  aggregate project commitment subscribed at par in month "
-                 "zero: "
+              << "  issued tranche principal and funded reserve at month zero: "
               << summary.aggregate_commitment_million << ' ' << currency
-              << " million\n"
+              << " million\n";
+    if (asset_liability_v02) {
+        std::cout
+              << "  aggregate project outlay limit (includes buyer direct cost): "
+              << summary.aggregate_project_outlay_limit_million << ' '
+              << currency << " million\n"
+              << "  aggregate contractual asset principal limit: "
+              << summary.aggregate_contractual_asset_principal_limit_million
+              << ' ' << currency << " million\n"
+              << "  acquisition and primary-funding uses draw the reserve; buyer direct costs are additional calls\n"
+              << "  contractual asset status and issued-principal cash sufficiency are separate ledgers\n"
+              << "  principal-base cash above unpaid issued principal enters the declared non-principal waterfall\n";
+    } else {
+        std::cout
+              << "  aggregate project commitment equals issued principal and reserve\n";
+    }
+    std::cout
               << "  selected underlying success participation q: "
               << summary.underlying_success_participation_fraction << '\n'
               << "  declared robust underlying NPV target: "
@@ -95,14 +113,20 @@ void print_report(const cf::PortfolioConfig& portfolio,
               << summary.selected_underlying_target_gap_million << ' '
               << currency << " million\n"
               << "  subscription reserve: zero-yield and assumed lossless\n"
-              << "  unused commitment: returned only at horizon\n"
-              << "  project draws: paid inside the prefunded reserve\n"
+              << "  unused commitment: returned only at horizon\n";
+    if (asset_liability_v02) {
+        std::cout
+            << "  acquisition and primary-funding uses draw the prefunded reserve; buyer direct costs do not\n";
+    } else {
+        std::cout << "  project draws: paid inside the prefunded reserve\n";
+    }
+    std::cout
               << "  pool costs: extra pro-rata calls, not tranche principal\n"
               << "  principal cash priority: most senior first\n"
-              << "  resolved principal loss at horizon priority: first-loss first\n"
+              << "  horizon issued-principal cash shortfall is layered first-loss first\n"
               << "  non-principal cash: senior/intermediate lifetime caps, "
                  "then residual\n"
-              << "  premium or discount to par: none\n\n";
+              << "  fair value or market-price conclusion: none\n\n";
 
     std::cout << "Pool economics and prefunding\n"
               << "  metric | minimum | central | maximum | unit\n";
@@ -115,6 +139,17 @@ void print_report(const cf::PortfolioConfig& portfolio,
     print_range("prefunding drag",
         summary.expected_prefunding_drag_npv_million,
         std::string(currency) + " million");
+    print_range("contractual asset principal loss",
+        summary.expected_contractual_asset_principal_loss_million,
+        std::string(currency) + " million");
+    if (asset_liability_v02) {
+        print_range("contractual asset outstanding principal",
+            summary.expected_contractual_asset_outstanding_principal_million,
+            std::string(currency) + " million");
+        print_range("issued-principal cash shortfall at horizon",
+            summary.expected_issued_principal_cash_shortfall_million,
+            std::string(currency) + " million");
+    }
     std::cout << '\n';
 
     for (const cf::CapitalStackTrancheSummary& tranche : summary.tranches) {
@@ -145,6 +180,9 @@ void print_report(const cf::PortfolioConfig& portfolio,
         print_range("expected contributions",
             tranche.expected_contributions_million,
             std::string(currency) + " million");
+        print_range("expected buyer direct-cost calls",
+            tranche.expected_buyer_direct_cost_calls_million,
+            std::string(currency) + " million");
         print_range("expected underlying principal cash",
             tranche.expected_underlying_principal_cash_distribution_million,
             std::string(currency) + " million");
@@ -160,15 +198,21 @@ void print_report(const cf::PortfolioConfig& portfolio,
         print_range("expected total distributions",
             tranche.expected_total_distributions_million,
             std::string(currency) + " million");
-        print_range("expected resolved principal loss at horizon",
-            tranche.expected_realized_principal_loss_million,
-            std::string(currency) + " million");
-        print_range("expected resolved principal loss rate at horizon",
-            tranche.expected_realized_principal_loss_fraction,
-            "percent of tranche notional", 100.0);
-        print_range("expected unresolved principal exposure",
-            tranche.expected_unresolved_principal_exposure_million,
-            std::string(currency) + " million");
+        if (asset_liability_v02) {
+            print_range("expected principal cash shortfall at horizon",
+                tranche.expected_principal_cash_shortfall_million,
+                std::string(currency) + " million");
+        } else {
+            print_range("expected resolved principal loss at horizon",
+                tranche.expected_realized_principal_loss_million,
+                std::string(currency) + " million");
+            print_range("expected resolved principal loss rate at horizon",
+                tranche.expected_realized_principal_loss_fraction,
+                "percent of tranche notional", 100.0);
+            print_range("expected unresolved principal exposure",
+                tranche.expected_unresolved_principal_exposure_million,
+                std::string(currency) + " million");
+        }
         print_range("expected all-in cash shortfall",
             tranche.expected_all_in_cash_shortfall_million,
             std::string(currency) + " million");
@@ -179,18 +223,36 @@ void print_report(const cf::PortfolioConfig& portfolio,
             tranche.expected_scenario_cash_multiple, "times");
         print_range("expected pathwise net-return fraction",
             tranche.expected_scenario_net_return_fraction, "percent", 100.0);
-        print_range("principal impairment probability",
-            tranche.principal_impairment_probability, "percent", 100.0);
-        print_range("principal exhaustion probability",
-            tranche.principal_exhaustion_probability, "percent", 100.0);
+        if (asset_liability_v02) {
+            print_range("principal cash-shortfall probability",
+                tranche.principal_cash_shortfall_probability,
+                "percent", 100.0);
+            print_range("full principal cash-shortfall probability",
+                tranche.full_principal_cash_shortfall_probability,
+                "percent", 100.0);
+        } else {
+            print_range("principal impairment probability",
+                tranche.principal_impairment_probability, "percent", 100.0);
+            print_range("principal exhaustion probability",
+                tranche.principal_exhaustion_probability, "percent", 100.0);
+        }
         print_range("negative NPV probability",
             tranche.negative_npv_probability, "percent", 100.0);
-        print_range("principal loss ES95",
-            tranche.principal_loss_expected_shortfall_95_million,
-            std::string(currency) + " million");
-        print_range("principal loss ES99",
-            tranche.principal_loss_expected_shortfall_99_million,
-            std::string(currency) + " million");
+        if (asset_liability_v02) {
+            print_range("principal cash-shortfall ES95",
+                tranche.principal_cash_shortfall_expected_shortfall_95_million,
+                std::string(currency) + " million");
+            print_range("principal cash-shortfall ES99",
+                tranche.principal_cash_shortfall_expected_shortfall_99_million,
+                std::string(currency) + " million");
+        } else {
+            print_range("principal loss ES95",
+                tranche.principal_loss_expected_shortfall_95_million,
+                std::string(currency) + " million");
+            print_range("principal loss ES99",
+                tranche.principal_loss_expected_shortfall_99_million,
+                std::string(currency) + " million");
+        }
         print_range("NPV shortfall ES95",
             tranche.npv_shortfall_expected_shortfall_95_million,
             std::string(currency) + " million");
@@ -211,11 +273,37 @@ void print_report(const cf::PortfolioConfig& portfolio,
         std::cout << '\n';
     }
 
+    if (asset_liability_v02) {
+        std::cout
+            << "Scenario asset/liability audit\n"
+            << "  scenario | principal-limit capacity minus funding uses | "
+               "contractual asset loss L | contractual asset outstanding O | "
+               "issued-principal cash shortfall Q\n";
+        for (const cf::CapitalStackScenarioResult& scenario :
+             summary.scenarios) {
+            std::cout << "  " << scenario.scenario_id << " | "
+                      << scenario
+                             .contractual_principal_limit_minus_funding_uses_million
+                      << " | "
+                      << scenario.contractual_asset_principal_loss_million
+                      << " | "
+                      << scenario
+                             .contractual_asset_outstanding_principal_million
+                      << " | "
+                      << scenario.issued_principal_cash_shortfall_million
+                      << '\n';
+        }
+        std::cout << "  The first numeric column is a limit-capacity diagnostic, not a price, discount, premium, or fair value.\n\n";
+    }
     std::cout << "Scenario allocation audit\n"
               << "  scenario | tranche | contributions | project principal | "
                  "reserve return | principal cash | non-principal cash | "
-                 "distributions | resolved loss at horizon | "
-                 "outstanding | NPV | cash multiple\n";
+                 "distributions | ";
+    if (asset_liability_v02) {
+        std::cout << "principal cash shortfall at horizon | NPV | cash multiple\n";
+    } else {
+        std::cout << "resolved loss at horizon | outstanding | NPV | cash multiple\n";
+    }
     for (const cf::CapitalStackScenarioResult& scenario : summary.scenarios) {
         for (const cf::CapitalStackTrancheScenarioResult& tranche :
              scenario.tranches) {
@@ -228,10 +316,15 @@ void print_report(const cf::PortfolioConfig& portfolio,
                       << " | "
                       << tranche.principal_cash_distribution_million << " | "
                       << tranche.nonprincipal_cash_distribution_million
-                      << " | " << tranche.total_distributions_million << " | "
-                      << tranche.realized_principal_loss_million << " | "
-                      << tranche.unresolved_principal_exposure_million << " | "
-                      << tranche.npv_at_tranche_hurdle_million << " | "
+                      << " | " << tranche.total_distributions_million << " | ";
+            if (asset_liability_v02) {
+                std::cout << tranche.principal_cash_shortfall_million << " | ";
+            } else {
+                std::cout << tranche.realized_principal_loss_million << " | "
+                          << tranche.unresolved_principal_exposure_million
+                          << " | ";
+            }
+            std::cout << tranche.npv_at_tranche_hurdle_million << " | "
                       << tranche.cash_multiple << '\n';
         }
     }
@@ -253,22 +346,40 @@ void print_report(const cf::PortfolioConfig& portfolio,
               << "  maximum pool-cost call error: "
               << summary.maximum_pool_cost_call_reconciliation_error_million
               << ' ' << currency << " million\n"
+              << "  maximum buyer direct-cost call error: "
+              << summary.maximum_buyer_direct_cost_call_reconciliation_error_million
+              << ' ' << currency << " million\n"
               << "  maximum principal distribution error: "
               << summary.maximum_principal_distribution_reconciliation_error_million
+              << ' ' << currency << " million\n"
+              << "  maximum contractual-principal surplus error: "
+              << summary.maximum_contractual_principal_surplus_reconciliation_error_million
+              << ' ' << currency << " million\n"
+              << "  maximum unused-reserve surplus error: "
+              << summary.maximum_unused_reserve_surplus_reconciliation_error_million
               << ' ' << currency << " million\n"
               << "  maximum non-principal distribution error: "
               << summary.maximum_nonprincipal_distribution_reconciliation_error_million
               << ' ' << currency << " million\n"
+              << "  maximum contractual asset-loss preservation error: "
+              << summary.maximum_contractual_asset_loss_preservation_error_million
+              << ' ' << currency << " million\n"
+              << "  maximum contractual outstanding-principal preservation error: "
+              << summary.maximum_contractual_asset_outstanding_preservation_error_million
+              << ' ' << currency << " million\n"
               << "  maximum priority non-principal cap violation: "
               << summary.maximum_priority_nonprincipal_cap_violation_million
-              << ' ' << currency << " million\n"
-              << "  maximum resolved-loss error: "
-              << summary.maximum_realized_loss_reconciliation_error_million
-              << ' ' << currency << " million\n"
-              << "  maximum unresolved exposure error: "
-              << summary.maximum_unresolved_exposure_reconciliation_error_million
-              << ' ' << currency << " million\n"
-              << "  maximum nominal net-cash error: "
+              << ' ' << currency << " million\n";
+    if (!asset_liability_v02) {
+        std::cout
+            << "  maximum v0.1 resolved-loss layering error: "
+            << summary.maximum_realized_loss_reconciliation_error_million
+            << ' ' << currency << " million\n"
+            << "  maximum v0.1 continuing-exposure layering error: "
+            << summary.maximum_unresolved_exposure_reconciliation_error_million
+            << ' ' << currency << " million\n";
+    }
+    std::cout << "  maximum nominal net-cash error: "
               << summary.maximum_nominal_net_cash_reconciliation_error_million
               << ' ' << currency << " million\n"
               << "  maximum stack NPV error: "
@@ -280,11 +391,16 @@ void print_report(const cf::PortfolioConfig& portfolio,
               << "  maximum endpoint probability error: "
               << summary.maximum_endpoint_probability_error << "\n\n";
 
-    std::cout << "Interpretation boundary\n"
-              << "  Lower senior loss is redistribution, not value creation. "
-                 "All tranche distributions reconcile to the fixed-q pool's "
-                 "actual principal and non-principal cash plus return of the "
-                 "investors' own unused reserve.\n"
+    std::cout << "Interpretation boundary\n";
+    if (asset_liability_v02) {
+        std::cout
+            << "  Senior-first principal cash and first-loss horizon-shortfall layering redistribute fixed pool cash; they do not create value or assign asset-loss causality.\n"
+            << "  Simultaneous asset-principal cash and reserve return use an equal-seniority pro-rata source memo. That memo is a convention for fungible cash, not observed provenance.\n";
+    } else {
+        std::cout
+            << "  Lower senior loss is redistribution, not value creation.\n";
+    }
+    std::cout << "  All tranche distributions reconcile to the fixed-q pool's actual principal and non-principal cash plus return of the investors' own unused reserve.\n"
               << "  Priority caps are allocation ceilings, not coupons, PIK, "
                  "guaranteed returns, or new project cash. Unused cap expires.\n"
               << "  Expected scenario cash multiple is E[pathwise multiple], "
@@ -296,7 +412,7 @@ void print_report(const cf::PortfolioConfig& portfolio,
               << "  The zero-yield reserve is an explicit synthetic assumption. "
                  "Custody loss, reserve yield, legal enforceability, tax, "
                  "capital-call default, rating, and market price are outside "
-                 "version 0.1.\n"
+                 "the selected capital-stack version.\n"
               << "  Source note: " << terms.source_note << '\n';
 }
 
@@ -405,6 +521,8 @@ void print_event_polytope_stack_report(const cf::PortfolioConfig& portfolio,
     const cf::CapitalStackConfig& terms,
     const cf::CapitalStackProbabilityPolytopeSummary& summary) {
     const std::string money_unit = portfolio.currency_label + " million";
+    const bool asset_liability_v02 =
+        terms.model_version == cf::kCapitalStackModelVersion;
     std::cout << std::fixed << std::setprecision(6)
               << "SYNTHETIC EVENT-CONSTRAINED FULLY FUNDED CAPITAL STACK\n"
               << "Fixed cash-path allocation under a bounded physical-P "
@@ -475,6 +593,17 @@ void print_event_polytope_stack_report(const cf::PortfolioConfig& portfolio,
         money_unit);
     print_polytope_range("prefunding drag",
         summary.expected_prefunding_drag_npv_million, money_unit);
+    print_polytope_range("contractual asset principal loss",
+        summary.expected_contractual_asset_principal_loss_million,
+        money_unit);
+    if (asset_liability_v02) {
+        print_polytope_range("contractual asset outstanding principal",
+            summary.expected_contractual_asset_outstanding_principal_million,
+            money_unit);
+        print_polytope_range("issued-principal cash shortfall at horizon",
+            summary.expected_issued_principal_cash_shortfall_million,
+            money_unit);
+    }
     std::cout << '\n';
 
     for (const cf::CapitalStackProbabilityPolytopeTrancheSummary& tranche :
@@ -491,20 +620,43 @@ void print_event_polytope_stack_report(const cf::PortfolioConfig& portfolio,
                      "event measure: "
                   << (tranche.robust_expected_npv_meets_hurdle ? "yes" : "no")
                   << "\n  metric | minimum | central | maximum | unit\n";
-        print_polytope_range("expected resolved principal loss at horizon",
-            tranche.expected_realized_principal_loss_million, money_unit);
-        print_polytope_range("principal impairment probability",
-            tranche.principal_impairment_probability, "percent", 100.0);
-        print_polytope_range("principal exhaustion probability",
-            tranche.principal_exhaustion_probability, "percent", 100.0);
+        if (asset_liability_v02) {
+            print_polytope_range("expected principal cash shortfall at horizon",
+                tranche.expected_principal_cash_shortfall_million,
+                money_unit);
+            print_polytope_range("principal cash-shortfall probability",
+                tranche.principal_cash_shortfall_probability,
+                "percent", 100.0);
+            print_polytope_range("full principal cash-shortfall probability",
+                tranche.full_principal_cash_shortfall_probability,
+                "percent", 100.0);
+        } else {
+            print_polytope_range("expected resolved principal loss at horizon",
+                tranche.expected_realized_principal_loss_million, money_unit);
+            print_polytope_range("principal impairment probability",
+                tranche.principal_impairment_probability, "percent", 100.0);
+            print_polytope_range("principal exhaustion probability",
+                tranche.principal_exhaustion_probability, "percent", 100.0);
+        }
         print_polytope_range("expected NPV at tranche hurdle",
             tranche.expected_npv_at_tranche_hurdle_million, money_unit);
-        print_polytope_tail_range("principal loss ES95",
-            tranche.principal_loss_expected_shortfall_95_million,
-            money_unit);
-        print_polytope_tail_range("principal loss ES99",
-            tranche.principal_loss_expected_shortfall_99_million,
-            money_unit);
+        if (asset_liability_v02) {
+            print_polytope_tail_range("principal cash-shortfall ES95",
+                tranche
+                    .principal_cash_shortfall_expected_shortfall_95_million,
+                money_unit);
+            print_polytope_tail_range("principal cash-shortfall ES99",
+                tranche
+                    .principal_cash_shortfall_expected_shortfall_99_million,
+                money_unit);
+        } else {
+            print_polytope_tail_range("principal loss ES95",
+                tranche.principal_loss_expected_shortfall_95_million,
+                money_unit);
+            print_polytope_tail_range("principal loss ES99",
+                tranche.principal_loss_expected_shortfall_99_million,
+                money_unit);
+        }
         print_polytope_tail_range("NPV shortfall ES95",
             tranche.npv_shortfall_expected_shortfall_95_million,
             money_unit);
@@ -541,9 +693,18 @@ void print_event_polytope_stack_report(const cf::PortfolioConfig& portfolio,
         print_linear_endpoint(tranche.tranche_id + " expected NPV", "minimum",
             tranche.expected_npv_at_tranche_hurdle_million.minimum,
             summary.scenario_probabilities);
-        print_tail_endpoint(tranche.tranche_id + " principal loss ES95",
-            tranche.principal_loss_expected_shortfall_95_million.maximum,
-            summary.scenario_probabilities);
+        if (asset_liability_v02) {
+            print_tail_endpoint(
+                tranche.tranche_id + " principal cash-shortfall ES95",
+                tranche
+                    .principal_cash_shortfall_expected_shortfall_95_million
+                    .maximum,
+                summary.scenario_probabilities);
+        } else {
+            print_tail_endpoint(tranche.tranche_id + " principal loss ES95",
+                tranche.principal_loss_expected_shortfall_95_million.maximum,
+                summary.scenario_probabilities);
+        }
         if (tranche.principal_cash_weighted_average_life_years.has_value()) {
             const cf::CapitalStackProbabilityPolytopeWalRange& wal =
                 *tranche.principal_cash_weighted_average_life_years;
@@ -614,10 +775,17 @@ void print_event_polytope_stack_report(const cf::PortfolioConfig& portfolio,
         << '\n'
         << "  gross_project_principal_loss_is_changed="
         << (summary.gross_project_principal_loss_is_changed ? "true" : "false")
-        << '\n'
-        << "  The structure redistributes fixed pool cash and loss; it does "
-           "not create project value. Physical-P expected NPV and ES are not "
-           "promised investor returns.\n"
+        << '\n';
+    if (asset_liability_v02) {
+        std::cout
+            << "  The structure redistributes fixed pool cash and horizon issued-principal cash shortfall Q; it does not create project value or assign pooled asset-loss causality.\n"
+            << "  Simultaneous asset-principal cash and reserve return use an equal-seniority pro-rata source memo, not observed provenance.\n";
+    } else {
+        std::cout
+            << "  The structure redistributes fixed pool cash and v0.1 loss layers; it does not create project value.\n";
+    }
+    std::cout
+        << "  Physical-P expected NPV and ES are not promised investor returns.\n"
         << "  Separate row endpoints can require different feasible measures "
            "and must not be assembled into one scenario. A reported witness "
            "may be nonunique.\n"

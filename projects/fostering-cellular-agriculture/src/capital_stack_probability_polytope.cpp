@@ -20,6 +20,22 @@ constexpr double kWalMinimumExpectedPrincipalCashMillion = 1.0e-10;
 constexpr std::size_t kMaximumWalIterations = 128U;
 constexpr double kWalAbsoluteObjectiveTolerance = 1.0e-9;
 constexpr double kWalAbsoluteRatioTolerance = 1.0e-12;
+constexpr double kEventAbsoluteTolerance = 1.0e-9;
+constexpr double kEventRelativeTolerance =
+    16.0 * std::numeric_limits<double>::epsilon();
+
+[[nodiscard]] double event_tolerance(double scale) noexcept {
+    return kEventAbsoluteTolerance +
+        kEventRelativeTolerance * std::max(1.0, std::abs(scale));
+}
+
+[[nodiscard]] bool is_material_positive(double value, double scale) noexcept {
+    return value > event_tolerance(scale);
+}
+
+[[nodiscard]] bool is_material_negative(double value, double scale) noexcept {
+    return value < -event_tolerance(scale);
+}
 
 class CompensatedSum {
 public:
@@ -52,13 +68,13 @@ private:
     return converted;
 }
 
-// The v0.1 capital-stack evaluator is used only as the validated deterministic
-// cash-path ledger. Its private ambiguity bounds deliberately carry no
+// The deterministic v0.1 or v0.2 capital-stack evaluator is used only as the
+// validated cash-path ledger. Its private ambiguity bounds deliberately carry no
 // financial meaning: [0,1] is guaranteed aggregate-feasible even when
 // configured central doubles sum just above or below one. The central weights
-// are copied from the portfolio, so the v0.1 checksum normalizes the same raw
-// values on both sides. None of the private evaluator's risk ranges, endpoint
-// witnesses, WAL results, or target conclusions are consumed by v0.2.
+// are copied from the portfolio, so its checksum normalizes the same raw values
+// on both sides. None of the private evaluator's probability projections,
+// endpoint witnesses, WAL results, or target conclusions are consumed here.
 [[nodiscard]] PortfolioAmbiguityConfig make_private_ledger_ambiguity(
     const PortfolioConfig& portfolio) {
     std::vector<const JointScenario*> ordered;
@@ -496,8 +512,16 @@ void copy_path_controls(const CapitalStackSummary& source,
         source.maximum_subscription_reconciliation_error_million;
     destination.maximum_pool_cost_call_reconciliation_error_million =
         source.maximum_pool_cost_call_reconciliation_error_million;
+    destination.maximum_buyer_direct_cost_call_reconciliation_error_million =
+        source.maximum_buyer_direct_cost_call_reconciliation_error_million;
     destination.maximum_principal_distribution_reconciliation_error_million =
         source.maximum_principal_distribution_reconciliation_error_million;
+    destination
+        .maximum_contractual_principal_surplus_reconciliation_error_million =
+        source
+            .maximum_contractual_principal_surplus_reconciliation_error_million;
+    destination.maximum_unused_reserve_surplus_reconciliation_error_million =
+        source.maximum_unused_reserve_surplus_reconciliation_error_million;
     destination
         .maximum_nonprincipal_distribution_reconciliation_error_million =
         source.maximum_nonprincipal_distribution_reconciliation_error_million;
@@ -505,6 +529,12 @@ void copy_path_controls(const CapitalStackSummary& source,
         source.maximum_priority_nonprincipal_cap_violation_million;
     destination.maximum_realized_loss_reconciliation_error_million =
         source.maximum_realized_loss_reconciliation_error_million;
+    destination.maximum_contractual_asset_loss_preservation_error_million =
+        source.maximum_contractual_asset_loss_preservation_error_million;
+    destination
+        .maximum_contractual_asset_outstanding_preservation_error_million =
+        source
+            .maximum_contractual_asset_outstanding_preservation_error_million;
     destination.maximum_unresolved_exposure_reconciliation_error_million =
         source.maximum_unresolved_exposure_reconciliation_error_million;
     destination.maximum_nominal_net_cash_reconciliation_error_million =
@@ -547,10 +577,19 @@ evaluate_capital_stack_probability_polytope(
         portfolio, locked, participation, stack);
 
     CapitalStackProbabilityPolytopeSummary summary;
+    summary.model_version = deterministic.model_version;
+    summary.uses_explicit_asset_liability_accounting =
+        deterministic.uses_explicit_asset_liability_accounting;
+    summary.legacy_v01_loss_layering_metrics_are_applicable =
+        deterministic.legacy_v01_loss_layering_metrics_are_applicable;
     summary.underlying_success_participation_fraction =
         stack.underlying_success_participation_fraction;
     summary.underlying_target_worst_expected_npv_million =
         participation.target_worst_expected_npv_million;
+    summary.aggregate_project_outlay_limit_million =
+        deterministic.aggregate_project_outlay_limit_million;
+    summary.aggregate_contractual_asset_principal_limit_million =
+        deterministic.aggregate_contractual_asset_principal_limit_million;
     summary.aggregate_commitment_million =
         deterministic.aggregate_commitment_million;
     summary.scenarios = deterministic.scenarios;
@@ -592,6 +631,27 @@ evaluate_capital_stack_probability_polytope(
     update_linear_audits(prefunding_drag, summary);
     summary.expected_prefunding_drag_npv_million =
         prefunding_drag.expectation;
+    const auto contractual_asset_loss = project_metric(projector,
+        summary.scenarios, [](const CapitalStackScenarioResult& scenario) {
+            return scenario.contractual_asset_principal_loss_million;
+        });
+    update_linear_audits(contractual_asset_loss, summary);
+    summary.expected_contractual_asset_principal_loss_million =
+        contractual_asset_loss.expectation;
+    const auto contractual_asset_outstanding = project_metric(projector,
+        summary.scenarios, [](const CapitalStackScenarioResult& scenario) {
+            return scenario.contractual_asset_outstanding_principal_million;
+        });
+    update_linear_audits(contractual_asset_outstanding, summary);
+    summary.expected_contractual_asset_outstanding_principal_million =
+        contractual_asset_outstanding.expectation;
+    const auto issued_principal_shortfall = project_metric(projector,
+        summary.scenarios, [](const CapitalStackScenarioResult& scenario) {
+            return scenario.issued_principal_cash_shortfall_million;
+        });
+    update_linear_audits(issued_principal_shortfall, summary);
+    summary.expected_issued_principal_cash_shortfall_million =
+        issued_principal_shortfall.expectation;
 
     summary.tranches.reserve(stack.tranches.size());
     for (std::size_t index = 0U; index < stack.tranches.size(); ++index) {
@@ -607,6 +667,8 @@ evaluate_capital_stack_probability_polytope(
         tranche.annual_physical_hurdle_rate =
             term.annual_physical_hurdle_rate;
         tranche.is_first_loss_residual = term.is_first_loss_residual;
+        tranche.legacy_v01_loss_layering_metrics_are_applicable =
+            summary.legacy_v01_loss_layering_metrics_are_applicable;
 
         const auto project = [&](auto selector) {
             return project_metric(projector, summary.scenarios,
@@ -623,6 +685,10 @@ evaluate_capital_stack_probability_polytope(
         assign(tranche.expected_contributions_million,
             project([](const CapitalStackTrancheScenarioResult& value) {
                 return value.total_contributions_million;
+            }));
+        assign(tranche.expected_buyer_direct_cost_calls_million,
+            project([](const CapitalStackTrancheScenarioResult& value) {
+                return value.pro_rata_buyer_direct_cost_calls_million;
             }));
         assign(
             tranche
@@ -646,19 +712,21 @@ evaluate_capital_stack_probability_polytope(
             project([](const CapitalStackTrancheScenarioResult& value) {
                 return value.total_distributions_million;
             }));
-        assign(tranche.expected_realized_principal_loss_million,
-            project([](const CapitalStackTrancheScenarioResult& value) {
-                return value.realized_principal_loss_million;
-            }));
-        assign(tranche.expected_realized_principal_loss_fraction,
-            project([](const CapitalStackTrancheScenarioResult& value) {
-                return value.realized_principal_loss_million /
-                    value.notional_million;
-            }));
-        assign(tranche.expected_unresolved_principal_exposure_million,
-            project([](const CapitalStackTrancheScenarioResult& value) {
-                return value.unresolved_principal_exposure_million;
-            }));
+        if (tranche.legacy_v01_loss_layering_metrics_are_applicable) {
+            assign(tranche.expected_realized_principal_loss_million,
+                project([](const CapitalStackTrancheScenarioResult& value) {
+                    return value.realized_principal_loss_million;
+                }));
+            assign(tranche.expected_realized_principal_loss_fraction,
+                project([](const CapitalStackTrancheScenarioResult& value) {
+                    return value.realized_principal_loss_million /
+                        value.notional_million;
+                }));
+            assign(tranche.expected_unresolved_principal_exposure_million,
+                project([](const CapitalStackTrancheScenarioResult& value) {
+                    return value.unresolved_principal_exposure_million;
+                }));
+        }
         assign(tranche.expected_principal_cash_shortfall_million,
             project([](const CapitalStackTrancheScenarioResult& value) {
                 return value.principal_cash_shortfall_million;
@@ -679,40 +747,90 @@ evaluate_capital_stack_probability_polytope(
             project([](const CapitalStackTrancheScenarioResult& value) {
                 return value.net_return_fraction;
             }));
-        assign(tranche.principal_impairment_probability,
+        if (tranche.legacy_v01_loss_layering_metrics_are_applicable) {
+            assign(tranche.principal_impairment_probability,
+                project([](const CapitalStackTrancheScenarioResult& value) {
+                    return is_material_positive(
+                               value.realized_principal_loss_million,
+                               value.notional_million)
+                        ? 1.0
+                        : 0.0;
+                }));
+            assign(tranche.principal_exhaustion_probability,
+                project([](const CapitalStackTrancheScenarioResult& value) {
+                    return value.realized_principal_loss_million >=
+                            value.notional_million -
+                                event_tolerance(value.notional_million)
+                        ? 1.0
+                        : 0.0;
+                }));
+        }
+        assign(tranche.principal_cash_shortfall_probability,
             project([](const CapitalStackTrancheScenarioResult& value) {
-                return value.realized_principal_loss_million > 0.0 ? 1.0 : 0.0;
+                return is_material_positive(
+                           value.principal_cash_shortfall_million,
+                           value.notional_million)
+                    ? 1.0
+                    : 0.0;
             }));
-        assign(tranche.principal_exhaustion_probability,
+        assign(tranche.full_principal_cash_shortfall_probability,
             project([](const CapitalStackTrancheScenarioResult& value) {
-                return value.realized_principal_loss_million >=
-                        value.notional_million
+                return value.principal_cash_shortfall_million >=
+                        value.notional_million -
+                            event_tolerance(value.notional_million)
                     ? 1.0
                     : 0.0;
             }));
         assign(tranche.negative_npv_probability,
             project([](const CapitalStackTrancheScenarioResult& value) {
-                return value.npv_at_tranche_hurdle_million < 0.0 ? 1.0 : 0.0;
+                return is_material_negative(value.npv_at_tranche_hurdle_million,
+                           value.total_contributions_million)
+                    ? 1.0
+                    : 0.0;
             }));
 
-        tranche.principal_loss_expected_shortfall_95_million = project_es(
-            projector, summary.scenarios,
-            [index](const CapitalStackScenarioResult& scenario) {
-                return scenario.tranches[index]
-                    .realized_principal_loss_million;
-            },
-            0.05);
+        if (tranche.legacy_v01_loss_layering_metrics_are_applicable) {
+            tranche.principal_loss_expected_shortfall_95_million = project_es(
+                projector, summary.scenarios,
+                [index](const CapitalStackScenarioResult& scenario) {
+                    return scenario.tranches[index]
+                        .realized_principal_loss_million;
+                },
+                0.05);
+            update_tail_audits(
+                tranche.principal_loss_expected_shortfall_95_million,
+                summary);
+            tranche.principal_loss_expected_shortfall_99_million = project_es(
+                projector, summary.scenarios,
+                [index](const CapitalStackScenarioResult& scenario) {
+                    return scenario.tranches[index]
+                        .realized_principal_loss_million;
+                },
+                0.01);
+            update_tail_audits(
+                tranche.principal_loss_expected_shortfall_99_million,
+                summary);
+        }
+        tranche.principal_cash_shortfall_expected_shortfall_95_million =
+            project_es(projector, summary.scenarios,
+                [index](const CapitalStackScenarioResult& scenario) {
+                    return scenario.tranches[index]
+                        .principal_cash_shortfall_million;
+                },
+                0.05);
         update_tail_audits(
-            tranche.principal_loss_expected_shortfall_95_million, summary);
-        tranche.principal_loss_expected_shortfall_99_million = project_es(
-            projector, summary.scenarios,
-            [index](const CapitalStackScenarioResult& scenario) {
-                return scenario.tranches[index]
-                    .realized_principal_loss_million;
-            },
-            0.01);
+            tranche.principal_cash_shortfall_expected_shortfall_95_million,
+            summary);
+        tranche.principal_cash_shortfall_expected_shortfall_99_million =
+            project_es(projector, summary.scenarios,
+                [index](const CapitalStackScenarioResult& scenario) {
+                    return scenario.tranches[index]
+                        .principal_cash_shortfall_million;
+                },
+                0.01);
         update_tail_audits(
-            tranche.principal_loss_expected_shortfall_99_million, summary);
+            tranche.principal_cash_shortfall_expected_shortfall_99_million,
+            summary);
         tranche.npv_shortfall_expected_shortfall_95_million = project_es(
             projector, summary.scenarios,
             [index](const CapitalStackScenarioResult& scenario) {

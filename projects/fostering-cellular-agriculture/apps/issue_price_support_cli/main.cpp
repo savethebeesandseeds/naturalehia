@@ -42,6 +42,11 @@ void print_usage(std::string_view program) {
     return std::abs(value) < 0.5e-6 ? 0.0 : value;
 }
 
+[[nodiscard]] bool uses_principal_cash_shortfall_v02(
+    const cf::CapitalStackConfig& base_stack) noexcept {
+    return base_stack.model_version == cf::kCapitalStackModelVersion;
+}
+
 void print_index_list(const std::vector<std::size_t>& indices) {
     if (indices.empty()) {
         std::cout << "none";
@@ -430,28 +435,44 @@ void print_reference_metrics(
 
 void print_principal_risk(
     const cf::RobustIssuePriceSupportPrincipalRiskMetrics& risk,
-    std::string_view currency) {
+    std::string_view currency, bool cash_shortfall_v02) {
     const std::string money = std::string(currency) + " million";
-    std::cout << "  Fixed future-cash physical principal risk\n"
+    std::cout
+              << (cash_shortfall_v02
+                      ? "  Fixed future-cash physical issued-principal shortfall risk\n"
+                      : "  Fixed future-cash physical principal risk\n")
               << "  contractual market principal notional M: "
               << risk.contractual_market_notional_million << ' ' << money
               << '\n';
     print_range("expected principal cash distribution",
         risk.expected_principal_cash_distribution_million, money);
-    print_range("expected principal-loss fraction",
+    print_range(cash_shortfall_v02
+            ? "expected issued-principal cash shortfall Q fraction"
+            : "expected principal-loss fraction",
         risk.expected_principal_loss_fraction, "percent of M", 100.0);
-    print_tail_range(
-        "principal-loss ES95", risk.principal_loss_es95_million, money);
-    print_tail_range(
-        "principal-loss ES99", risk.principal_loss_es99_million, money);
+    print_tail_range(cash_shortfall_v02
+            ? "issued-principal cash shortfall Q ES95"
+            : "principal-loss ES95",
+        risk.principal_loss_es95_million, money);
+    print_tail_range(cash_shortfall_v02
+            ? "issued-principal cash shortfall Q ES99"
+            : "principal-loss ES99",
+        risk.principal_loss_es99_million, money);
     std::cout
-        << "  worst principal-loss ES95 fraction: "
+        << "  "
+        << (cash_shortfall_v02
+                ? "worst issued-principal cash shortfall Q ES95 fraction: "
+                : "worst principal-loss ES95 fraction: ")
         << risk.worst_principal_loss_es95_fraction * 100.0
-        << " percent of M\n"
-        << "  worst principal-loss ES99 fraction: "
+        << " percent of M\n  "
+        << (cash_shortfall_v02
+                ? "worst issued-principal cash shortfall Q ES99 fraction: "
+                : "worst principal-loss ES99 fraction: ")
         << risk.worst_principal_loss_es99_fraction * 100.0
         << " percent of M\n";
-    print_range("principal impairment probability",
+    print_range(cash_shortfall_v02
+            ? "issued-principal cash shortfall probability Pr[Q>0]"
+            : "principal impairment probability",
         risk.principal_impairment_probability, "percent", 100.0);
     if (risk.principal_cash_wal_years.has_value()) {
         const auto& wal = *risk.principal_cash_wal_years;
@@ -533,7 +554,7 @@ void print_case_audit(const cf::RobustIssuePriceSupportCaseAudit& audit,
 
 void print_case_witnesses(std::size_t index,
     const cf::RobustIssuePriceSupportCaseResult& result,
-    std::string_view currency) {
+    std::string_view currency, bool cash_shortfall_v02) {
     const auto& scenarios =
         result.principal_risk.principal_loss_es95_million
             .scenario_probabilities;
@@ -542,14 +563,22 @@ void print_case_witnesses(std::size_t index,
     print_range_witnesses(index, "market expected principal cash",
         result.principal_risk.expected_principal_cash_distribution_million,
         scenarios);
-    print_range_witnesses(index, "market expected principal-loss fraction",
+    print_range_witnesses(index, cash_shortfall_v02
+            ? "market expected issued-principal cash shortfall Q fraction"
+            : "market expected principal-loss fraction",
         result.principal_risk.expected_principal_loss_fraction, scenarios);
-    print_range_witnesses(index, "market principal impairment probability",
+    print_range_witnesses(index, cash_shortfall_v02
+            ? "market issued-principal cash shortfall probability Pr[Q>0]"
+            : "market principal impairment probability",
         result.principal_risk.principal_impairment_probability, scenarios);
-    print_tail_witnesses(index, "market principal-loss ES95",
+    print_tail_witnesses(index, cash_shortfall_v02
+            ? "market issued-principal cash shortfall Q ES95"
+            : "market principal-loss ES95",
         result.principal_risk.principal_loss_es95_million, scenarios,
         currency);
-    print_tail_witnesses(index, "market principal-loss ES99",
+    print_tail_witnesses(index, cash_shortfall_v02
+            ? "market issued-principal cash shortfall Q ES99"
+            : "market principal-loss ES99",
         result.principal_risk.principal_loss_es99_million, scenarios,
         currency);
     if (result.principal_risk.principal_cash_wal_years.has_value()) {
@@ -580,7 +609,7 @@ void print_case_witnesses(std::size_t index,
 
 void print_hurdle_case(std::size_t index,
     const cf::RobustIssuePriceSupportCaseResult& result,
-    std::string_view currency) {
+    std::string_view currency, bool cash_shortfall_v02) {
     const std::string money = std::string(currency) + " million";
     std::cout
         << "Hurdle case " << index << " | id=" << result.case_id
@@ -651,13 +680,14 @@ void print_hurdle_case(std::size_t index,
                "applicable (the record is evidence-only for numerical "
                "purposes)\n";
     }
-    print_principal_risk(result.principal_risk, currency);
+    print_principal_risk(
+        result.principal_risk, currency, cash_shortfall_v02);
     print_case_audit(result.audit, currency);
     std::cout
         << "  Endpoint witness ledger for this hurdle\n"
         << "  Each row has its own optimized physical probability measure; "
            "different rows are not one combined stress.\n";
-    print_case_witnesses(index, result, currency);
+    print_case_witnesses(index, result, currency, cash_shortfall_v02);
     std::cout << '\n';
 }
 
@@ -668,6 +698,8 @@ void print_interpretation_boundary(const cf::PortfolioConfig& portfolio,
     const cf::RobustMarketPriorityCapConfig& priority_cap,
     const cf::RobustIssuePriceSupportConfig& terms,
     const cf::RobustIssuePriceSupportSummary& summary) {
+    const bool cash_shortfall_v02 =
+        uses_principal_cash_shortfall_v02(base_stack);
     std::cout
         << "Interpretation boundary and full false-claim ledger\n"
         << "  A modeled conditional price window is arithmetic under fixed "
@@ -687,10 +719,9 @@ void print_interpretation_boundary(const cf::PortfolioConfig& portfolio,
         << "  Hurdle provenance and relation to P are independent of "
            "transaction execution or settlement evidence. A model-implied "
            "or unresolved hurdle cannot establish a financeable window.\n"
-        << "  Expected cash, principal loss, impairment probability, tails, "
-           "and WAL are physical-measure analyses. They are not a price, "
-           "discount curve, expected investor yield, IFRS 9 ECL, Basel EL, "
-           "accounting impairment, rating, or legal default.\n"
+        << (cash_shortfall_v02
+                ? "  Expected cash, issued-principal cash shortfall Q, Q ES95/ES99, shortfall probability Pr[Q>0], and WAL are physical-measure analyses. Q is not contractual asset loss, accounting impairment, an assumed post-horizon recovery value, or legal default; none of these analyses is a price, discount curve, expected investor yield, IFRS 9 ECL, Basel EL, or rating.\n"
+                : "  Expected cash, principal loss, impairment probability, tails, and WAL are physical-measure analyses. They are not a price, discount curve, expected investor yield, IFRS 9 ECL, Basel EL, accounting impairment, rating, or legal default.\n")
         << "  Funding evidence does not calibrate underlying project cash or "
            "probabilities and does not prove financeability, additionality, "
            "deployment, displacement, or animal-welfare impact.\n"
@@ -755,6 +786,8 @@ void print_report(const cf::PortfolioConfig& portfolio,
         polytope.synthetic_inputs && participation.synthetic_inputs &&
         base_stack.synthetic_inputs && priority_cap.synthetic_inputs &&
         issue_price.synthetic_inputs;
+    const bool cash_shortfall_v02 =
+        uses_principal_cash_shortfall_v02(base_stack);
     std::cout << std::fixed << std::setprecision(6)
               << (all_synthetic ? "SYNTHETIC " : "")
               << "ROBUST ISSUE-PRICE SUPPORT TERM\n"
@@ -774,7 +807,8 @@ void print_report(const cf::PortfolioConfig& portfolio,
     for (std::size_t index = 0U; index < summary.hurdle_cases.size();
          ++index) {
         print_hurdle_case(
-            index, summary.hurdle_cases[index], portfolio.currency_label);
+            index, summary.hurdle_cases[index], portfolio.currency_label,
+            cash_shortfall_v02);
     }
     print_interpretation_boundary(portfolio, polytope, participation,
         base_stack, priority_cap, issue_price, summary);

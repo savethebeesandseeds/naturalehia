@@ -1,11 +1,13 @@
 # SPDX-License-Identifier: MIT
 
+include("${CMAKE_CURRENT_LIST_DIR}/resolve_program_command.cmake")
+
 if(NOT DEFINED PROGRAM OR NOT DEFINED PORTFOLIO OR NOT DEFINED POLYTOPE)
     message(FATAL_ERROR "PROGRAM, PORTFOLIO, and POLYTOPE are required")
 endif()
 
 execute_process(
-    COMMAND "${PROGRAM}" --event-polytope "${PORTFOLIO}" "${POLYTOPE}"
+    COMMAND ${PROGRAM_COMMAND} --event-polytope "${PORTFOLIO}" "${POLYTOPE}"
     RESULT_VARIABLE result
     OUTPUT_VARIABLE output
     ERROR_VARIABLE error_output
@@ -112,7 +114,7 @@ foreach(forbidden_fragment IN ITEMS
 endforeach()
 
 execute_process(
-    COMMAND "${PROGRAM}" --event-polytope "${PORTFOLIO}" "${POLYTOPE}"
+    COMMAND ${PROGRAM_COMMAND} --event-polytope "${PORTFOLIO}" "${POLYTOPE}"
         --print-normalized
     RESULT_VARIABLE normalized_result
     OUTPUT_VARIABLE normalized_output
@@ -149,7 +151,7 @@ set(normalized_polytope_path
     "${CMAKE_CURRENT_BINARY_DIR}/event-polytope-normalized-${temporary_suffix}.cfg")
 file(WRITE "${normalized_polytope_path}" "${normalized_polytope}")
 execute_process(
-    COMMAND "${PROGRAM}" --event-polytope "${PORTFOLIO}"
+    COMMAND ${PROGRAM_COMMAND} --event-polytope "${PORTFOLIO}"
         "${normalized_polytope_path}"
     RESULT_VARIABLE reload_result
     OUTPUT_VARIABLE reload_output
@@ -176,7 +178,7 @@ if(NOT EXISTS "${legacy_ambiguity}")
     message(FATAL_ERROR "legacy ambiguity fixture is missing: ${legacy_ambiguity}")
 endif()
 execute_process(
-    COMMAND "${PROGRAM}" "${PORTFOLIO}" "${legacy_ambiguity}"
+    COMMAND ${PROGRAM_COMMAND} "${PORTFOLIO}" "${legacy_ambiguity}"
     RESULT_VARIABLE legacy_result
     OUTPUT_VARIABLE legacy_output
     ERROR_VARIABLE legacy_error
@@ -197,7 +199,7 @@ foreach(fragment IN ITEMS
 endforeach()
 
 execute_process(
-    COMMAND "${PROGRAM}" --event-polytope "${PORTFOLIO}" "${POLYTOPE}"
+    COMMAND ${PROGRAM_COMMAND} --event-polytope "${PORTFOLIO}" "${POLYTOPE}"
         --unknown-option
     RESULT_VARIABLE unknown_result
     OUTPUT_VARIABLE unknown_output
@@ -213,7 +215,7 @@ if(unknown_usage_position EQUAL -1)
 endif()
 
 execute_process(
-    COMMAND "${PROGRAM}" --event-polytope "${PORTFOLIO}"
+    COMMAND ${PROGRAM_COMMAND} --event-polytope "${PORTFOLIO}"
     RESULT_VARIABLE missing_result
     OUTPUT_VARIABLE missing_output
     ERROR_VARIABLE missing_error
@@ -235,7 +237,7 @@ set(invalid_polytope_path
     "${CMAKE_CURRENT_BINARY_DIR}/event-polytope-invalid-${temporary_suffix}.cfg")
 file(WRITE "${invalid_polytope_path}" "${invalid_polytope}")
 execute_process(
-    COMMAND "${PROGRAM}" --event-polytope "${PORTFOLIO}"
+    COMMAND ${PROGRAM_COMMAND} --event-polytope "${PORTFOLIO}"
         "${invalid_polytope_path}"
     RESULT_VARIABLE invalid_result
     OUTPUT_VARIABLE invalid_output

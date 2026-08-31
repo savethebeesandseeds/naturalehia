@@ -47,7 +47,7 @@
 \pagestyle{fancy}
 \fancyhf{}
 \fancyhead[L]{\footnotesize\color{Forest}\textsc{Fostering Cellular Agriculture}}
-\fancyhead[R]{\footnotesize\color{Rust}\textsc{Technical White Paper / Version 1.0}}
+\fancyhead[R]{\footnotesize\color{Rust}\textsc{Technical White Paper / Version 1.1}}
 \fancyfoot[L]{\footnotesize\color{Sage}Open research design / synthetic economics}
 \fancyfoot[R]{\footnotesize\color{Forest}\thepage}
 \renewcommand{\headrulewidth}{0.4pt}
@@ -104,7 +104,7 @@
   \vspace{10mm}
   \begin{tabularx}{\textwidth}{@{}P{0.27\textwidth}Y@{}}
     \textbf{Author} & Naturalehia, open financial-engineering research\\
-    \textbf{Version} & 1.0 / 31 August 2026\\
+    \textbf{Version} & 1.1 / 1 September 2026\\
     \textbf{Model case} & Ten synthetic project claims / 60-month horizon\\
     \textbf{Correspondence} & \href{https://naturalehia.waajacu.com/projects/fostering-cellular-agriculture/}{naturalehia.waajacu.com/projects/fostering-cellular-agriculture}\\
     \textbf{License} & MIT for source, model code and original paper text\\
@@ -124,7 +124,7 @@
 \begin{abstract}
 Cellular agriculture requires patient capital across research, pilot, demonstration and first-industrial stages, yet early cash is sparse, technical failures are correlated and the legal source of investor repayment is often unclear. We define a candidate \emph{Multi-Project Milestone Participation}: a limited-recourse claim on dated project draws, explicitly assigned success cash, recoveries and continuing principal across a disclosed set of projects. Later funding is callable only after stated milestones. Dependence is represented by complete joint states and a bounded set of physical probability measures rather than by multiplying independent project defaults.
 
-The financial contribution is a source-separated, principal-conserving model that compares an unsupported callable core with two mutually exclusive variants: a fully funded first-loss/priority stack and a failure-contingent partial-credit guarantee. In a ten-claim synthetic experiment with 100 of reference principal, the core has central expected NPV of \(0.661828\) at an 8\% hurdle but adverse expected NPV of \(-18.717674\). Pooling reduces central principal-loss ES95 by 10.05\%, while ES99 diversification benefit is zero. Neither the funded stack nor the 30\% guarantee restores robust investor adequacy under the declared terms. The result is therefore a rejection, not a financing claim. We state the contractual, empirical, institutional and legal evidence required to turn the design into a real asset.
+The financial contribution is a source-separated, principal-conserving model that compares an unsupported callable core with two mutually exclusive variants: a fully funded first-loss/priority stack and a failure-contingent partial-credit guarantee. For the funded variant, acquisition and primary-funding cash, contractual asset principal, issued principal and direct costs remain separate ledgers. Contractual writeoff \(L\), continuing asset principal \(O\), and horizon issued-principal cash shortfall \(Q\) are reported as distinct observables; pooled cash is not used to invent causal impairment or recovery attribution. In a ten-claim synthetic experiment with 100 of reference principal, the core has central expected NPV of \(0.661828\) at an 8\% hurdle but adverse expected NPV of \(-18.717674\). Pooling reduces central principal-loss ES95 by 10.05\%, while ES99 diversification benefit is zero. Neither the funded stack nor the 30\% guarantee restores robust investor adequacy under the declared terms. The result is therefore a rejection, not a financing claim. We state the contractual, empirical, institutional and legal evidence required to turn the design into a real asset.
 \end{abstract}
 
 \textbf{Keywords:} cellular agriculture; financial engineering; milestone finance; project participation; portfolio dependence; partial-credit guarantee; blended finance; expected shortfall.\\
@@ -146,7 +146,7 @@ This paper makes four contributions:
 
 \begin{enumerate}
   \item It defines the economic asset before the legal wrapper: a limited-recourse participation in dated, source-budgeted project cash, recovery and continuing exposure.
-  \item It gives one core construction and two alternative risk-allocation variants without claiming that tranching or guarantees create underlying project value.
+  \item It gives one core construction and two alternative risk-allocation variants without claiming that tranching or guarantees create underlying project value, and supplies an explicit asset-to-liability bridge for non-par claims.
   \item It evaluates the constructions under explicit joint physical states and probability ambiguity, preserving adverse witnesses rather than reducing the result to one expected return.
   \item It turns non-investability into a useful output by stating measurable rejection conditions and the evidence needed for a live issuance.
 \end{enumerate}
@@ -261,18 +261,65 @@ The core is one disclosed claim across a fixed set of project claims. Investors 
 
 \subsection{Variant 1: fully funded first-loss and priority claims}
 
-The full commitment is subscribed at inception. A funded first-loss claim occupies loss coordinates 0--20 and a priority claim occupies 20--100. Principal cash and unused reserve pay priority first; assigned non-principal cash pays priority up to a lifetime cap and then flows to the first-loss residual. Pool cost is called pro rata. Returned reserve is capital, not profit.
+Investors subscribe a reserve at inception. A funded first-loss claim occupies horizon principal-cash-shortfall coordinates beginning at zero; priority claims attach above it. Contractual-principal cash and unused reserve pay principal most senior first. Assigned non-principal cash pays priority up to a lifetime cap and then flows to the first-loss residual. Buyer direct costs and pool costs are separate pro-rata calls rather than tranche principal. Returned reserve is capital, not profit.
 
-If \(L_s\) is aggregate resolved principal loss in state \(s\), loss allocation is
+The asset-to-liability bridge does not assume that cash paid for an asset, contractual asset principal and issued principal are equal. Let \(A_{is}\) be project \(i\)'s acquisition and primary-funding use in state \(s\), excluding buyer direct cost. The funded limit is set project by project:
 \begin{align}
-L^{\mathrm{FL}}_s &= \min(L_s,20),\\
-L^{\mathrm{PR}}_s &= \min\bigl(\max(L_s-20,0),80\bigr).
+R_i&=\max_{s\in\mathcal S}A_{is}, & R&=\sum_i R_i,\\
+A_s&=\sum_i A_{is}, & U_s&=R-A_s,
 \end{align}
-This variant changes payment timing and priority. It does not change project receipts, gross loss, common-factor dependence or diversification. Full prefunding can reduce call risk but introduces negative carry when capital waits in reserve.
+where \(R\) is both reserve subscription and issued tranche principal, and \(U_s\) is unused reserve returned at the horizon. This deliberately uses the sum of project maxima, not the maximum aggregate use in one state; projects can require liquidity in different states.
+
+Let \(P_s\) be contractual-principal cash received by the analysis horizon. The liability ledger is
+\begin{align}
+D_s&=\min\bigl(R,P_s+U_s\bigr),\\
+Q_s&=R-D_s,\\
+S_s&=\max\bigl(0,P_s+U_s-R\bigr),
+\end{align}
+where \(D_s\) is principal cash distributable to issued claims, \(Q_s\) is their horizon principal-cash shortfall after the single aggregate canonicalization described below, and \(S_s\) is cash above unpaid issued principal that enters the declared non-principal waterfall. For a tranche with attachment \(a_j\) and detachment \(d_j\),
+\begin{equation}
+Q_{js}=\min\!\left(\max(Q_s-a_j,0),d_j-a_j\right).
+\label{eq:tranche-shortfall}
+\end{equation}
+Thus a 0--20 first-loss claim absorbs the first 20 of \(Q_s\), while an attaching priority claim receives principal cash first.
+
+Before tranche layering, the engine canonicalizes aggregate \(Q_s\) once: a non-negative residual no greater than \(\tau(R)=10^{-9}+16\varepsilon_{\mathrm{double}}\max(1,|R|)\) is set to zero. No tranche applies an independent tolerance. The resulting once-canonicalized \(Q_s\) is the liability observable used throughout the funded stack.
+
+The asset ledger remains separate:
+\begin{equation}
+L_s=\sum_i\ell_{is},\qquad O_s=\sum_i u_{is}.
+\end{equation}
+Here \(L_s\) is contractual principal written off on resolved paths and \(O_s\) is contractual principal still outstanding on continuing paths. The model asserts no causal allocation, impairment identity or post-horizon recovery value linking \(L_s\), \(O_s\) and \(Q_s\). Pooled cash identifies the liability shortfall but not which asset economically caused it. Aggregate contractual-principal limit less \(A_s\) is reported only as a principal-limit capacity diagnostic: the limit need not equal principal created or acquired in that state, so the difference is not a price, discount, premium or fair value.
+
+\begin{table}[htbp]
+\centering
+\caption{Non-par hand checks for the exact asset-to-liability bridge}
+\label{tab:bridge-hand-checks}
+\small
+\begin{tabularx}{\textwidth}{@{}YrrrrrrY@{}}
+\toprule
+\textbf{State} & \(R=A_s\) & \textbf{Principal limit} & \(P_s\) & \(L_s\) & \(O_s\) & \(Q_s\) & \textbf{Conclusion} \\
+\midrule
+Resolved 8-for-10 & 8 & 10 & 8 & 2 & 0 & 0 & Asset loss; no liability cash shortfall \\
+Performing 12-for-10 & 12 & 10 & 10 & 0 & 0 & 2 & Liability cash shortfall; no asset loss \\
+Continuing 8-for-10 & 8 & 10 & 3 & 0 & 7 & 5 & Outstanding asset and cash shortfall remain distinct \\
+\bottomrule
+\end{tabularx}
+\tightnote{All amounts are synthetic \demounit{}. These rows demonstrate accounting mechanics, not market price, impairment, recovery or investability.}
+\end{table}
+
+When contractual-principal cash and reserve return arrive in the same month, they have equal seniority. For a simultaneous surplus \(S_{s,t}\), the engine records the source memo pro rata,
+\begin{equation}
+S^P_{s,t}=S_{s,t}\frac{P_{s,t}}{P_{s,t}+U_{s,t}},\qquad
+S^U_{s,t}=S_{s,t}-S^P_{s,t},
+\end{equation}
+and uses the same ratio for the paid-principal source memo. This is a deterministic convention for fungible cash, not observed provenance; both sources enter one waterfall, so the split changes neither total cash nor tranche entitlement.
+
+This variant changes payment timing and priority. It does not change project receipts, contractual writeoff, continuing principal, common-factor dependence or diversification. Full prefunding can reduce call risk but introduces negative carry when capital waits in reserve. The ten-claim illustration below remains the documented at-par draw-equals-principal baseline; the explicit bridge above controls any non-par claim. No cross-version equivalence inference is made from that baseline.
 
 \subsection{Variant 2: failure-contingent partial-credit guarantee}
 
-The alternative guarantee attaches only to the untranched core in version 1. Let \(g\) be the covered share, \(\Gamma\) the provider's legal cash cap and \(L_s\) final resolved loss. With full provider performance,
+The alternative guarantee attaches only to the untranched multi-project participation core defined in Section~5.1. Let \(g\) be the covered share, \(\Gamma\) the provider's legal cash cap and \(L_s\) final resolved loss. With full provider performance,
 \begin{align}
 G_s &= \min(gL_s,\Gamma),\\
 L^{\mathrm{retained}}_s &= L_s-G_s.
@@ -471,7 +518,7 @@ Principal-loss ES99 & 23.150000 & 90.000000 & 90.000000 \\
 Peak cumulative net outlay & 88.147600 & 94.533000 & 99.487400 \\
 \bottomrule
 \end{tabularx}
-\tightnote{Impairment probability is 16\% / 37\% / 60\%. Negative-NPV probability is 28\% / 42\% / 60\%. Each endpoint column except ``central'' is assembled metric by metric and may use a different admissible probability witness.}
+\tightnote{Resolved contractual-principal-loss probability is 16\% / 37\% / 60\%. Negative-NPV probability is 28\% / 42\% / 60\%. Each endpoint column except ``central'' is assembled metric by metric and may use a different admissible probability witness.}
 \end{table}
 
 At the central measure, expected project cash remains source-separated: 77.1490 commercial, 40.8265 licensing/royalty and 3.6734 recovery. Pool cost is 1.0. There is no project-level explicit-support cash. The minimum-NPV witness assigns only 40\% to all-perform and more mass to compound, buyer, regulatory and systemic states; it produces \(-18.717674\). Full declared success participation cannot reach robust break-even.
@@ -538,7 +585,7 @@ Central expected NPV of \result{+0.661828} is thin relative to model uncertainty
 \textbf{Construction} & \textbf{Central NPV} & \textbf{Adverse NPV} & \textbf{Financial interpretation} \\
 \midrule
 Unsupported callable core & 0.661828 & -18.717674 & Milestone stops reduce unused draws; investor bears gross project loss and delay. \\
-Funded stack, aggregate at 8\% & -8.321750 & -27.985093 & Loss priority becomes real, but full prefunding adds drag and creates no project value. \\
+Funded stack, aggregate at 8\% & -8.321750 & -27.985093 & Principal-cash priority and horizon-shortfall subordination become explicit, but full prefunding adds drag and creates no project value. \\
 30\% guarantee, provider performs & 2.699617 & -14.925982 & External provider cash reduces retained resolved loss; premium is excluded. \\
 30\% guarantee, credit-stressed & 2.617773 & -15.161094 & Wrong-way provider default reduces promised delivery in adverse states. \\
 \bottomrule
@@ -547,9 +594,9 @@ Funded stack, aggregate at 8\% & -8.321750 & -27.985093 & Loss priority becomes 
 
 \subsection{Funded first-loss and priority variant}
 
-The stack subscribes 101 at month zero: 100 of commitment plus 1 of pool cost. Expected prefunding drag at the pool's 8\% hurdle is 8.983578 centrally. At their own stated hurdles, the 0--20 first-loss class has central NPV \(-0.854614\) at 15\%; the 20--100 priority class has central NPV \(-13.926874\) at 8\%. Priority has negative NPV in every declared state. Aggregate stack NPV at the common 8\% hurdle is \(-27.985093/-8.321750/6.715820\) across adverse, central and favorable expected cases.
+Investors subscribe 100 into the reserve at month zero and contribute 1 as a separate pool-cost call; project uses are funded from the reserve and are not counted again as investor contributions. Expected prefunding drag at the pool's 8\% hurdle is 8.983578 centrally. At their own stated hurdles, the 0--20 first-loss class has central NPV \(-0.854614\) at 15\%; the 20--100 priority class has central NPV \(-13.926874\) at 8\%. Priority has negative NPV in every declared state. Aggregate stack NPV at the common 8\% hurdle is \(-27.985093/-8.321750/6.715820\) across adverse, central and favorable expected cases.
 
-The result is not an argument against subordination. It shows that subordination must be funded and priced. Loss and exposure reconcile to the unchanged gross pool at every path; rearranging the order of distributions cannot repair insufficient aggregate value.
+The result is not an argument against subordination. It shows that subordination must be funded and priced. Asset \(L_s\) and \(O_s\) remain unchanged, while tranche principal-cash shortfalls sum to \(Q_s\). The model does not attribute asset loss or outstanding principal causally to liability layers; rearranging the order of distributions cannot repair insufficient aggregate value.
 
 \subsection{Partial-credit guarantee and provider capacity}
 
@@ -568,7 +615,7 @@ The candidate can become attractive only through real economic changes, not labe
   \item \textbf{Better milestone control.} Earlier, independently verified stopping rules can reduce expected draws and downside liquidity while preserving value-producing paths.
   \item \textbf{True diversification.} Projects using materially different technical routes, suppliers, jurisdictions and buyers can reduce common-tail concentration if the data support it.
   \item \textbf{A lower issue price or different participation.} Price and success-cash sharing can align expected NPV with the buyer's hurdle, subject to issuer viability and source budgets.
-  \item \textbf{Explicit risk-bearing support.} A funded first-loss investor or capable guarantor can transfer a defined loss layer if its cost, authority, liquidity and return requirement are transparently financed.
+  \item \textbf{Explicit risk-bearing support.} A funded first-loss investor can take a defined issued-principal cash-shortfall layer \(Q\); a capable guarantor can cover a defined resolved asset-loss layer \(L\). Each transfers only the risk specified by its contract, and its cost, authority, liquidity and return requirement must be transparently financed.
 \end{enumerate}
 
 These channels can be compared because the standard holds accounting constant. If a proposed term improves NPV while receipts, price, timing and external transfers are unchanged, the improvement is suspect.
@@ -580,7 +627,7 @@ No single rating-like number is appropriate at the present stage. Investors shou
 \begin{itemize}
   \item dated contribution and receipt distributions;
   \item expected NPV and probability of negative NPV at independently supported hurdles;
-  \item resolved-loss and NPV-shortfall VaR/ES at disclosed levels;
+  \item resolved asset-loss tails for guarantee analysis, v0.2 issued-principal cash-shortfall expectation, incidence and ES95/ES99 for the funded stack, and NPV-shortfall VaR/ES at disclosed levels;
   \item continuing exposure, duration or weighted-average life where defined;
   \item project, stage, source, factor, buyer and provider concentrations;
   \item simultaneous-draw and peak cumulative liquidity requirements;
@@ -654,7 +701,7 @@ The current model is deliberately incomplete. It does not estimate live probabil
 
 \section{Implementation and reproducibility}
 
-The analytical core is written in C++ and uses strict text configurations, deterministic scenario evaluation, exact cash-source and principal reconciliations, bounded-probability optimization, loss/NPV tails, tranche waterfalls, guarantee payment, provider price decomposition and provider-credit stress. The maintained research repository includes model specifications, fixtures, command-line reporters, adversarial tests and verification records \citep{fca2026brief,fca2026term,fca2026analysis}.
+The analytical core is written in C++ and uses strict text configurations, deterministic scenario evaluation, exact cash-source and principal reconciliations, bounded-probability optimization, resolved asset-loss tails, issued-principal-cash-shortfall tails, NPV-shortfall tails, tranche waterfalls, guarantee payment, provider price decomposition and provider-credit stress. The maintained research repository includes model specifications, fixtures, command-line reporters, adversarial tests and verification records \citep{fca2026brief,fca2026term,fca2026analysis}.
 
 For the paper's reported snapshot:
 
@@ -664,11 +711,12 @@ For the paper's reported snapshot:
   \item monetary convention: synthetic \demounit{}, constant analysis-close basis;
   \item discounting: annual-effective, monthly exponents;
   \item reconciliation tolerance: \(10^{-9}\) for modeled floating identities;
-  \item verification status: 68 of 68 declared Debug/Release tests passed in the retained reports;
+  \item verification status: 70 of 70 declared tests pass in the current strict C++20 Emscripten 6.0.5 Release/Node suite, including the v0.2 asset-to-liability bridge and direct Claim Ledger integration;
+  \item portable execution: the release evidence reported for version 1.1 is produced by the pinned Emscripten container and Node, including every command-line report wrapper;
   \item paper toolchain: \texttt{latexmk} inside the Debian-based \texttt{documents-latex:bookworm} container.
 \end{itemize}
 
-The public browser interface is a readable analytical view of frozen synthetic results. A future WebAssembly build may compile the same C++ kernel for interactive use, but it must not be described as parity-verified until Linux-native and WebAssembly structured outputs pass golden-result tests with the same input hashes.
+The public browser interface is a readable analytical view of frozen synthetic results, and the same C++ kernel now has a strict WebAssembly build path. Browser interactivity does not itself prove parity or calibration: any published parity claim must remain tied to named structured-output fixtures, input hashes and retained cross-runtime tests.
 
 \section{Open-standard and responsibility commitments}
 
@@ -678,7 +726,7 @@ The governing charter requires underwriting before advocacy, full visibility of 
 
 \section{Conclusion}
 
-The proposed Multi-Project Milestone Participation is a financial standard before it is a product. It defines a real candidate asset as a limited-recourse claim on dated, source-budgeted project cash and recoveries; represents unresolved exposure separately from loss; encodes shared shocks directly; and lets funded subordination or guarantee support be evaluated without confusing transfer with value creation.
+The proposed Multi-Project Milestone Participation is a financial standard before it is a product. It defines a real candidate asset as a limited-recourse claim on dated, source-budgeted project cash and recoveries; represents unresolved exposure separately from loss; encodes shared shocks directly; and lets funded subordination allocate actual cash and horizon shortfall \(Q_s\), or guarantee support transfer defined asset loss, without confusing either operation with value creation.
 
 The synthetic experiment gives the appropriate first conclusion. Pooling provides some ES95 benefit, but common risk dominates ES99. The central core NPV is slightly positive, yet the adverse permitted NPV is materially negative. Fully funded priority creates drag, and the guarantee adds useful external cash but still cannot satisfy both investor and provider constraints. None of the current constructions is shown financeable.
 
@@ -723,11 +771,22 @@ The next serious step is empirical, not cosmetic: acquire enforceable project ca
 \(\ell_{is}\) & Resolved contractual-principal loss. \\
 \(u_{is}\) & Continuing contractual principal at horizon. \\
 \(e_{is}\) & Evidenced conversion or other non-cash extinguishment. \\
+\(L_s\) & Aggregate resolved contractual-principal writeoff, \(\sum_i\ell_{is}\). \\
+\(O_s\) & Aggregate continuing contractual principal, \(\sum_i u_{is}\). \\
+\(A_{is}\) & Acquisition and primary-funding reserve use for project \(i\) in state \(s\), excluding buyer direct cost. \\
+\(R_i\) & Project reserve limit, \(\max_s A_{is}\). \\
+\(R\) & Aggregate reserve subscription and issued principal, \(\sum_iR_i\). \\
+\(A_s\) & Aggregate state acquisition and primary-funding use, \(\sum_iA_{is}\). \\
+\(U_s\) & Unused reserve returned at horizon, \(R-A_s\). \\
+\(P_s\) & Contractual-principal cash received by the analysis horizon. \\
+\(D_s\) & Principal cash distributable to issued claims, \(\min(R,P_s+U_s)\). \\
+\(Q_s\) & Horizon issued-principal cash shortfall, \(R-D_s\); not an accounting impairment or recovery estimate. \\
+\(S_s\) & Cash above unpaid issued principal, \(\max(0,P_s+U_s-R)\). \\
+\(a_j,d_j\) & Attachment and detachment of tranche \(j\) in \(Q_s\)-shortfall coordinates. \\
 \(CF_s(t)\) & Investor net cash at month \(t\) in state \(s\). \\
 \(V_s(h)\) & State NPV at annual-effective investor hurdle \(h\). \\
 \(p\in\mathcal P\) & Admissible physical probability measure. \\
 \(q\) & Participation share in assigned success cash. \\
-\(A\) & Funded first-loss amount. \\
 \(B\) & Priority lifetime non-principal cash cap. \\
 \(g\) & Guarantee share of final resolved loss. \\
 \(\Gamma\) & Guarantee provider's legal cash cap. \\
@@ -769,11 +828,12 @@ The next serious step is empirical, not cosmetic: acquire enforceable project ca
 Every evaluated state is subject to the following controls before reporting:
 
 \begin{enumerate}
-  \item investor contributions equal project draws plus explicit pool cost, reserve subscription and any separately stated premium;
+  \item in the callable core, investor contributions equal project outlays plus explicit pool costs and any separately stated premium;
+  \item in the funded stack, investor contributions equal reserve subscription plus separate buyer-direct-cost and pool-cost calls; project acquisition and primary-funding uses consume reserve and are not counted again;
   \item project receipts equal commercial plus licensing/royalty plus recovery plus other named project-source cash;
   \item provider payments are external and never included in project-source cash;
   \item principal returned, extinguished, continuing and lost equals opening plus created principal;
-  \item tranche loss and continuing exposure sum to the unchanged gross pool amounts;
+  \item asset \(L_s\) and \(O_s\) are preserved separately, issued principal satisfies \(R=D_s+Q_s\), and tranche principal-cash shortfalls sum to \(Q_s\);
   \item tranche distributions do not exceed cash available under the waterfall;
   \item guarantee retained loss plus delivered provider payment equals gross resolved loss when full coverage terms apply, subject to the cap;
   \item probability weights remain non-negative, within bounds and sum to one; and

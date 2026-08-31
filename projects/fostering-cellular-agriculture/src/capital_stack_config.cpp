@@ -108,7 +108,8 @@ void require_safe_text(std::string_view value, std::string_view description) {
         throw std::invalid_argument(
             std::string(description) + " must be non-empty and bounded");
     }
-    for (const unsigned char character : value) {
+    for (const char raw_character : value) {
+        const auto character = static_cast<unsigned char>(raw_character);
         if (character < 0x20U || character == 0x7FU) {
             throw std::invalid_argument(
                 std::string(description) + " contains a control character");
@@ -239,14 +240,16 @@ void require_safe_text(std::string_view value, std::string_view description) {
 }
 
 void validate_intrinsic(const CapitalStackConfig& config) {
-    if (config.model_version != kCapitalStackModelVersion) {
+    const bool is_v01 =
+        config.model_version == kCapitalStackLegacyModelVersion;
+    const bool is_v02 = config.model_version == kCapitalStackModelVersion;
+    if (!is_v01 && !is_v02) {
         throw std::invalid_argument(
             "unsupported capital-stack model version");
     }
     require_safe_text(config.scenario_label, "capital-stack label");
     require_safe_text(config.source_note, "capital-stack source note");
     if (!config.synthetic_inputs ||
-        !config.aggregate_commitment_is_fully_funded_at_par_at_month_zero ||
         !config.subscription_reserve_is_zero_yield_and_lossless ||
         !config.undrawn_commitment_cancels_and_returns_only_at_horizon ||
         !config.pool_costs_are_additional_pro_rata_calls ||
@@ -255,7 +258,25 @@ void validate_intrinsic(const CapitalStackConfig& config) {
         !config.tranching_does_not_change_project_cash_or_gross_loss ||
         config.premium_discount_or_fair_value_is_claimed) {
         throw std::invalid_argument(
+            "capital-stack shared assertions have an unsupported value");
+    }
+    if (is_v01 &&
+        (!config.aggregate_commitment_is_fully_funded_at_par_at_month_zero ||
+            config.asset_acquisition_and_primary_funding_limit_is_fully_funded_at_par_at_month_zero ||
+            config.buyer_direct_costs_are_additional_pro_rata_calls ||
+            config.principal_base_cash_above_issued_principal_is_nonprincipal ||
+            config.principal_limit_capacity_difference_is_reported_without_valuation_claim)) {
+        throw std::invalid_argument(
             "capital-stack v0.1 assertions have an unsupported value");
+    }
+    if (is_v02 &&
+        (config.aggregate_commitment_is_fully_funded_at_par_at_month_zero ||
+            !config.asset_acquisition_and_primary_funding_limit_is_fully_funded_at_par_at_month_zero ||
+            !config.buyer_direct_costs_are_additional_pro_rata_calls ||
+            !config.principal_base_cash_above_issued_principal_is_nonprincipal ||
+            !config.principal_limit_capacity_difference_is_reported_without_valuation_claim)) {
+        throw std::invalid_argument(
+            "capital-stack v0.2 assertions have an unsupported value");
     }
     if (!std::isfinite(config.underlying_success_participation_fraction) ||
         config.underlying_success_participation_fraction < 0.0 ||
@@ -310,7 +331,7 @@ void validate_intrinsic(const CapitalStackConfig& config) {
 }
 
 [[nodiscard]] CapitalStackConfig parse_raw(const RawMap& raw) {
-    static const std::unordered_set<std::string> fixed_keys{
+    static const std::unordered_set<std::string> common_fixed_keys{
         "capital_stack.model_version",
         "capital_stack.label",
         "capital_stack.source_note",
@@ -326,7 +347,24 @@ void validate_intrinsic(const CapitalStackConfig& config) {
         "capital_stack.underlying_success_participation_fraction",
         "tranche.count",
     };
-    for (const std::string& key : fixed_keys) {
+    static const std::unordered_set<std::string> v02_fixed_keys{
+        "capital_stack.asset_acquisition_and_primary_funding_limit_is_fully_funded_at_par_at_month_zero",
+        "capital_stack.buyer_direct_costs_are_additional_pro_rata_calls",
+        "capital_stack.principal_base_cash_above_issued_principal_is_nonprincipal",
+        "capital_stack.principal_limit_capacity_difference_is_reported_without_valuation_claim",
+    };
+    const std::string& model_version =
+        required(raw, "capital_stack.model_version").value;
+    const bool is_v02 = model_version == kCapitalStackModelVersion;
+    if (model_version != kCapitalStackLegacyModelVersion && !is_v02) {
+        throw std::invalid_argument(
+            "unsupported capital-stack model version");
+    }
+    std::unordered_set<std::string> expected = common_fixed_keys;
+    if (is_v02) {
+        expected.insert(v02_fixed_keys.begin(), v02_fixed_keys.end());
+    }
+    for (const std::string& key : expected) {
         (void)required(raw, key);
     }
     const std::size_t count = parse_size(required(raw, "tranche.count"));
@@ -334,7 +372,6 @@ void validate_intrinsic(const CapitalStackConfig& config) {
         throw std::invalid_argument(
             "capital-stack tranche count exceeds the resource bound");
     }
-    std::unordered_set<std::string> expected = fixed_keys;
     for (std::size_t index = 0U; index < count; ++index) {
         expected.emplace(tranche_key(index, "id"));
         expected.emplace(tranche_key(index, "attachment_million"));
@@ -382,6 +419,20 @@ void validate_intrinsic(const CapitalStackConfig& config) {
             "capital_stack.tranching_does_not_change_project_cash_or_gross_loss"));
     config.premium_discount_or_fair_value_is_claimed = parse_bool(required(
         raw, "capital_stack.premium_discount_or_fair_value_is_claimed"));
+    if (is_v02) {
+        config.asset_acquisition_and_primary_funding_limit_is_fully_funded_at_par_at_month_zero =
+            parse_bool(required(raw,
+                "capital_stack.asset_acquisition_and_primary_funding_limit_is_fully_funded_at_par_at_month_zero"));
+        config.buyer_direct_costs_are_additional_pro_rata_calls = parse_bool(
+            required(raw,
+                "capital_stack.buyer_direct_costs_are_additional_pro_rata_calls"));
+        config.principal_base_cash_above_issued_principal_is_nonprincipal =
+            parse_bool(required(raw,
+                "capital_stack.principal_base_cash_above_issued_principal_is_nonprincipal"));
+        config.principal_limit_capacity_difference_is_reported_without_valuation_claim =
+            parse_bool(required(raw,
+                "capital_stack.principal_limit_capacity_difference_is_reported_without_valuation_claim"));
+    }
     config.underlying_success_participation_fraction = parse_double(required(
         raw, "capital_stack.underlying_success_participation_fraction"));
     config.tranches.reserve(count);
@@ -474,6 +525,23 @@ void print_normalized_capital_stack_config(
         << config.tranching_does_not_change_project_cash_or_gross_loss << '\n';
     output << "capital_stack.premium_discount_or_fair_value_is_claimed="
            << config.premium_discount_or_fair_value_is_claimed << '\n';
+    if (config.model_version == kCapitalStackModelVersion) {
+        output
+            << "capital_stack.asset_acquisition_and_primary_funding_limit_is_fully_funded_at_par_at_month_zero="
+            << config.asset_acquisition_and_primary_funding_limit_is_fully_funded_at_par_at_month_zero
+            << '\n';
+        output
+            << "capital_stack.buyer_direct_costs_are_additional_pro_rata_calls="
+            << config.buyer_direct_costs_are_additional_pro_rata_calls << '\n';
+        output
+            << "capital_stack.principal_base_cash_above_issued_principal_is_nonprincipal="
+            << config.principal_base_cash_above_issued_principal_is_nonprincipal
+            << '\n';
+        output
+            << "capital_stack.principal_limit_capacity_difference_is_reported_without_valuation_claim="
+            << config.principal_limit_capacity_difference_is_reported_without_valuation_claim
+            << '\n';
+    }
     output << "capital_stack.underlying_success_participation_fraction="
            << config.underlying_success_participation_fraction << '\n';
     output << "tranche.count=" << config.tranches.size() << '\n';

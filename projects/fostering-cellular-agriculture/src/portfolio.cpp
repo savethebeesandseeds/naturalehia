@@ -95,7 +95,8 @@ void require_safe_text(std::string_view value, std::string_view description) {
         throw std::invalid_argument(
             std::string(description) + " must be non-empty and bounded");
     }
-    for (const unsigned char character : value) {
+    for (const char raw_character : value) {
+        const auto character = static_cast<unsigned char>(raw_character);
         if (character < 0x20U || character == 0x7FU) {
             throw std::invalid_argument(
                 std::string(description) + " contains a control character");
@@ -1229,9 +1230,13 @@ PortfolioSummary evaluate_portfolio(const PortfolioConfig& config) {
             const long double added_principal = explicit_principal
                 ? principal_added.value()
                 : draw_total;
+            const long double returned_principal =
+                principal_returned.value();
             const long double effective_principal = explicit_principal
-                ? principal_returned.value()
-                : std::min(principal_returned.value(), draw_total);
+                ? returned_principal
+                : (near_input_money(returned_principal, draw_total)
+                        ? draw_total
+                        : std::min(returned_principal, draw_total));
             const long double converted_principal = explicit_principal
                 ? principal_converted.value()
                 : 0.0L;

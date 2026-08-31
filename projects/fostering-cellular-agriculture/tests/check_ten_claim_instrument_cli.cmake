@@ -1,9 +1,11 @@
+include("${CMAKE_CURRENT_LIST_DIR}/resolve_program_command.cmake")
+
 if(NOT DEFINED PROGRAM OR NOT DEFINED FIXTURE)
     message(FATAL_ERROR "PROGRAM and FIXTURE are required")
 endif()
 
 execute_process(
-    COMMAND "${PROGRAM}"
+    COMMAND ${PROGRAM_COMMAND}
         "${FIXTURE}/portfolio.cfg"
         "${FIXTURE}/ambiguity.cfg"
         "${FIXTURE}/success-participation.cfg"
@@ -146,7 +148,7 @@ string(REPLACE
 file(WRITE "${negative_dir}/extra-factor-portfolio.cfg"
     "${extra_factor_portfolio}")
 execute_process(
-    COMMAND "${PROGRAM}"
+    COMMAND ${PROGRAM_COMMAND}
         "${negative_dir}/extra-factor-portfolio.cfg"
         "${FIXTURE}/ambiguity.cfg"
         "${FIXTURE}/success-participation.cfg"
@@ -177,7 +179,7 @@ string(REPLACE
 file(WRITE "${negative_dir}/nonsynthetic-portfolio.cfg"
     "${nonsynthetic_portfolio}")
 execute_process(
-    COMMAND "${PROGRAM}"
+    COMMAND ${PROGRAM_COMMAND}
         "${negative_dir}/nonsynthetic-portfolio.cfg"
         "${FIXTURE}/ambiguity.cfg"
         "${FIXTURE}/success-participation.cfg"
@@ -202,7 +204,7 @@ if(nonsynthetic_error_position EQUAL -1)
 endif()
 
 execute_process(
-    COMMAND "${PROGRAM}"
+    COMMAND ${PROGRAM_COMMAND}
         "${FIXTURE}/portfolio.cfg"
         "${FIXTURE}/ambiguity.cfg"
         "${FIXTURE}/success-participation.cfg"

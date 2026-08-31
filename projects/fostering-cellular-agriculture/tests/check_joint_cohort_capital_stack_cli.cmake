@@ -1,3 +1,5 @@
+include("${CMAKE_CURRENT_LIST_DIR}/resolve_program_command.cmake")
+
 if(NOT DEFINED PROGRAM OR NOT DEFINED COHORT OR NOT DEFINED BLOCKED OR
         NOT DEFINED PARTICIPATION OR NOT DEFINED STACK OR
         NOT DEFINED STACK_Q037)
@@ -6,7 +8,7 @@ if(NOT DEFINED PROGRAM OR NOT DEFINED COHORT OR NOT DEFINED BLOCKED OR
 endif()
 
 execute_process(
-    COMMAND "${PROGRAM}" --joint-cohort "${COHORT}" "${PARTICIPATION}"
+    COMMAND ${PROGRAM_COMMAND} --joint-cohort "${COHORT}" "${PARTICIPATION}"
         "${STACK}" --print-normalized
     RESULT_VARIABLE result
     OUTPUT_VARIABLE output
@@ -66,7 +68,7 @@ endforeach()
 # receipts and NPV must be recomputed for the non-unit participation fraction
 # that actually enters the waterfall, while draws and loss stay unchanged.
 execute_process(
-    COMMAND "${PROGRAM}" --joint-cohort "${COHORT}" "${PARTICIPATION}"
+    COMMAND ${PROGRAM_COMMAND} --joint-cohort "${COHORT}" "${PARTICIPATION}"
         "${STACK_Q037}"
     RESULT_VARIABLE q037_result
     OUTPUT_VARIABLE q037_output
@@ -96,7 +98,7 @@ if(NOT stale_q1_project_position EQUAL -1)
 endif()
 
 execute_process(
-    COMMAND "${PROGRAM}" --joint-cohort "${BLOCKED}" "${PARTICIPATION}"
+    COMMAND ${PROGRAM_COMMAND} --joint-cohort "${BLOCKED}" "${PARTICIPATION}"
         "${STACK}"
     RESULT_VARIABLE blocked_result
     OUTPUT_VARIABLE blocked_output
@@ -124,7 +126,7 @@ if(NOT unexpected_stack_position EQUAL -1)
 endif()
 
 execute_process(
-    COMMAND "${PROGRAM}" --joint-cohort "${COHORT}" "${PARTICIPATION}"
+    COMMAND ${PROGRAM_COMMAND} --joint-cohort "${COHORT}" "${PARTICIPATION}"
     RESULT_VARIABLE usage_result
     OUTPUT_VARIABLE usage_output
     ERROR_VARIABLE usage_error
@@ -143,7 +145,7 @@ if(usage_boundary_position EQUAL -1)
 endif()
 
 execute_process(
-    COMMAND "${PROGRAM}" --joint-cohort "${COHORT}.missing"
+    COMMAND ${PROGRAM_COMMAND} --joint-cohort "${COHORT}.missing"
         "${PARTICIPATION}" "${STACK}"
     RESULT_VARIABLE error_result
     OUTPUT_VARIABLE runtime_output

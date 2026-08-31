@@ -49,6 +49,68 @@ struct EvaluatedCase {
     CapitalStackProbabilityPolytopeSummary stack{};
 };
 
+enum class PrincipalRiskMetricFamily {
+    LegacyLossLayeringV01,
+    PrincipalCashShortfallV02,
+};
+
+[[nodiscard]] PrincipalRiskMetricFamily principal_risk_metric_family(
+    std::string_view model_version) {
+    if (model_version == kCapitalStackLegacyModelVersion) {
+        return PrincipalRiskMetricFamily::LegacyLossLayeringV01;
+    }
+    if (model_version == kCapitalStackModelVersion) {
+        return PrincipalRiskMetricFamily::PrincipalCashShortfallV02;
+    }
+    throw std::invalid_argument(
+        "issue-price support does not support the capital-stack model version");
+}
+
+void require_principal_risk_metric_family(
+    const CapitalStackConfig& requested,
+    const CapitalStackProbabilityPolytopeSummary& evaluated) {
+    const PrincipalRiskMetricFamily family =
+        principal_risk_metric_family(requested.model_version);
+    const bool legacy_is_applicable =
+        family == PrincipalRiskMetricFamily::LegacyLossLayeringV01;
+    if (evaluated.model_version != requested.model_version ||
+        evaluated.legacy_v01_loss_layering_metrics_are_applicable !=
+            legacy_is_applicable) {
+        throw std::logic_error(
+            "issue-price support capital-stack principal-risk metric family is unavailable");
+    }
+    for (const CapitalStackProbabilityPolytopeTrancheSummary& tranche :
+         evaluated.tranches) {
+        if (tranche.legacy_v01_loss_layering_metrics_are_applicable !=
+            legacy_is_applicable) {
+            throw std::logic_error(
+                "issue-price support tranche principal-risk metric family is unavailable");
+        }
+    }
+    for (const CapitalStackScenarioResult& scenario : evaluated.scenarios) {
+        for (const CapitalStackTrancheScenarioResult& tranche :
+             scenario.tranches) {
+            if (tranche.legacy_v01_loss_layering_metrics_are_applicable !=
+                legacy_is_applicable) {
+                throw std::logic_error(
+                    "issue-price support scenario principal-risk metric family is unavailable");
+            }
+        }
+    }
+}
+
+[[nodiscard]] ProbabilityPolytopeMetricRange divide_metric_range(
+    ProbabilityPolytopeMetricRange value, double divisor) noexcept {
+    value.minimum.value /= divisor;
+    value.minimum.objective_reconciliation_error /= divisor;
+    value.minimum.optimality_residual /= divisor;
+    value.central /= divisor;
+    value.maximum.value /= divisor;
+    value.maximum.objective_reconciliation_error /= divisor;
+    value.maximum.optimality_residual /= divisor;
+    return value;
+}
+
 [[nodiscard]] double comparison_tolerance(
     double first, double second) noexcept {
     return kComparisonAbsoluteTolerance +
@@ -108,7 +170,8 @@ void require_safe_text(std::string_view value, std::string_view description) {
         throw std::invalid_argument(
             std::string(description) + " must be non-empty and bounded");
     }
-    for (const unsigned char character : value) {
+    for (const char raw_character : value) {
+        const auto character = static_cast<unsigned char>(raw_character);
         if (character < 0x20U || character == 0x7FU) {
             throw std::invalid_argument(
                 std::string(description) + " contains a control character");
@@ -568,6 +631,14 @@ canonical_hurdle_cases(
             second.tranching_does_not_change_project_cash_or_gross_loss ||
         first.premium_discount_or_fair_value_is_claimed !=
             second.premium_discount_or_fair_value_is_claimed ||
+        first.asset_acquisition_and_primary_funding_limit_is_fully_funded_at_par_at_month_zero !=
+            second.asset_acquisition_and_primary_funding_limit_is_fully_funded_at_par_at_month_zero ||
+        first.buyer_direct_costs_are_additional_pro_rata_calls !=
+            second.buyer_direct_costs_are_additional_pro_rata_calls ||
+        first.principal_base_cash_above_issued_principal_is_nonprincipal !=
+            second.principal_base_cash_above_issued_principal_is_nonprincipal ||
+        first.principal_limit_capacity_difference_is_reported_without_valuation_claim !=
+            second.principal_limit_capacity_difference_is_reported_without_valuation_claim ||
         first.underlying_success_participation_fraction !=
             second.underlying_success_participation_fraction ||
         first.tranches.size() != second.tranches.size()) {
@@ -599,6 +670,7 @@ canonical_hurdle_cases(
     validate_robust_issue_price_support_config(issue_price);
     validate_robust_market_priority_cap_config(portfolio,
         probability_polytope, participation, base_stack, priority_cap);
+    (void)principal_risk_metric_family(base_stack.model_version);
     if (base_stack.tranches.size() != 2U) {
         throw std::invalid_argument(
             "issue-price-support base stack must contain exactly two claims");
@@ -1150,6 +1222,7 @@ void audit_sparse_market_ledger(
     EvaluatedCase result;
     result.stack = evaluate_capital_stack_probability_polytope(portfolio,
         probability_polytope, participation, hurdle_stack);
+    require_principal_risk_metric_family(hurdle_stack, result.stack);
     if (result.stack.tranches.size() != 2U ||
         result.stack.tranches[0].tranche_id !=
             selected_stack.tranches[0].id ||
@@ -1277,20 +1350,38 @@ void audit_sparse_market_ledger(
     risk.contractual_market_notional_million = market_notional_million;
     risk.expected_principal_cash_distribution_million =
         market.expected_principal_cash_distribution_million;
-    risk.expected_principal_loss_fraction =
-        market.expected_realized_principal_loss_fraction;
-    risk.principal_loss_es95_million =
-        market.principal_loss_expected_shortfall_95_million;
-    risk.principal_loss_es99_million =
-        market.principal_loss_expected_shortfall_99_million;
+    const PrincipalRiskMetricFamily risk_family =
+        principal_risk_metric_family(hurdle_stack.model_version);
+    if (risk_family == PrincipalRiskMetricFamily::LegacyLossLayeringV01) {
+        risk.expected_principal_loss_fraction =
+            market.expected_realized_principal_loss_fraction;
+        risk.principal_loss_es95_million =
+            market.principal_loss_expected_shortfall_95_million;
+        risk.principal_loss_es99_million =
+            market.principal_loss_expected_shortfall_99_million;
+        risk.principal_impairment_probability =
+            market.principal_impairment_probability;
+    } else {
+        // Compatibility result names retain their v0.1 spelling. Under the
+        // v0.2 explicit asset/liability bridge, their controlling investor-
+        // risk quantities are issued-principal cash shortfall Q, its upper
+        // tails, and Pr[Q>0].
+        risk.expected_principal_loss_fraction = divide_metric_range(
+            market.expected_principal_cash_shortfall_million,
+            market_notional_million);
+        risk.principal_loss_es95_million =
+            market.principal_cash_shortfall_expected_shortfall_95_million;
+        risk.principal_loss_es99_million =
+            market.principal_cash_shortfall_expected_shortfall_99_million;
+        risk.principal_impairment_probability =
+            market.principal_cash_shortfall_probability;
+    }
     risk.worst_principal_loss_es95_fraction =
         risk.principal_loss_es95_million.maximum.value /
         market_notional_million;
     risk.worst_principal_loss_es99_fraction =
         risk.principal_loss_es99_million.maximum.value /
         market_notional_million;
-    risk.principal_impairment_probability =
-        market.principal_impairment_probability;
     risk.principal_cash_wal_years =
         market.principal_cash_weighted_average_life_years;
 
@@ -1706,7 +1797,8 @@ void compare_principal_risk(
     RobustIssuePriceSupportCaseAudit& audit) {
     audit.market_principal_risk_is_unchanged = true;
     audit.market_principal_wal_is_unchanged = true;
-    if (baseline.scenarios.size() != current.scenarios.size() ||
+    if (baseline.model_version != current.model_version ||
+        baseline.scenarios.size() != current.scenarios.size() ||
         baseline.tranches.size() != 2U || current.tranches.size() != 2U) {
         mark_structural_mismatch(audit.maximum_principal_risk_change,
             audit.market_principal_risk_is_unchanged);
@@ -1714,6 +1806,8 @@ void compare_principal_risk(
             audit.market_principal_wal_is_unchanged);
         return;
     }
+    const PrincipalRiskMetricFamily risk_family =
+        principal_risk_metric_family(baseline.model_version);
     for (std::size_t index = 0U; index < baseline.scenarios.size(); ++index) {
         const CapitalStackScenarioResult& a = baseline.scenarios[index];
         const CapitalStackScenarioResult& b = current.scenarios[index];
@@ -1725,14 +1819,17 @@ void compare_principal_risk(
         }
         const CapitalStackTrancheScenarioResult& market_a = a.tranches[1];
         const CapitalStackTrancheScenarioResult& market_b = b.tranches[1];
-        update_change(market_a.realized_principal_loss_million,
-            market_b.realized_principal_loss_million,
-            audit.maximum_principal_risk_change,
-            audit.market_principal_risk_is_unchanged);
-        update_change(market_a.unresolved_principal_exposure_million,
-            market_b.unresolved_principal_exposure_million,
-            audit.maximum_principal_risk_change,
-            audit.market_principal_risk_is_unchanged);
+        if (risk_family ==
+            PrincipalRiskMetricFamily::LegacyLossLayeringV01) {
+            update_change(market_a.realized_principal_loss_million,
+                market_b.realized_principal_loss_million,
+                audit.maximum_principal_risk_change,
+                audit.market_principal_risk_is_unchanged);
+            update_change(market_a.unresolved_principal_exposure_million,
+                market_b.unresolved_principal_exposure_million,
+                audit.maximum_principal_risk_change,
+                audit.market_principal_risk_is_unchanged);
+        }
         update_change(market_a.principal_cash_shortfall_million,
             market_b.principal_cash_shortfall_million,
             audit.maximum_principal_risk_change,
@@ -1746,22 +1843,51 @@ void compare_principal_risk(
         market_b.expected_principal_cash_distribution_million,
         audit.maximum_principal_risk_change,
         audit.market_principal_risk_is_unchanged);
-    update_range_change(market_a.expected_realized_principal_loss_fraction,
-        market_b.expected_realized_principal_loss_fraction,
-        audit.maximum_principal_risk_change,
-        audit.market_principal_risk_is_unchanged);
-    update_range_change(market_a.principal_impairment_probability,
-        market_b.principal_impairment_probability,
-        audit.maximum_principal_risk_change,
-        audit.market_principal_risk_is_unchanged);
-    update_tail_change(market_a.principal_loss_expected_shortfall_95_million,
-        market_b.principal_loss_expected_shortfall_95_million,
-        audit.maximum_principal_risk_change,
-        audit.market_principal_risk_is_unchanged);
-    update_tail_change(market_a.principal_loss_expected_shortfall_99_million,
-        market_b.principal_loss_expected_shortfall_99_million,
-        audit.maximum_principal_risk_change,
-        audit.market_principal_risk_is_unchanged);
+    if (risk_family == PrincipalRiskMetricFamily::LegacyLossLayeringV01) {
+        update_range_change(market_a.expected_realized_principal_loss_fraction,
+            market_b.expected_realized_principal_loss_fraction,
+            audit.maximum_principal_risk_change,
+            audit.market_principal_risk_is_unchanged);
+        update_range_change(market_a.principal_impairment_probability,
+            market_b.principal_impairment_probability,
+            audit.maximum_principal_risk_change,
+            audit.market_principal_risk_is_unchanged);
+        update_tail_change(
+            market_a.principal_loss_expected_shortfall_95_million,
+            market_b.principal_loss_expected_shortfall_95_million,
+            audit.maximum_principal_risk_change,
+            audit.market_principal_risk_is_unchanged);
+        update_tail_change(
+            market_a.principal_loss_expected_shortfall_99_million,
+            market_b.principal_loss_expected_shortfall_99_million,
+            audit.maximum_principal_risk_change,
+            audit.market_principal_risk_is_unchanged);
+    } else {
+        update_range_change(
+            market_a.expected_principal_cash_shortfall_million,
+            market_b.expected_principal_cash_shortfall_million,
+            audit.maximum_principal_risk_change,
+            audit.market_principal_risk_is_unchanged);
+        update_range_change(market_a.principal_cash_shortfall_probability,
+            market_b.principal_cash_shortfall_probability,
+            audit.maximum_principal_risk_change,
+            audit.market_principal_risk_is_unchanged);
+        update_range_change(
+            market_a.full_principal_cash_shortfall_probability,
+            market_b.full_principal_cash_shortfall_probability,
+            audit.maximum_principal_risk_change,
+            audit.market_principal_risk_is_unchanged);
+        update_tail_change(
+            market_a.principal_cash_shortfall_expected_shortfall_95_million,
+            market_b.principal_cash_shortfall_expected_shortfall_95_million,
+            audit.maximum_principal_risk_change,
+            audit.market_principal_risk_is_unchanged);
+        update_tail_change(
+            market_a.principal_cash_shortfall_expected_shortfall_99_million,
+            market_b.principal_cash_shortfall_expected_shortfall_99_million,
+            audit.maximum_principal_risk_change,
+            audit.market_principal_risk_is_unchanged);
+    }
     update_wal_change(
         market_a.principal_cash_weighted_average_life_years,
         market_b.principal_cash_weighted_average_life_years,

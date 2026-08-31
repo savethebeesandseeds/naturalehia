@@ -1,9 +1,11 @@
+include("${CMAKE_CURRENT_LIST_DIR}/resolve_program_command.cmake")
+
 if(NOT DEFINED PROGRAM OR NOT DEFINED BINDER)
     message(FATAL_ERROR "PROGRAM and BINDER are required")
 endif()
 
 execute_process(
-    COMMAND "${PROGRAM}" "${BINDER}" --print-normalized
+    COMMAND ${PROGRAM_COMMAND} "${BINDER}" --print-normalized
     RESULT_VARIABLE result
     OUTPUT_VARIABLE output
     ERROR_VARIABLE error_output
@@ -35,7 +37,7 @@ foreach(fragment IN ITEMS
 endforeach()
 
 execute_process(
-    COMMAND "${PROGRAM}" "${BINDER}" --unknown-option
+    COMMAND ${PROGRAM_COMMAND} "${BINDER}" --unknown-option
     RESULT_VARIABLE bad_result
     OUTPUT_VARIABLE bad_output
     ERROR_VARIABLE bad_error

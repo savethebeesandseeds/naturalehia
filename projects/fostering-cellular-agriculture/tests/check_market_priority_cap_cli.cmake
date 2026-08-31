@@ -1,5 +1,7 @@
 # SPDX-License-Identifier: MIT
 
+include("${CMAKE_CURRENT_LIST_DIR}/resolve_program_command.cmake")
+
 if(NOT DEFINED PROGRAM OR NOT DEFINED FIXTURE)
     message(FATAL_ERROR "PROGRAM and FIXTURE are required")
 endif()
@@ -11,7 +13,7 @@ set(base_stack "${FIXTURE}/capital-stack.cfg")
 set(priority_cap "${FIXTURE}/priority-cap.cfg")
 
 execute_process(
-    COMMAND "${PROGRAM}" "${portfolio}" "${polytope}"
+    COMMAND ${PROGRAM_COMMAND} "${portfolio}" "${polytope}"
         "${participation}" "${base_stack}" "${priority_cap}"
     RESULT_VARIABLE result
     OUTPUT_VARIABLE output
@@ -177,7 +179,7 @@ endforeach()
 # configurations, reload them together, and require byte-stable normalized
 # rendering across the complete five-file suffix.
 execute_process(
-    COMMAND "${PROGRAM}" "${portfolio}" "${polytope}"
+    COMMAND ${PROGRAM_COMMAND} "${portfolio}" "${polytope}"
         "${participation}" "${base_stack}" "${priority_cap}"
         --print-normalized
     RESULT_VARIABLE normalized_result
@@ -263,7 +265,7 @@ file(WRITE "${temp_participation}" "${normalized_participation}\n")
 file(WRITE "${temp_stack}" "${normalized_stack}\n")
 file(WRITE "${temp_cap}" "${normalized_cap}\n")
 execute_process(
-    COMMAND "${PROGRAM}" "${temp_portfolio}" "${temp_polytope}"
+    COMMAND ${PROGRAM_COMMAND} "${temp_portfolio}" "${temp_polytope}"
         "${temp_participation}" "${temp_stack}" "${temp_cap}"
         --print-normalized
     RESULT_VARIABLE replay_result
@@ -294,7 +296,7 @@ set(no_adequate_cap
     "${CMAKE_CURRENT_BINARY_DIR}/priority-cap-${suffix}-none.cfg")
 file(WRITE "${no_adequate_cap}" "${no_adequate_terms}")
 execute_process(
-    COMMAND "${PROGRAM}" "${portfolio}" "${polytope}"
+    COMMAND ${PROGRAM_COMMAND} "${portfolio}" "${polytope}"
         "${participation}" "${base_stack}" "${no_adequate_cap}"
     RESULT_VARIABLE no_adequate_result
     OUTPUT_VARIABLE no_adequate_output
@@ -325,7 +327,7 @@ set(fixed_ineligible_cap
     "${CMAKE_CURRENT_BINARY_DIR}/priority-cap-${suffix}-fixed.cfg")
 file(WRITE "${fixed_ineligible_cap}" "${fixed_ineligible_terms}")
 execute_process(
-    COMMAND "${PROGRAM}" "${portfolio}" "${polytope}"
+    COMMAND ${PROGRAM_COMMAND} "${portfolio}" "${polytope}"
         "${participation}" "${base_stack}" "${fixed_ineligible_cap}"
     RESULT_VARIABLE fixed_ineligible_result
     OUTPUT_VARIABLE fixed_ineligible_output
@@ -344,7 +346,7 @@ endif()
 # Strict exit taxonomy: 1 command grammar, 2 load/parser,
 # 3 cross-input/core/report-output.
 execute_process(
-    COMMAND "${PROGRAM}" "${portfolio}" "${polytope}"
+    COMMAND ${PROGRAM_COMMAND} "${portfolio}" "${polytope}"
         "${participation}" "${base_stack}"
     RESULT_VARIABLE usage_result
     ERROR_VARIABLE usage_error
@@ -358,7 +360,7 @@ if(position EQUAL -1)
 endif()
 
 execute_process(
-    COMMAND "${PROGRAM}" "${portfolio}" "${polytope}"
+    COMMAND ${PROGRAM_COMMAND} "${portfolio}" "${polytope}"
         "${participation}" "${base_stack}" "${priority_cap}"
         --unknown-option
     RESULT_VARIABLE option_result
@@ -369,7 +371,7 @@ if(NOT option_result EQUAL 1)
 endif()
 
 execute_process(
-    COMMAND "${PROGRAM}" "${portfolio}.missing" "${polytope}"
+    COMMAND ${PROGRAM_COMMAND} "${portfolio}.missing" "${polytope}"
         "${participation}" "${base_stack}" "${priority_cap}"
     RESULT_VARIABLE input_result
     ERROR_VARIABLE input_error
@@ -392,7 +394,7 @@ set(invalid_analysis_cap
     "${CMAKE_CURRENT_BINARY_DIR}/priority-cap-${suffix}-analysis.cfg")
 file(WRITE "${invalid_analysis_cap}" "${invalid_analysis_terms}")
 execute_process(
-    COMMAND "${PROGRAM}" "${portfolio}" "${polytope}"
+    COMMAND ${PROGRAM_COMMAND} "${portfolio}" "${polytope}"
         "${participation}" "${base_stack}" "${invalid_analysis_cap}"
     RESULT_VARIABLE analysis_result
     ERROR_VARIABLE analysis_error
@@ -411,7 +413,7 @@ endif()
 # destination, report a scoped analysis failure, and exit 3 rather than
 # silently returning success with an incomplete report.
 execute_process(
-    COMMAND "${PROGRAM}" "${portfolio}" "${polytope}"
+    COMMAND ${PROGRAM_COMMAND} "${portfolio}" "${polytope}"
         "${participation}" "${base_stack}" "${priority_cap}"
     COMMAND "${CMAKE_COMMAND}" -E false
     RESULTS_VARIABLE report_output_results

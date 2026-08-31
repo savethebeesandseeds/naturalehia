@@ -9,6 +9,25 @@ project(
     LANGUAGES CXX
 )
 
+set(cellular_finance_program_emulator)
+if(EMSCRIPTEN)
+    if(NOT CMAKE_CROSSCOMPILING_EMULATOR)
+        find_program(
+            NATURALEHIA_CELLULAR_FINANCE_NODE_EXECUTABLE
+            NAMES node nodejs
+            REQUIRED
+        )
+        set(
+            CMAKE_CROSSCOMPILING_EMULATOR
+            "${NATURALEHIA_CELLULAR_FINANCE_NODE_EXECUTABLE}"
+        )
+    endif()
+    set(
+        cellular_finance_program_emulator
+        "${CMAKE_CROSSCOMPILING_EMULATOR}"
+    )
+endif()
+
 option(
     NATURALEHIA_CELLULAR_FINANCE_BUILD_CLI
     "Build the cellular-agriculture risk-model command line application"
@@ -574,6 +593,14 @@ if(BUILD_TESTING)
     cellular_finance_set_compile_policy(
         cellular_finance_claim_ledger_package_tests
     )
+    if(EMSCRIPTEN)
+        # Deep package-adversary construction exceeds Emscripten's default
+        # stack in an optimized build and can corrupt a later fixture read.
+        target_link_options(
+            cellular_finance_claim_ledger_package_tests
+            PRIVATE "SHELL:-sSTACK_SIZE=1048576"
+        )
+    endif()
     add_test(
         NAME cellular_finance_claim_ledger_package_tests
         COMMAND cellular_finance_claim_ledger_package_tests
@@ -626,6 +653,16 @@ if(BUILD_TESTING)
     cellular_finance_set_compile_policy(
         cellular_finance_claim_ledger_joint_portfolio_tests
     )
+    if(EMSCRIPTEN)
+        # The fail-closed joint-assembler cases unwind several deeply nested
+        # package/portfolio values. Emscripten's default stack is too small
+        # for that valid Release path and otherwise traps before C++ can
+        # deliver the expected invalid_argument.
+        target_link_options(
+            cellular_finance_claim_ledger_joint_portfolio_tests
+            PRIVATE "SHELL:-sSTACK_SIZE=1048576"
+        )
+    endif()
     add_test(
         NAME cellular_finance_claim_ledger_joint_portfolio_tests
         COMMAND cellular_finance_claim_ledger_joint_portfolio_tests
@@ -1143,6 +1180,56 @@ if(BUILD_TESTING)
     )
 
     add_executable(
+        cellular_finance_capital_stack_v02_tests
+        tests/capital_stack_v02_tests.cpp
+    )
+    target_link_libraries(
+        cellular_finance_capital_stack_v02_tests
+        PRIVATE Naturalehia::CellularFinance
+    )
+    target_compile_features(
+        cellular_finance_capital_stack_v02_tests
+        PRIVATE cxx_std_20
+    )
+    set_target_properties(
+        cellular_finance_capital_stack_v02_tests
+        PROPERTIES CXX_EXTENSIONS OFF
+    )
+    cellular_finance_set_compile_policy(
+        cellular_finance_capital_stack_v02_tests
+    )
+    add_test(
+        NAME cellular_finance_capital_stack_v02_tests
+        COMMAND cellular_finance_capital_stack_v02_tests
+    )
+
+    add_executable(
+        cellular_finance_claim_ledger_capital_stack_v02_tests
+        tests/claim_ledger_capital_stack_v02_tests.cpp
+    )
+    target_link_libraries(
+        cellular_finance_claim_ledger_capital_stack_v02_tests
+        PRIVATE Naturalehia::CellularFinance
+    )
+    target_compile_features(
+        cellular_finance_claim_ledger_capital_stack_v02_tests
+        PRIVATE cxx_std_20
+    )
+    set_target_properties(
+        cellular_finance_claim_ledger_capital_stack_v02_tests
+        PROPERTIES CXX_EXTENSIONS OFF
+    )
+    cellular_finance_set_compile_policy(
+        cellular_finance_claim_ledger_capital_stack_v02_tests
+    )
+    add_test(
+        NAME cellular_finance_claim_ledger_capital_stack_v02_tests
+        COMMAND cellular_finance_claim_ledger_capital_stack_v02_tests
+            ${CMAKE_CURRENT_SOURCE_DIR}/scenarios/claim-ledger-v0.1-synthetic/claim.cfg
+            ${CMAKE_CURRENT_SOURCE_DIR}/scenarios/claim-ledger-v0.1-synthetic-peer/claim.cfg
+    )
+
+    add_executable(
         cf_stack_polytope_tests
         tests/capital_stack_probability_polytope_tests.cpp
     )
@@ -1542,7 +1629,8 @@ if(BUILD_TESTING)
             NAME cellular_finance_staged_capital_cli_synthetic
             COMMAND
                 ${CMAKE_COMMAND}
-                -DPROGRAM=$<TARGET_FILE:naturalehia_staged_capital_cli>
+                "-DPROGRAM=$<TARGET_FILE:naturalehia_staged_capital_cli>"
+                "-DPROGRAM_EMULATOR=${cellular_finance_program_emulator}"
                 -DSCENARIO=${CMAKE_CURRENT_SOURCE_DIR}/scenarios/milestone-gated-capital-synthetic.cfg
                 -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/check_staged_capital_cli.cmake
         )
@@ -1551,7 +1639,8 @@ if(BUILD_TESTING)
             NAME cellular_finance_portfolio_cli_synthetic
             COMMAND
                 ${CMAKE_COMMAND}
-                -DPROGRAM=$<TARGET_FILE:naturalehia_portfolio_cli>
+                "-DPROGRAM=$<TARGET_FILE:naturalehia_portfolio_cli>"
+                "-DPROGRAM_EMULATOR=${cellular_finance_program_emulator}"
                 -DSCENARIO=${CMAKE_CURRENT_SOURCE_DIR}/scenarios/two-project-participation-pool-synthetic.cfg
                 -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/check_portfolio_cli.cmake
         )
@@ -1560,7 +1649,8 @@ if(BUILD_TESTING)
             NAME cellular_finance_portfolio_ambiguity_cli_synthetic
             COMMAND
                 ${CMAKE_COMMAND}
-                -DPROGRAM=$<TARGET_FILE:naturalehia_portfolio_ambiguity_cli>
+                "-DPROGRAM=$<TARGET_FILE:naturalehia_portfolio_ambiguity_cli>"
+                "-DPROGRAM_EMULATOR=${cellular_finance_program_emulator}"
                 -DPORTFOLIO=${CMAKE_CURRENT_SOURCE_DIR}/scenarios/two-project-participation-pool-synthetic.cfg
                 -DAMBIGUITY=${CMAKE_CURRENT_SOURCE_DIR}/scenarios/two-project-probability-envelope-synthetic.cfg
                 -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/check_ambiguity_cli.cmake
@@ -1570,7 +1660,8 @@ if(BUILD_TESTING)
             NAME cellular_finance_probability_polytope_cli_synthetic
             COMMAND
                 ${CMAKE_COMMAND}
-                -DPROGRAM=$<TARGET_FILE:naturalehia_portfolio_ambiguity_cli>
+                "-DPROGRAM=$<TARGET_FILE:naturalehia_portfolio_ambiguity_cli>"
+                "-DPROGRAM_EMULATOR=${cellular_finance_program_emulator}"
                 -DPORTFOLIO=${CMAKE_CURRENT_SOURCE_DIR}/scenarios/two-project-participation-pool-synthetic.cfg
                 -DPOLYTOPE=${CMAKE_CURRENT_SOURCE_DIR}/scenarios/two-project-event-polytope-synthetic.cfg
                 -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/check_probability_polytope_cli.cmake
@@ -1580,7 +1671,8 @@ if(BUILD_TESTING)
             NAME cellular_finance_success_participation_cli_synthetic
             COMMAND
                 ${CMAKE_COMMAND}
-                -DPROGRAM=$<TARGET_FILE:naturalehia_success_participation_cli>
+                "-DPROGRAM=$<TARGET_FILE:naturalehia_success_participation_cli>"
+                "-DPROGRAM_EMULATOR=${cellular_finance_program_emulator}"
                 -DPORTFOLIO=${CMAKE_CURRENT_SOURCE_DIR}/scenarios/two-project-participation-pool-synthetic.cfg
                 -DAMBIGUITY=${CMAKE_CURRENT_SOURCE_DIR}/scenarios/two-project-probability-envelope-synthetic.cfg
                 -DPARTICIPATION=${CMAKE_CURRENT_SOURCE_DIR}/scenarios/two-project-success-participation-synthetic.cfg
@@ -1591,7 +1683,8 @@ if(BUILD_TESTING)
             NAME cellular_finance_pooled_loss_protection_cli_synthetic
             COMMAND
                 ${CMAKE_COMMAND}
-                -DPROGRAM=$<TARGET_FILE:naturalehia_pooled_loss_protection_cli>
+                "-DPROGRAM=$<TARGET_FILE:naturalehia_pooled_loss_protection_cli>"
+                "-DPROGRAM_EMULATOR=${cellular_finance_program_emulator}"
                 -DPORTFOLIO=${CMAKE_CURRENT_SOURCE_DIR}/scenarios/two-project-participation-pool-synthetic.cfg
                 -DAMBIGUITY=${CMAKE_CURRENT_SOURCE_DIR}/scenarios/two-project-probability-envelope-synthetic.cfg
                 -DPARTICIPATION=${CMAKE_CURRENT_SOURCE_DIR}/scenarios/two-project-success-participation-synthetic.cfg
@@ -1603,7 +1696,8 @@ if(BUILD_TESTING)
             NAME cellular_finance_provider_price_ladder_cli_synthetic
             COMMAND
                 ${CMAKE_COMMAND}
-                -DPROGRAM=$<TARGET_FILE:naturalehia_provider_price_ladder_cli>
+                "-DPROGRAM=$<TARGET_FILE:naturalehia_provider_price_ladder_cli>"
+                "-DPROGRAM_EMULATOR=${cellular_finance_program_emulator}"
                 -DPORTFOLIO=${CMAKE_CURRENT_SOURCE_DIR}/scenarios/two-project-participation-pool-synthetic.cfg
                 -DAMBIGUITY=${CMAKE_CURRENT_SOURCE_DIR}/scenarios/two-project-probability-envelope-synthetic.cfg
                 -DPARTICIPATION=${CMAKE_CURRENT_SOURCE_DIR}/scenarios/two-project-success-participation-synthetic.cfg
@@ -1616,7 +1710,8 @@ if(BUILD_TESTING)
             NAME cellular_finance_provider_credit_stress_cli_synthetic
             COMMAND
                 ${CMAKE_COMMAND}
-                -DPROGRAM=$<TARGET_FILE:naturalehia_provider_credit_stress_cli>
+                "-DPROGRAM=$<TARGET_FILE:naturalehia_provider_credit_stress_cli>"
+                "-DPROGRAM_EMULATOR=${cellular_finance_program_emulator}"
                 -DPORTFOLIO=${CMAKE_CURRENT_SOURCE_DIR}/scenarios/two-project-participation-pool-synthetic.cfg
                 -DAMBIGUITY=${CMAKE_CURRENT_SOURCE_DIR}/scenarios/two-project-probability-envelope-synthetic.cfg
                 -DPARTICIPATION=${CMAKE_CURRENT_SOURCE_DIR}/scenarios/two-project-success-participation-synthetic.cfg
@@ -1630,7 +1725,8 @@ if(BUILD_TESTING)
             NAME cellular_finance_capital_stack_cli_synthetic
             COMMAND
                 ${CMAKE_COMMAND}
-                -DPROGRAM=$<TARGET_FILE:naturalehia_capital_stack_cli>
+                "-DPROGRAM=$<TARGET_FILE:naturalehia_capital_stack_cli>"
+                "-DPROGRAM_EMULATOR=${cellular_finance_program_emulator}"
                 -DPORTFOLIO=${CMAKE_CURRENT_SOURCE_DIR}/scenarios/two-project-participation-pool-synthetic.cfg
                 -DAMBIGUITY=${CMAKE_CURRENT_SOURCE_DIR}/scenarios/two-project-probability-envelope-synthetic.cfg
                 -DPARTICIPATION=${CMAKE_CURRENT_SOURCE_DIR}/scenarios/two-project-success-participation-synthetic.cfg
@@ -1642,7 +1738,8 @@ if(BUILD_TESTING)
             NAME cf_stack_poly_cli
             COMMAND
                 ${CMAKE_COMMAND}
-                -DPROGRAM=$<TARGET_FILE:naturalehia_capital_stack_cli>
+                "-DPROGRAM=$<TARGET_FILE:naturalehia_capital_stack_cli>"
+                "-DPROGRAM_EMULATOR=${cellular_finance_program_emulator}"
                 -DPORTFOLIO=${CMAKE_CURRENT_SOURCE_DIR}/scenarios/two-project-participation-pool-synthetic.cfg
                 -DPOLYTOPE=${CMAKE_CURRENT_SOURCE_DIR}/scenarios/two-project-event-polytope-synthetic.cfg
                 -DAMBIGUITY=${CMAKE_CURRENT_SOURCE_DIR}/scenarios/two-project-probability-envelope-synthetic.cfg
@@ -1655,7 +1752,8 @@ if(BUILD_TESTING)
             NAME cf_frontier_cli_synthetic
             COMMAND
                 ${CMAKE_COMMAND}
-                -DPROGRAM=$<TARGET_FILE:cf_frontier_cli>
+                "-DPROGRAM=$<TARGET_FILE:cf_frontier_cli>"
+                "-DPROGRAM_EMULATOR=${cellular_finance_program_emulator}"
                 -DFIXTURE=${CMAKE_CURRENT_SOURCE_DIR}/scenarios/capital-mobilization-frontier-v0.1-synthetic
                 -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/check_capital_mobilization_frontier_cli.cmake
         )
@@ -1664,7 +1762,8 @@ if(BUILD_TESTING)
             NAME cf_priority_cap_cli_synthetic
             COMMAND
                 ${CMAKE_COMMAND}
-                -DPROGRAM=$<TARGET_FILE:cf_priority_cap_cli>
+                "-DPROGRAM=$<TARGET_FILE:cf_priority_cap_cli>"
+                "-DPROGRAM_EMULATOR=${cellular_finance_program_emulator}"
                 -DFIXTURE=${CMAKE_CURRENT_SOURCE_DIR}/scenarios/market-priority-cap-v0.1-synthetic
                 -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/check_market_priority_cap_cli.cmake
         )
@@ -1673,7 +1772,8 @@ if(BUILD_TESTING)
             NAME cf_issue_price_support_cli_synthetic
             COMMAND
                 ${CMAKE_COMMAND}
-                -DPROGRAM=$<TARGET_FILE:cf_issue_price_support_cli>
+                "-DPROGRAM=$<TARGET_FILE:cf_issue_price_support_cli>"
+                "-DPROGRAM_EMULATOR=${cellular_finance_program_emulator}"
                 -DFIXTURE=${CMAKE_CURRENT_SOURCE_DIR}/scenarios/market-priority-cap-v0.1-synthetic
                 -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/check_issue_price_support_cli.cmake
         )
@@ -1682,7 +1782,8 @@ if(BUILD_TESTING)
             NAME cf_hurdle_evidence_cli_synthetic
             COMMAND
                 ${CMAKE_COMMAND}
-                -DPROGRAM=$<TARGET_FILE:cf_hurdle_evidence_cli>
+                "-DPROGRAM=$<TARGET_FILE:cf_hurdle_evidence_cli>"
+                "-DPROGRAM_EMULATOR=${cellular_finance_program_emulator}"
                 -DFIXTURE=${CMAKE_CURRENT_SOURCE_DIR}/scenarios/market-priority-cap-v0.1-synthetic
                 -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/check_hurdle_evidence_cli.cmake
         )
@@ -1691,7 +1792,8 @@ if(BUILD_TESTING)
             NAME cellular_finance_joint_cohort_capital_stack_cli_synthetic
             COMMAND
                 ${CMAKE_COMMAND}
-                -DPROGRAM=$<TARGET_FILE:naturalehia_capital_stack_cli>
+                "-DPROGRAM=$<TARGET_FILE:naturalehia_capital_stack_cli>"
+                "-DPROGRAM_EMULATOR=${cellular_finance_program_emulator}"
                 -DCOHORT=${CMAKE_CURRENT_SOURCE_DIR}/scenarios/joint-cohort-v0.1-synthetic/cohort.cfg
                 -DBLOCKED=${CMAKE_CURRENT_SOURCE_DIR}/scenarios/joint-cohort-v0.1-synthetic/blocked.cfg
                 -DPARTICIPATION=${CMAKE_CURRENT_SOURCE_DIR}/scenarios/joint-cohort-v0.1-synthetic/success-participation.cfg
@@ -1704,7 +1806,8 @@ if(BUILD_TESTING)
             NAME cellular_finance_calibration_binder_cli_synthetic
             COMMAND
                 ${CMAKE_COMMAND}
-                -DPROGRAM=$<TARGET_FILE:naturalehia_calibration_binder_cli>
+                "-DPROGRAM=$<TARGET_FILE:naturalehia_calibration_binder_cli>"
+                "-DPROGRAM_EMULATOR=${cellular_finance_program_emulator}"
                 -DBINDER=${CMAKE_CURRENT_SOURCE_DIR}/scenarios/calibration-binder-v0.1-synthetic/binder.cfg
                 -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/check_calibration_binder_cli.cmake
         )
@@ -1713,7 +1816,8 @@ if(BUILD_TESTING)
             NAME cellular_finance_claim_ledger_cli
             COMMAND
                 ${CMAKE_COMMAND}
-                -DPROGRAM=$<TARGET_FILE:naturalehia_claim_ledger_cli>
+                "-DPROGRAM=$<TARGET_FILE:naturalehia_claim_ledger_cli>"
+                "-DPROGRAM_EMULATOR=${cellular_finance_program_emulator}"
                 -DSYNTHETIC=${CMAKE_CURRENT_SOURCE_DIR}/scenarios/claim-ledger-v0.1-synthetic/claim.cfg
                 -DLIBERATION=${CMAKE_CURRENT_SOURCE_DIR}/reference_transactions/liberation-labs-facility-financing-2024-2025/claim_ledger_v0_1/claim.cfg
                 -DSOLAR=${CMAKE_CURRENT_SOURCE_DIR}/reference_transactions/solar-foods-factory-01-facility-2022-2025/claim_ledger_v0_1/claim.cfg
@@ -1724,7 +1828,8 @@ if(BUILD_TESTING)
             NAME cellular_finance_joint_cohort_cli_synthetic
             COMMAND
                 ${CMAKE_COMMAND}
-                -DPROGRAM=$<TARGET_FILE:naturalehia_joint_cohort_cli>
+                "-DPROGRAM=$<TARGET_FILE:naturalehia_joint_cohort_cli>"
+                "-DPROGRAM_EMULATOR=${cellular_finance_program_emulator}"
                 -DCOHORT=${CMAKE_CURRENT_SOURCE_DIR}/scenarios/joint-cohort-v0.1-synthetic/cohort.cfg
                 -DBLOCKED=${CMAKE_CURRENT_SOURCE_DIR}/scenarios/joint-cohort-v0.1-synthetic/blocked.cfg
                 -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/check_joint_cohort_cli.cmake
@@ -1740,7 +1845,8 @@ if(BUILD_TESTING)
                 NAME cellular_finance_evidence_gate_${evidence_cli_mode}
                 COMMAND
                     ${CMAKE_COMMAND}
-                    -DPROGRAM=$<TARGET_FILE:naturalehia_evidence_gate_cli>
+                    "-DPROGRAM=$<TARGET_FILE:naturalehia_evidence_gate_cli>"
+                    "-DPROGRAM_EMULATOR=${cellular_finance_program_emulator}"
                     -DDOSSIER=${CMAKE_CURRENT_SOURCE_DIR}/reference_projects/believer-wilson/dossier.cfg
                     -DMANIFEST=${CMAKE_CURRENT_SOURCE_DIR}/reference_projects/believer-wilson/evidence_manifest.tsv
                     -DMODE=${evidence_cli_mode}
@@ -1752,7 +1858,8 @@ if(BUILD_TESTING)
             NAME cellular_finance_evidence_gate_claim_population
             COMMAND
                 ${CMAKE_COMMAND}
-                -DPROGRAM=$<TARGET_FILE:naturalehia_evidence_gate_cli>
+                "-DPROGRAM=$<TARGET_FILE:naturalehia_evidence_gate_cli>"
+                "-DPROGRAM_EMULATOR=${cellular_finance_program_emulator}"
                 -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/claim-population-evidence-cli
                 -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/check_claim_population_evidence_cli.cmake
         )
@@ -1761,7 +1868,8 @@ if(BUILD_TESTING)
             NAME cellular_finance_ten_claim_instrument_family_cli_synthetic
             COMMAND
                 ${CMAKE_COMMAND}
-                -DPROGRAM=$<TARGET_FILE:naturalehia_instrument_family_cli>
+                "-DPROGRAM=$<TARGET_FILE:naturalehia_instrument_family_cli>"
+                "-DPROGRAM_EMULATOR=${cellular_finance_program_emulator}"
                 -DFIXTURE=${CMAKE_CURRENT_SOURCE_DIR}/scenarios/ten-claim-instrument-v1-synthetic
                 -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/check_ten_claim_instrument_cli.cmake
         )

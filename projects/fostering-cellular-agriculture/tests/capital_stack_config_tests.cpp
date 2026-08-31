@@ -69,6 +69,29 @@ void expect_invalid_argument(
         "tranche.3.is_first_loss_residual=false\n";
 }
 
+[[nodiscard]] std::string valid_v02_config() {
+    std::string result = valid_config();
+    const std::string legacy_version =
+        "capital_stack.model_version=0.1.0";
+    result.replace(result.find(legacy_version), legacy_version.size(),
+        "capital_stack.model_version=0.2.0");
+    const std::string legacy_funding_assertion =
+        "capital_stack.aggregate_commitment_is_fully_funded_at_par_at_month_zero=true";
+    result.replace(result.find(legacy_funding_assertion),
+        legacy_funding_assertion.size(),
+        "capital_stack.aggregate_commitment_is_fully_funded_at_par_at_month_zero=false");
+    const std::string fair_value_assertion =
+        "capital_stack.premium_discount_or_fair_value_is_claimed=false\n";
+    const std::size_t insertion =
+        result.find(fair_value_assertion) + fair_value_assertion.size();
+    result.insert(insertion,
+        "capital_stack.asset_acquisition_and_primary_funding_limit_is_fully_funded_at_par_at_month_zero=true\n"
+        "capital_stack.buyer_direct_costs_are_additional_pro_rata_calls=true\n"
+        "capital_stack.principal_base_cash_above_issued_principal_is_nonprincipal=true\n"
+        "capital_stack.principal_limit_capacity_difference_is_reported_without_valuation_claim=true\n");
+    return result;
+}
+
 [[nodiscard]] cf::CapitalStackConfig parse(std::string text) {
     std::istringstream input(std::move(text));
     return cf::parse_capital_stack_config(input);
@@ -76,25 +99,98 @@ void expect_invalid_argument(
 
 void test_parse_and_normalized_round_trip() {
     const cf::CapitalStackConfig config = parse(valid_config());
-    check(config.tranches.size() == 3U &&
+    check(config.model_version == cf::kCapitalStackLegacyModelVersion &&
+            config.tranches.size() == 3U &&
             config.tranches.front().is_first_loss_residual &&
             config.tranches[1].priority_nonprincipal_cap_million == 2.0 &&
             config.tranches.back().annual_physical_hurdle_rate == 0.05,
-        "strict parser retains every tranche term");
+        "strict v0.1 parser retains every tranche term");
     std::ostringstream normalized;
     cf::print_normalized_capital_stack_config(normalized, config);
+    check(normalized.str().find(
+              "asset_acquisition_and_primary_funding_limit") ==
+            std::string::npos,
+        "normalized v0.1 output does not add v0.2 keys");
     const cf::CapitalStackConfig reparsed = parse(normalized.str());
-    check(reparsed.scenario_label == config.scenario_label &&
+    check(reparsed.model_version == cf::kCapitalStackLegacyModelVersion &&
+            reparsed.scenario_label == config.scenario_label &&
             reparsed.tranches.size() == config.tranches.size() &&
             reparsed.tranches[0].detachment_million == 4.0 &&
             reparsed.tranches[2].priority_nonprincipal_cap_million == 1.0,
-        "normalized output is deterministic and reloadable");
+        "normalized v0.1 output is deterministic and reloadable");
+
+    const cf::CapitalStackConfig v02 = parse(valid_v02_config());
+    check(v02.model_version == cf::kCapitalStackModelVersion &&
+            !v02.aggregate_commitment_is_fully_funded_at_par_at_month_zero &&
+            v02.asset_acquisition_and_primary_funding_limit_is_fully_funded_at_par_at_month_zero &&
+            v02.buyer_direct_costs_are_additional_pro_rata_calls &&
+            v02.principal_base_cash_above_issued_principal_is_nonprincipal &&
+            v02.principal_limit_capacity_difference_is_reported_without_valuation_claim,
+        "strict v0.2 parser retains every asset-liability assertion");
+    std::ostringstream normalized_v02;
+    cf::print_normalized_capital_stack_config(normalized_v02, v02);
+    const cf::CapitalStackConfig reparsed_v02 = parse(normalized_v02.str());
+    check(reparsed_v02.model_version == cf::kCapitalStackModelVersion &&
+            reparsed_v02.scenario_label == v02.scenario_label &&
+            reparsed_v02.asset_acquisition_and_primary_funding_limit_is_fully_funded_at_par_at_month_zero &&
+            reparsed_v02.buyer_direct_costs_are_additional_pro_rata_calls &&
+            reparsed_v02.principal_base_cash_above_issued_principal_is_nonprincipal &&
+            reparsed_v02.principal_limit_capacity_difference_is_reported_without_valuation_claim,
+        "normalized v0.2 output is deterministic and reloadable");
 }
 
 void test_closed_schema_and_guardrails() {
     expect_invalid_argument(
         [] { (void)parse(valid_config() + "capital_stack.unknown=true\n"); },
         "unknown keys are rejected");
+
+    expect_invalid_argument(
+        [] {
+            (void)parse(valid_config() +
+                "capital_stack.buyer_direct_costs_are_additional_pro_rata_calls=true\n");
+        },
+        "v0.1 rejects v0.2-only keys");
+
+    std::string unsupported = valid_config();
+    const std::string supported_version =
+        "capital_stack.model_version=0.1.0";
+    unsupported.replace(unsupported.find(supported_version),
+        supported_version.size(), "capital_stack.model_version=0.3.0");
+    expect_invalid_argument([&] { (void)parse(unsupported); },
+        "unsupported model versions are rejected");
+
+    std::string missing_v02_key = valid_v02_config();
+    const std::string required_v02_line =
+        "capital_stack.principal_limit_capacity_difference_is_reported_without_valuation_claim=true\n";
+    missing_v02_key.erase(missing_v02_key.find(required_v02_line),
+        required_v02_line.size());
+    expect_invalid_argument([&] { (void)parse(missing_v02_key); },
+        "v0.2 requires every asset-liability assertion key");
+
+    std::string legacy_assertion_in_v02 = valid_v02_config();
+    const std::string legacy_assertion_false =
+        "capital_stack.aggregate_commitment_is_fully_funded_at_par_at_month_zero=false";
+    legacy_assertion_in_v02.replace(
+        legacy_assertion_in_v02.find(legacy_assertion_false),
+        legacy_assertion_false.size(),
+        "capital_stack.aggregate_commitment_is_fully_funded_at_par_at_month_zero=true");
+    expect_invalid_argument([&] { (void)parse(legacy_assertion_in_v02); },
+        "v0.2 rejects the legacy aggregate-commitment assertion");
+
+    const std::string v02_true_assertions[] = {
+        "capital_stack.asset_acquisition_and_primary_funding_limit_is_fully_funded_at_par_at_month_zero=true",
+        "capital_stack.buyer_direct_costs_are_additional_pro_rata_calls=true",
+        "capital_stack.principal_base_cash_above_issued_principal_is_nonprincipal=true",
+        "capital_stack.principal_limit_capacity_difference_is_reported_without_valuation_claim=true",
+    };
+    for (const std::string& assertion : v02_true_assertions) {
+        std::string false_assertion = valid_v02_config();
+        false_assertion.replace(false_assertion.find(assertion),
+            assertion.size(), assertion.substr(0U, assertion.size() - 4U) +
+                "false");
+        expect_invalid_argument([&] { (void)parse(false_assertion); },
+            "v0.2 accounting assertions must all be true");
+    }
 
     std::string duplicate = valid_config();
     duplicate += "tranche.count=3\n";
@@ -164,6 +260,15 @@ void test_closed_schema_and_guardrails() {
             cf::print_normalized_capital_stack_config(output, injected);
         },
         "normalized output rejects an embedded BOM it cannot reload");
+
+    injected = parse(valid_config());
+    injected.buyer_direct_costs_are_additional_pro_rata_calls = true;
+    expect_invalid_argument(
+        [&] {
+            std::ostringstream output;
+            cf::print_normalized_capital_stack_config(output, injected);
+        },
+        "programmatic v0.1 cannot silently carry a v0.2 assertion");
 }
 
 } // namespace

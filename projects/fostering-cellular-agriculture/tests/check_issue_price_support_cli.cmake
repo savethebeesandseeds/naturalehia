@@ -1,5 +1,7 @@
 # SPDX-License-Identifier: MIT
 
+include("${CMAKE_CURRENT_LIST_DIR}/resolve_program_command.cmake")
+
 if(NOT DEFINED PROGRAM OR NOT DEFINED FIXTURE)
     message(FATAL_ERROR "PROGRAM and FIXTURE are required")
 endif()
@@ -12,7 +14,7 @@ set(priority_cap "${FIXTURE}/priority-cap.cfg")
 set(issue_price "${FIXTURE}/issue-price.cfg")
 
 execute_process(
-    COMMAND "${PROGRAM}" "${portfolio}" "${polytope}"
+    COMMAND ${PROGRAM_COMMAND} "${portfolio}" "${polytope}"
         "${participation}" "${base_stack}" "${priority_cap}"
         "${issue_price}"
     RESULT_VARIABLE result
@@ -154,7 +156,7 @@ endforeach()
 # Normalized output must expose all six reloadable files. Extract each one,
 # reload them together, and require a byte-stable six-file normalized suffix.
 execute_process(
-    COMMAND "${PROGRAM}" "${portfolio}" "${polytope}"
+    COMMAND ${PROGRAM_COMMAND} "${portfolio}" "${polytope}"
         "${participation}" "${base_stack}" "${priority_cap}"
         "${issue_price}" --print-normalized
     RESULT_VARIABLE normalized_result
@@ -256,7 +258,7 @@ file(WRITE "${temp_stack}" "${normalized_stack}\n")
 file(WRITE "${temp_cap}" "${normalized_cap}\n")
 file(WRITE "${temp_issue}" "${normalized_issue}\n")
 execute_process(
-    COMMAND "${PROGRAM}" "${temp_portfolio}" "${temp_polytope}"
+    COMMAND ${PROGRAM_COMMAND} "${temp_portfolio}" "${temp_polytope}"
         "${temp_participation}" "${temp_stack}" "${temp_cap}"
         "${temp_issue}" --print-normalized
     RESULT_VARIABLE replay_result
@@ -293,7 +295,7 @@ set(no_solution_issue
     "${CMAKE_CURRENT_BINARY_DIR}/issue-price-${suffix}-none.cfg")
 file(WRITE "${no_solution_issue}" "${no_solution_terms}")
 execute_process(
-    COMMAND "${PROGRAM}" "${portfolio}" "${polytope}"
+    COMMAND ${PROGRAM_COMMAND} "${portfolio}" "${polytope}"
         "${participation}" "${base_stack}" "${priority_cap}"
         "${no_solution_issue}"
     RESULT_VARIABLE no_solution_result
@@ -332,7 +334,7 @@ set(non_independent_issue
     "${CMAKE_CURRENT_BINARY_DIR}/issue-price-${suffix}-nonind.cfg")
 file(WRITE "${non_independent_issue}" "${non_independent_terms}")
 execute_process(
-    COMMAND "${PROGRAM}" "${portfolio}" "${polytope}"
+    COMMAND ${PROGRAM_COMMAND} "${portfolio}" "${polytope}"
         "${participation}" "${base_stack}" "${priority_cap}"
         "${non_independent_issue}"
     RESULT_VARIABLE non_independent_result
@@ -397,7 +399,7 @@ set(secondary_issue
     "${CMAKE_CURRENT_BINARY_DIR}/issue-price-${suffix}-secondary.cfg")
 file(WRITE "${secondary_issue}" "${secondary_terms}")
 execute_process(
-    COMMAND "${PROGRAM}" "${portfolio}" "${polytope}"
+    COMMAND ${PROGRAM_COMMAND} "${portfolio}" "${polytope}"
         "${participation}" "${base_stack}" "${priority_cap}"
         "${secondary_issue}"
     RESULT_VARIABLE secondary_result
@@ -500,7 +502,7 @@ set(settled_issue
     "${CMAKE_CURRENT_BINARY_DIR}/issue-price-${suffix}-settled.cfg")
 file(WRITE "${settled_issue}" "${settled_terms}")
 execute_process(
-    COMMAND "${PROGRAM}" "${portfolio}" "${polytope}"
+    COMMAND ${PROGRAM_COMMAND} "${portfolio}" "${polytope}"
         "${participation}" "${base_stack}" "${priority_cap}"
         "${settled_issue}"
     RESULT_VARIABLE settled_result
@@ -550,7 +552,7 @@ set(settled_sources_only_issue
     "${CMAKE_CURRENT_BINARY_DIR}/issue-price-${suffix}-sources-only.cfg")
 file(WRITE "${settled_sources_only_issue}" "${settled_sources_only_terms}")
 execute_process(
-    COMMAND "${PROGRAM}" "${portfolio}" "${polytope}"
+    COMMAND ${PROGRAM_COMMAND} "${portfolio}" "${polytope}"
         "${participation}" "${base_stack}" "${priority_cap}"
         "${settled_sources_only_issue}"
     RESULT_VARIABLE settled_sources_only_result
@@ -578,7 +580,7 @@ endforeach()
 # Strict exit taxonomy: 1 command grammar, 2 load/parser, and 3 compatible
 # input cross-validation, evaluation, or report-output failure.
 execute_process(
-    COMMAND "${PROGRAM}" "${portfolio}" "${polytope}"
+    COMMAND ${PROGRAM_COMMAND} "${portfolio}" "${polytope}"
         "${participation}" "${base_stack}" "${priority_cap}"
     RESULT_VARIABLE usage_result
     ERROR_VARIABLE usage_error
@@ -592,7 +594,7 @@ if(position EQUAL -1)
 endif()
 
 execute_process(
-    COMMAND "${PROGRAM}" "${portfolio}" "${polytope}"
+    COMMAND ${PROGRAM_COMMAND} "${portfolio}" "${polytope}"
         "${participation}" "${base_stack}" "${priority_cap}"
         "${issue_price}" --unknown-option
     RESULT_VARIABLE option_result
@@ -603,7 +605,7 @@ if(NOT option_result EQUAL 1)
 endif()
 
 execute_process(
-    COMMAND "${PROGRAM}" "${portfolio}" "${polytope}"
+    COMMAND ${PROGRAM_COMMAND} "${portfolio}" "${polytope}"
         "${participation}" "${base_stack}" "${priority_cap}"
         "${issue_price}.missing"
     RESULT_VARIABLE input_result
@@ -627,7 +629,7 @@ set(invalid_analysis_issue
     "${CMAKE_CURRENT_BINARY_DIR}/issue-price-${suffix}-analysis.cfg")
 file(WRITE "${invalid_analysis_issue}" "${invalid_analysis_terms}")
 execute_process(
-    COMMAND "${PROGRAM}" "${portfolio}" "${polytope}"
+    COMMAND ${PROGRAM_COMMAND} "${portfolio}" "${polytope}"
         "${participation}" "${base_stack}" "${priority_cap}"
         "${invalid_analysis_issue}"
     RESULT_VARIABLE analysis_result
@@ -647,7 +649,7 @@ endif()
 # ledger exceeds a platform pipe buffer, so the producer must observe the
 # broken destination and return the scoped output-failure status.
 execute_process(
-    COMMAND "${PROGRAM}" "${portfolio}" "${polytope}"
+    COMMAND ${PROGRAM_COMMAND} "${portfolio}" "${polytope}"
         "${participation}" "${base_stack}" "${priority_cap}"
         "${issue_price}"
     COMMAND "${CMAKE_COMMAND}" -E false

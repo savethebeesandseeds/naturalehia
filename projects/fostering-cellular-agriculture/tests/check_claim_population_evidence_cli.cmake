@@ -1,5 +1,7 @@
 # SPDX-License-Identifier: MIT
 
+include("${CMAKE_CURRENT_LIST_DIR}/resolve_program_command.cmake")
+
 if(NOT DEFINED PROGRAM OR NOT DEFINED WORK_DIR)
     message(FATAL_ERROR "PROGRAM and WORK_DIR are required")
 endif()
@@ -34,7 +36,7 @@ set(independent_row
 file(WRITE "${WORK_DIR}/evidence_manifest.tsv"
     "${manifest_header}${authority_row}${independent_row}")
 execute_process(
-    COMMAND "${PROGRAM}"
+    COMMAND ${PROGRAM_COMMAND}
         "${WORK_DIR}/dossier.cfg"
         "${WORK_DIR}/evidence_manifest.tsv"
         --evaluation-date 2026-08-30
@@ -55,7 +57,7 @@ endif()
 file(WRITE "${WORK_DIR}/evidence_manifest.tsv"
     "${manifest_header}${authority_row}")
 execute_process(
-    COMMAND "${PROGRAM}"
+    COMMAND ${PROGRAM_COMMAND}
         "${WORK_DIR}/dossier.cfg"
         "${WORK_DIR}/evidence_manifest.tsv"
         --evaluation-date 2026-08-30

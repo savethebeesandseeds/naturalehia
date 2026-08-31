@@ -169,6 +169,34 @@ void check_invalid_equals(Callable&& callable,
     return portfolio;
 }
 
+[[nodiscard]] cf::PortfolioConfig explicit_ledger_four_state_portfolio() {
+    cf::PortfolioConfig portfolio = four_state_portfolio();
+    for (cf::PortfolioProject& project : portfolio.projects) {
+        project.principal_accounting_mode =
+            cf::PrincipalAccountingMode::ExplicitContractualLedger;
+        project.principal_limit_million = project.commitment_million;
+    }
+    for (cf::JointScenario& scenario : portfolio.joint_scenarios) {
+        for (cf::ProjectJointPath& path : scenario.project_paths) {
+            path.capital_draws.clear();
+            path.investor_outlays = {{0U,
+                cf::InvestorOutlayPurpose::ClaimPurchasePrice, 10.0}};
+            path.principal_movements = {{0U,
+                cf::PrincipalMovementKind::FundedPrincipalAddition, 10.0}};
+            double principal_cash = 0.0;
+            for (const cf::InvestorReceipt& receipt : path.investor_receipts) {
+                principal_cash += receipt.principal_component_million;
+            }
+            if (principal_cash < 10.0) {
+                path.principal_movements.push_back({portfolio.horizon_months,
+                    cf::PrincipalMovementKind::Writeoff,
+                    10.0 - principal_cash});
+            }
+        }
+    }
+    return portfolio;
+}
+
 [[nodiscard]] cf::ProbabilityPolytopeConfig event_polytope() {
     cf::ProbabilityPolytopeConfig polytope;
     polytope.scenario_label = "overlapping event constraint hand table";
@@ -261,6 +289,19 @@ struct RepeatedStateFixture {
         {"catalytic-first-loss", 0.0, 12.0, 0.0, 0.0, true},
         {"market-priority", 12.0, 20.0, 1.0, 0.0, false},
     };
+    return stack;
+}
+
+[[nodiscard]] cf::CapitalStackConfig explicit_asset_liability_stack() {
+    cf::CapitalStackConfig stack = base_stack();
+    stack.model_version = std::string(cf::kCapitalStackModelVersion);
+    stack.aggregate_commitment_is_fully_funded_at_par_at_month_zero = false;
+    stack.asset_acquisition_and_primary_funding_limit_is_fully_funded_at_par_at_month_zero =
+        true;
+    stack.buyer_direct_costs_are_additional_pro_rata_calls = true;
+    stack.principal_base_cash_above_issued_principal_is_nonprincipal = true;
+    stack.principal_limit_capacity_difference_is_reported_without_valuation_claim =
+        true;
     return stack;
 }
 
@@ -569,6 +610,63 @@ void test_status_falsification_and_unequal_hurdles() {
         "unequal own hurdles preserve monotonicity without a false NPV conservation claim");
 }
 
+void test_v02_uses_issued_principal_cash_shortfall_risk() {
+    const cf::PortfolioConfig portfolio =
+        explicit_ledger_four_state_portfolio();
+    const cf::CapitalStackConfig stack = explicit_asset_liability_stack();
+    const cf::RobustMarketPriorityCapSummary summary =
+        cf::evaluate_robust_market_priority_cap(portfolio, event_polytope(),
+            participation_terms(), stack, cap_terms());
+    const auto& root = summary.candidates[3];
+    check(near(root.worst_market_expected_loss_fraction, 0.05) &&
+            near(root.worst_market_principal_loss_es95_fraction, 0.50) &&
+            near(root.worst_market_principal_loss_es99_fraction, 0.50) &&
+            near(root.worst_market_principal_impairment_probability, 0.10) &&
+            root.fixed_structure_eligible && root.market_adequate &&
+            summary.grid_audit.market_principal_risk_is_invariant,
+        "v0.2 market mandates use nonzero issued-principal cash-shortfall expectation, tails, and incidence");
+
+    const cf::PortfolioConfig legacy_projects = four_state_portfolio();
+    const cf::RobustMarketPriorityCapSummary legacy_project_summary =
+        cf::evaluate_robust_market_priority_cap(legacy_projects,
+            event_polytope(), participation_terms(), stack, cap_terms());
+    const auto& legacy_project_root = legacy_project_summary.candidates[3];
+    check(std::all_of(legacy_projects.projects.begin(),
+              legacy_projects.projects.end(), [](const auto& project) {
+                  return project.principal_accounting_mode ==
+                      cf::PrincipalAccountingMode::DrawEqualsPrincipalLegacy;
+              }) &&
+            near(legacy_project_root.worst_market_expected_loss_fraction,
+                0.05) &&
+            near(legacy_project_root
+                    .worst_market_principal_loss_es95_fraction,
+                0.50) &&
+            near(legacy_project_root
+                    .worst_market_principal_loss_es99_fraction,
+                0.50) &&
+            near(legacy_project_root
+                    .worst_market_principal_impairment_probability,
+                0.10) &&
+            legacy_project_root.fixed_structure_eligible &&
+            legacy_project_summary.grid_audit
+                .market_principal_risk_is_invariant,
+        "v0.2 cash-shortfall metrics remain available when every project uses the legacy at-par ledger");
+
+    cf::RobustMarketPriorityCapConfig strict = cap_terms();
+    strict.constraints.maximum_market_expected_loss_fraction = 0.049;
+    const cf::RobustMarketPriorityCapSummary rejected =
+        cf::evaluate_robust_market_priority_cap(legacy_projects,
+            event_polytope(),
+            participation_terms(), stack, strict);
+    check(rejected.status ==
+                cf::RobustMarketPriorityCapStatus::FixedStructureIneligible &&
+            std::none_of(rejected.candidates.begin(),
+                rejected.candidates.end(), [](const auto& candidate) {
+                    return candidate.fixed_structure_eligible;
+                }),
+        "v0.2 cash-shortfall risk fails a binding fixed mandate instead of reading legacy zero placeholders");
+}
+
 void test_cash_boundaries_and_structural_edge_cases() {
     const cf::PortfolioConfig portfolio = four_state_portfolio();
     const cf::ProbabilityPolytopeConfig polytope = event_polytope();
@@ -844,6 +942,7 @@ int main() {
     test_hand_boundary_and_complete_report();
     test_b1_matches_frontier_including_witnesses();
     test_status_falsification_and_unequal_hurdles();
+    test_v02_uses_issued_principal_cash_shortfall_risk();
     test_cash_boundaries_and_structural_edge_cases();
     test_invalid_grids_and_base_stacks();
     test_resource_boundaries_fail_closed();

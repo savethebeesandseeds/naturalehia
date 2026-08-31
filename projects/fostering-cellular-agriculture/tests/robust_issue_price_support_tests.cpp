@@ -156,6 +156,34 @@ void check_invalid_equals(Callable&& callable,
     return portfolio;
 }
 
+[[nodiscard]] cf::PortfolioConfig explicit_ledger_four_state_portfolio() {
+    cf::PortfolioConfig portfolio = four_state_portfolio();
+    for (cf::PortfolioProject& project : portfolio.projects) {
+        project.principal_accounting_mode =
+            cf::PrincipalAccountingMode::ExplicitContractualLedger;
+        project.principal_limit_million = project.commitment_million;
+    }
+    for (cf::JointScenario& scenario : portfolio.joint_scenarios) {
+        for (cf::ProjectJointPath& path : scenario.project_paths) {
+            path.capital_draws.clear();
+            path.investor_outlays = {{0U,
+                cf::InvestorOutlayPurpose::ClaimPurchasePrice, 10.0}};
+            path.principal_movements = {{0U,
+                cf::PrincipalMovementKind::FundedPrincipalAddition, 10.0}};
+            double principal_cash = 0.0;
+            for (const cf::InvestorReceipt& receipt : path.investor_receipts) {
+                principal_cash += receipt.principal_component_million;
+            }
+            if (principal_cash < 10.0) {
+                path.principal_movements.push_back({portfolio.horizon_months,
+                    cf::PrincipalMovementKind::Writeoff,
+                    10.0 - principal_cash});
+            }
+        }
+    }
+    return portfolio;
+}
+
 [[nodiscard]] cf::ProbabilityPolytopeConfig event_polytope() {
     cf::ProbabilityPolytopeConfig polytope;
     polytope.scenario_label = "overlapping event constraint hand table";
@@ -209,6 +237,19 @@ void check_invalid_equals(Callable&& callable,
         {"catalytic-first-loss", 0.0, 12.0, 0.0, 0.0, true},
         {"market-priority", 12.0, 20.0, 1.0, 0.0, false},
     };
+    return stack;
+}
+
+[[nodiscard]] cf::CapitalStackConfig explicit_asset_liability_stack() {
+    cf::CapitalStackConfig stack = base_stack();
+    stack.model_version = std::string(cf::kCapitalStackModelVersion);
+    stack.aggregate_commitment_is_fully_funded_at_par_at_month_zero = false;
+    stack.asset_acquisition_and_primary_funding_limit_is_fully_funded_at_par_at_month_zero =
+        true;
+    stack.buyer_direct_costs_are_additional_pro_rata_calls = true;
+    stack.principal_base_cash_above_issued_principal_is_nonprincipal = true;
+    stack.principal_limit_capacity_difference_is_reported_without_valuation_claim =
+        true;
     return stack;
 }
 
@@ -663,6 +704,52 @@ void test_transaction_evidence_and_hurdle_axes() {
         "transaction settlement, hurdle independence, and sensitivity calculation stay separate axes");
 }
 
+void test_v02_reports_issued_principal_cash_shortfall_risk() {
+    const cf::RobustIssuePriceSupportSummary summary = evaluate(issue_terms(),
+        explicit_ledger_four_state_portfolio(),
+        explicit_asset_liability_stack(), cap_terms());
+    check(summary.status ==
+                cf::RobustIssuePriceSupportStatus::FinanceableWindowFound &&
+            summary.hurdle_cases.size() == 5U,
+        "v0.2 issue-price support reaches the selected market claim");
+    const auto& risk = summary.hurdle_cases[2].principal_risk;
+    check(near(risk.expected_principal_loss_fraction.maximum.value, 0.05) &&
+            near(risk.worst_principal_loss_es95_fraction, 0.50) &&
+            near(risk.worst_principal_loss_es99_fraction, 0.50) &&
+            near(risk.principal_impairment_probability.maximum.value, 0.10) &&
+            summary.all_contractual_cash_and_principal_risk_invariants_hold &&
+            std::all_of(summary.hurdle_cases.begin(),
+                summary.hurdle_cases.end(), [](const auto& item) {
+                    return item.audit.market_principal_risk_is_unchanged;
+                }),
+        "v0.2 issue-price risk output and hurdle invariance use issued-principal cash-shortfall expectation, tails, and incidence");
+
+    const cf::PortfolioConfig legacy_projects = four_state_portfolio();
+    const cf::RobustIssuePriceSupportSummary legacy_project_summary =
+        evaluate(issue_terms(), legacy_projects,
+            explicit_asset_liability_stack(), cap_terms());
+    const auto& legacy_project_risk =
+        legacy_project_summary.hurdle_cases[2].principal_risk;
+    check(std::all_of(legacy_projects.projects.begin(),
+              legacy_projects.projects.end(), [](const auto& project) {
+                  return project.principal_accounting_mode ==
+                      cf::PrincipalAccountingMode::DrawEqualsPrincipalLegacy;
+              }) &&
+            near(legacy_project_risk.expected_principal_loss_fraction
+                    .maximum.value,
+                0.05) &&
+            near(legacy_project_risk.worst_principal_loss_es95_fraction,
+                0.50) &&
+            near(legacy_project_risk.worst_principal_loss_es99_fraction,
+                0.50) &&
+            near(legacy_project_risk.principal_impairment_probability
+                    .maximum.value,
+                0.10) &&
+            legacy_project_summary
+                .all_contractual_cash_and_principal_risk_invariants_hold,
+        "v0.2 issue-price risk remains available when every project uses the legacy at-par ledger");
+}
+
 void test_price_support_and_cash_path_boundaries() {
     cf::RobustIssuePriceSupportConfig terms = issue_terms();
     terms.reference_price.gross_issue_price_million = 8.0;
@@ -1021,6 +1108,7 @@ void test_direct_api_validation_and_resource_failure() {
 int main() {
     test_hand_fixture_and_resource_oracle();
     test_transaction_evidence_and_hurdle_axes();
+    test_v02_reports_issued_principal_cash_shortfall_risk();
     test_price_support_and_cash_path_boundaries();
     test_event_witness_switch_and_no_selection();
     test_direct_api_validation_and_resource_failure();

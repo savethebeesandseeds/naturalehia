@@ -40,9 +40,12 @@ the underlying project claims.
 The consolidated C++ comparison is `naturalehia-instrument-family`; its seven
 reproducible inputs and invocation are documented with the
 [ten-claim synthetic fixture](scenarios/ten-claim-instrument-v1-synthetic/README.md).
-The completed construction passes 68 of 68 tests in both Debug and Release,
-with identical consolidated output and zero reported monetary reconciliation
-error across the five composing engines.
+The retained version-1 construction passed 68 of 68 tests in both Debug and
+Release, with identical consolidated output and zero reported monetary
+reconciliation error across the five composing engines. The current suite adds
+the Capital Stack v0.2 bridge and its direct Claim Ledger integration: 70 of 70
+tests pass in the pinned Emscripten 6.0.5 Release build when every executable
+and CLI wrapper runs through Node.
 
 > **Current status:** this repository implements an open financial standard that
 > keeps cash sources, contractual loss, dependence, and evidence quality
@@ -62,10 +65,11 @@ error across the five composing engines.
 > joint scenarios rather than inferred independence. They conserve external
 > cash budgets and principal, report return, loss, liquidity, dependence, and
 > tail risk, and re-project bounded physical-probability sets through
-> participation and protection analyses, plus separate legacy at-par
-> capital-stack and market-claim analyses. These
-> are transparent mechanics and ambiguity tests, not calibrated forecasts or
-> prices.
+> participation and protection analyses, plus versioned fully funded capital-
+> stack and market-claim analyses. Capital Stack v0.2 funds the sum of project-
+> level maximum uses, preserves asset writeoff `L` and continuing principal
+> `O`, and separately layers only issued-principal cash shortfall `Q`. These are
+> transparent mechanics and ambiguity tests, not calibrated forecasts or prices.
 >
 > The selected core is now the **Multi-Project Milestone Participation**. Its
 > exactly ten-claim fixture has nine explicit dependent states, milestone stop,
@@ -124,8 +128,8 @@ avoidable animal use.
   records but cannot produce expected return or a rate preimage.
 - Portfolio v0.2 explicit-contractual-principal accounting, with strict v0.1
   reload compatibility. Investor outlays and receipts remain separate from
-  principal additions, repayment, conversion, and writeoff, so purchase premium
-  cannot become a false principal loss.
+  principal additions, repayment, conversion, and writeoff, so cash paid above
+  or below a contractual-principal limit cannot be relabeled as principal loss.
 - A verified ClaimLedgerPackage-to-Portfolio v0.2 adapter that consumes only
   the frozen decision cut, requires reconciled external source budgets, and
   preserves package, entry, provider, cluster, and generated-output lineage.
@@ -177,8 +181,8 @@ avoidable animal use.
   event-constrained ES95/ES99, common-tail project attribution, full endpoint
   measures, and primal, objective, and reduced-cost residuals. It also routes
   the fixed candidate paths through the fully funded capital stack and
-  re-projects tranche risk, return, tail loss, robust target results, and
-  common-measure principal WAL under those same event constraints.
+  re-projects tranche cash risk, return, shortfall tails, robust target results,
+  and common-measure principal WAL under those same event constraints.
 - A candidate-only C++20 joint-cohort bridge over a SHA-256-bound raw row
   ledger. It retains not-yet-matured and unresolved observations as compatible
   with every fixed joint state, constructs a conservative simultaneous
@@ -212,18 +216,21 @@ avoidable animal use.
   allocated capital stock or claim fair value, a provider balance sheet, or
   capital adequacy.
 - A deterministic fully funded capital-stack term, strict companion input,
-  and CLI. Aggregate project commitment is subscribed at par into a zero-yield
-  reserve; project principal and reserve return pay senior first, actual
-  non-principal cash pays priority caps then the residual, and gross loss and
-  unresolved exposure occupy the stack from first-loss upward. It reports
-  physical expected cash, loss, impairment, exhaustion, NPV, tail shortfall,
-  and common-witness principal WAL without claiming price, spread, rating, or
-  fair value. Its direct cohort mode preserves one bound portfolio from the
-  row ledger through the generated candidate probability set and waterfall;
-  it never promotes candidate output into calibrated execution. Version 0.1
-  rejects explicit-contractual-ledger portfolios; Claim-Ledger adapter output
-  cannot enter until subscription cash, reserve cash, acquisition cost, and
-  asset principal are separated in that stack.
+  and CLI. Legacy v0.1 retains its at-par commitment model. Version 0.2 accepts
+  the Claim Ledger's explicit contractual-principal portfolio and keeps four
+  quantities separate: issued tranche principal, acquisition and primary-
+  funding uses, contractual asset principal, and direct-cost calls. Its issued
+  reserve `R` is the sum of project-level maximum uses. Asset writeoff `L` and
+  continuing asset principal `O` remain Portfolio facts; horizon issued-
+  principal cash shortfall `Q` is a separate liability fact, and only
+  `layer(Q)` is mapped to tranches. Principal-base cash above issued principal
+  enters the non-principal waterfall with source-preserving, equal-seniority
+  pro-rata memos. The principal-limit-minus-use result is a capacity diagnostic,
+  not a valuation. The exact Claim Ledger joint portfolio enters without
+  re-encoding and retains its probability lineage. Both versions report actual
+  cash, version-specific principal risk, NPV, shortfall tails, and common-
+  witness principal WAL without claiming price, spread, rating, fair value, or
+  calibrated execution.
 - A consolidated C++20 ten-claim instrument-family reporter and strict golden
   test. It requires exactly ten synthetic claims, the five declared adverse
   risk categories, a two-class funded variant, and the exact 30% protection
@@ -808,6 +815,8 @@ each relevant jurisdiction before solicitation or execution.
 | [Provider Counterparty-Credit Stress v0.1 Verification](docs/PROVIDER_CREDIT_STRESS_VERIFICATION_V0_1.md) | Debug/Release record, hand reconciliation, strict sixth input and CLI controls, independent audit, and residual boundary |
 | [Fully Funded Capital Stack v0.1](docs/CAPITAL_STACK_TERM_V0_1.md) | Implemented at-par reserve, principal and non-principal waterfalls, loss/exposure allocation, robust tranche risk/return, common-witness WAL, and strict term format |
 | [Fully Funded Capital Stack v0.1 Verification](docs/CAPITAL_STACK_VERIFICATION_V0_1.md) | Debug/Release record, hand table, staged-reserve and continuing-exposure tests, strict parser/CLI controls, and residual boundary |
+| [Capital Stack Asset-to-Liability Bridge v0.2](docs/CAPITAL_STACK_ASSET_LIABILITY_BRIDGE_V0_2.md) | Per-project-maximum reserve funding, exact asset `L/O` and liability `Q` separation, `layer(Q)` tranche shortfalls, simultaneous-source pro-rata memos, and the direct Claim Ledger acceptance contract |
+| [Capital Stack Asset-to-Liability Bridge v0.2 Verification](docs/CAPITAL_STACK_ASSET_LIABILITY_BRIDGE_VERIFICATION_V0_2.md) | Exact 8/10 and 12/10 `L/O/Q` hand tables, staggered-use and simultaneous-surplus checks, high-scale minimum-tranche boundary, event-polytope coverage, and focused WebAssembly results |
 | [Robust Capital-Mobilization Frontier v0.1](docs/ROBUST_CAPITAL_MOBILIZATION_FRONTIER_V0_1.md) | Implemented finite `q`-by-`A` market-claim feasibility frontier, two funded claims, twelve optional mandates, endpoint witnesses, Pareto reporting, and institutional boundaries |
 | [Robust Capital-Mobilization Frontier v0.1 Verification](docs/ROBUST_CAPITAL_MOBILIZATION_FRONTIER_VERIFICATION_V0_1.md) | Hand reconciliation, strict Debug/Release record, parser and CLI controls, independent 228-candidate oracle, exposure correction, resource guard, and residual limitations |
 | [Robust Market Non-Principal Priority-Cap Term v0.1](docs/ROBUST_MARKET_PRIORITY_CAP_TERM_V0_1.md) | Implemented fixed-`q`, fixed-`A` finite lifetime-cap adequacy grid, junior-transfer account, exact `8/15` hand boundary, resource guard, and pricing limitations |

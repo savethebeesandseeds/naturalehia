@@ -42,6 +42,68 @@ struct EvaluatedCandidate {
     CapitalStackProbabilityPolytopeSummary stack{};
 };
 
+enum class PrincipalRiskMetricFamily {
+    LegacyLossLayeringV01,
+    PrincipalCashShortfallV02,
+};
+
+[[nodiscard]] PrincipalRiskMetricFamily principal_risk_metric_family(
+    std::string_view model_version) {
+    if (model_version == kCapitalStackLegacyModelVersion) {
+        return PrincipalRiskMetricFamily::LegacyLossLayeringV01;
+    }
+    if (model_version == kCapitalStackModelVersion) {
+        return PrincipalRiskMetricFamily::PrincipalCashShortfallV02;
+    }
+    throw std::invalid_argument(
+        "market priority-cap does not support the capital-stack model version");
+}
+
+void require_principal_risk_metric_family(
+    const CapitalStackConfig& requested,
+    const CapitalStackProbabilityPolytopeSummary& evaluated) {
+    const PrincipalRiskMetricFamily family =
+        principal_risk_metric_family(requested.model_version);
+    const bool legacy_is_applicable =
+        family == PrincipalRiskMetricFamily::LegacyLossLayeringV01;
+    if (evaluated.model_version != requested.model_version ||
+        evaluated.legacy_v01_loss_layering_metrics_are_applicable !=
+            legacy_is_applicable) {
+        throw std::logic_error(
+            "market priority-cap capital-stack principal-risk metric family is unavailable");
+    }
+    for (const CapitalStackProbabilityPolytopeTrancheSummary& tranche :
+         evaluated.tranches) {
+        if (tranche.legacy_v01_loss_layering_metrics_are_applicable !=
+            legacy_is_applicable) {
+            throw std::logic_error(
+                "market priority-cap tranche principal-risk metric family is unavailable");
+        }
+    }
+    for (const CapitalStackScenarioResult& scenario : evaluated.scenarios) {
+        for (const CapitalStackTrancheScenarioResult& tranche :
+             scenario.tranches) {
+            if (tranche.legacy_v01_loss_layering_metrics_are_applicable !=
+                legacy_is_applicable) {
+                throw std::logic_error(
+                    "market priority-cap scenario principal-risk metric family is unavailable");
+            }
+        }
+    }
+}
+
+[[nodiscard]] ProbabilityPolytopeMetricRange divide_metric_range(
+    ProbabilityPolytopeMetricRange value, double divisor) noexcept {
+    value.minimum.value /= divisor;
+    value.minimum.objective_reconciliation_error /= divisor;
+    value.minimum.optimality_residual /= divisor;
+    value.central /= divisor;
+    value.maximum.value /= divisor;
+    value.maximum.objective_reconciliation_error /= divisor;
+    value.maximum.optimality_residual /= divisor;
+    return value;
+}
+
 [[nodiscard]] double comparison_tolerance(
     double first, double second) noexcept {
     return kComparisonAbsoluteTolerance +
@@ -234,6 +296,7 @@ void validate_constraints(
 
     validate_capital_stack_probability_polytope(
         portfolio, probability_polytope, participation, base_stack);
+    (void)principal_risk_metric_family(base_stack.model_version);
     if (base_stack.tranches.size() != 2U) {
         throw std::invalid_argument(
             "market priority-cap base stack must contain exactly two tranches");
@@ -382,6 +445,7 @@ void update_linear_audits(const ProbabilityPolytopeMetricProjection& value,
     EvaluatedCandidate result;
     result.stack = evaluate_capital_stack_probability_polytope(
         portfolio, probability_polytope, participation, tested_stack);
+    require_principal_risk_metric_family(tested_stack, result.stack);
     if (result.stack.tranches.size() != 2U ||
         result.stack.tranches[0].tranche_id != cap_term.junior_claim_id ||
         result.stack.tranches[1].tranche_id != cap_term.market_claim_id) {
@@ -426,14 +490,32 @@ void update_linear_audits(const ProbabilityPolytopeMetricProjection& value,
         market.expected_scenario_net_return_fraction;
     candidate.market_npv_million =
         market.expected_npv_at_tranche_hurdle_million;
-    candidate.market_expected_loss_fraction =
-        market.expected_realized_principal_loss_fraction;
-    candidate.market_principal_loss_es95_million =
-        market.principal_loss_expected_shortfall_95_million;
-    candidate.market_principal_loss_es99_million =
-        market.principal_loss_expected_shortfall_99_million;
-    candidate.market_principal_impairment_probability =
-        market.principal_impairment_probability;
+    const PrincipalRiskMetricFamily risk_family =
+        principal_risk_metric_family(tested_stack.model_version);
+    if (risk_family == PrincipalRiskMetricFamily::LegacyLossLayeringV01) {
+        candidate.market_expected_loss_fraction =
+            market.expected_realized_principal_loss_fraction;
+        candidate.market_principal_loss_es95_million =
+            market.principal_loss_expected_shortfall_95_million;
+        candidate.market_principal_loss_es99_million =
+            market.principal_loss_expected_shortfall_99_million;
+        candidate.market_principal_impairment_probability =
+            market.principal_impairment_probability;
+    } else {
+        // Compatibility result names retain their v0.1 spelling. Under the
+        // v0.2 explicit asset/liability bridge, their controlling investor-
+        // risk quantities are issued-principal cash shortfall Q, its upper
+        // tails, and Pr[Q>0].
+        candidate.market_expected_loss_fraction = divide_metric_range(
+            market.expected_principal_cash_shortfall_million,
+            market.notional_million);
+        candidate.market_principal_loss_es95_million =
+            market.principal_cash_shortfall_expected_shortfall_95_million;
+        candidate.market_principal_loss_es99_million =
+            market.principal_cash_shortfall_expected_shortfall_99_million;
+        candidate.market_principal_impairment_probability =
+            market.principal_cash_shortfall_probability;
+    }
     candidate.market_npv_shortfall_es95_million =
         market.npv_shortfall_expected_shortfall_95_million;
     candidate.market_npv_shortfall_es99_million =
@@ -590,6 +672,14 @@ void update_linear_audits(const ProbabilityPolytopeMetricProjection& value,
             second.tranching_does_not_change_project_cash_or_gross_loss ||
         first.premium_discount_or_fair_value_is_claimed !=
             second.premium_discount_or_fair_value_is_claimed ||
+        first.asset_acquisition_and_primary_funding_limit_is_fully_funded_at_par_at_month_zero !=
+            second.asset_acquisition_and_primary_funding_limit_is_fully_funded_at_par_at_month_zero ||
+        first.buyer_direct_costs_are_additional_pro_rata_calls !=
+            second.buyer_direct_costs_are_additional_pro_rata_calls ||
+        first.principal_base_cash_above_issued_principal_is_nonprincipal !=
+            second.principal_base_cash_above_issued_principal_is_nonprincipal ||
+        first.principal_limit_capacity_difference_is_reported_without_valuation_claim !=
+            second.principal_limit_capacity_difference_is_reported_without_valuation_claim ||
         first.underlying_success_participation_fraction !=
             second.underlying_success_participation_fraction ||
         first.tranches.size() != second.tranches.size()) {
@@ -716,9 +806,48 @@ void update_tail_range(
         const EvaluatedCandidate& previous =
             evaluated[candidate_index - 1U];
         const EvaluatedCandidate& current = evaluated[candidate_index];
-        if (previous.stack.scenarios.size() != current.stack.scenarios.size()) {
+        if (previous.stack.model_version != current.stack.model_version ||
+            previous.stack.scenarios.size() != current.stack.scenarios.size()) {
             throw std::logic_error(
-                "market priority-cap scenario count changed across the cap grid");
+                "market priority-cap stack version or scenario count changed across the cap grid");
+        }
+        const PrincipalRiskMetricFamily risk_family =
+            principal_risk_metric_family(previous.stack.model_version);
+
+        if (risk_family ==
+            PrincipalRiskMetricFamily::PrincipalCashShortfallV02) {
+            const CapitalStackProbabilityPolytopeTrancheSummary& market_a =
+                previous.stack.tranches[1];
+            const CapitalStackProbabilityPolytopeTrancheSummary& market_b =
+                current.stack.tranches[1];
+            update_metric_range(
+                market_a.expected_principal_cash_shortfall_million,
+                market_b.expected_principal_cash_shortfall_million,
+                audit.maximum_market_principal_risk_change,
+                audit.market_principal_risk_is_invariant, update_change);
+            update_metric_range(market_a.principal_cash_shortfall_probability,
+                market_b.principal_cash_shortfall_probability,
+                audit.maximum_market_principal_risk_change,
+                audit.market_principal_risk_is_invariant, update_change);
+            update_metric_range(
+                market_a.full_principal_cash_shortfall_probability,
+                market_b.full_principal_cash_shortfall_probability,
+                audit.maximum_market_principal_risk_change,
+                audit.market_principal_risk_is_invariant, update_change);
+            update_tail_range(
+                market_a
+                    .principal_cash_shortfall_expected_shortfall_95_million,
+                market_b
+                    .principal_cash_shortfall_expected_shortfall_95_million,
+                audit.maximum_market_principal_risk_change,
+                audit.market_principal_risk_is_invariant, update_change);
+            update_tail_range(
+                market_a
+                    .principal_cash_shortfall_expected_shortfall_99_million,
+                market_b
+                    .principal_cash_shortfall_expected_shortfall_99_million,
+                audit.maximum_market_principal_risk_change,
+                audit.market_principal_risk_is_invariant, update_change);
         }
 
         update_metric_range(
@@ -785,14 +914,17 @@ void update_tail_range(
                 market_b.principal_cash_distribution_million,
                 audit.maximum_market_principal_cash_change_million,
                 audit.market_principal_cash_is_invariant);
-            update_change(market_a.realized_principal_loss_million,
-                market_b.realized_principal_loss_million,
-                audit.maximum_market_principal_risk_change,
-                audit.market_principal_risk_is_invariant);
-            update_change(market_a.unresolved_principal_exposure_million,
-                market_b.unresolved_principal_exposure_million,
-                audit.maximum_market_principal_risk_change,
-                audit.market_principal_risk_is_invariant);
+            if (risk_family ==
+                PrincipalRiskMetricFamily::LegacyLossLayeringV01) {
+                update_change(market_a.realized_principal_loss_million,
+                    market_b.realized_principal_loss_million,
+                    audit.maximum_market_principal_risk_change,
+                    audit.market_principal_risk_is_invariant);
+                update_change(market_a.unresolved_principal_exposure_million,
+                    market_b.unresolved_principal_exposure_million,
+                    audit.maximum_market_principal_risk_change,
+                    audit.market_principal_risk_is_invariant);
+            }
             update_change(market_a.principal_cash_shortfall_million,
                 market_b.principal_cash_shortfall_million,
                 audit.maximum_market_principal_risk_change,
