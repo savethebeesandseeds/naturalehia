@@ -235,15 +235,6 @@ h3 {
   background: var(--forest-bright);
 }
 
-.button-light {
-  background: var(--white);
-  color: var(--forest);
-}
-
-.button-light:hover {
-  background: var(--sand);
-}
-
 .text-link {
   font-weight: 800;
   text-decoration-color: var(--gold);
@@ -345,60 +336,8 @@ h3 {
   color: var(--muted);
 }
 
-.featured,
-.projects-section {
+.featured {
   padding-block: clamp(5rem, 10vw, 9rem);
-}
-
-.project-card {
-  position: relative;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: end;
-  gap: 3rem;
-  overflow: hidden;
-  padding: clamp(2rem, 5vw, 4.5rem);
-  border-radius: var(--radius);
-  background: var(--forest);
-  box-shadow: var(--shadow);
-  color: var(--white);
-}
-
-.project-card + .project-card {
-  margin-top: 1.5rem;
-}
-
-.project-card::after {
-  position: absolute;
-  right: -7rem;
-  bottom: -9rem;
-  width: 25rem;
-  height: 25rem;
-  border: 1px solid rgba(255, 253, 247, 0.18);
-  border-radius: 50%;
-  content: "";
-}
-
-.project-card-main,
-.project-card-actions {
-  position: relative;
-  z-index: 1;
-}
-
-.project-card-main {
-  max-width: 46rem;
-}
-
-.project-card h3 {
-  max-width: 44rem;
-  margin-bottom: 1.25rem;
-  font-size: clamp(2.35rem, 5vw, 4.8rem);
-}
-
-.project-card-main > p {
-  max-width: 41rem;
-  color: rgba(255, 253, 247, 0.76);
-  font-size: 1.1rem;
 }
 
 .status-line {
@@ -425,37 +364,6 @@ h3 {
   box-shadow: 0 0 0 0.28rem rgba(184, 205, 127, 0.13);
 }
 
-.tag-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.55rem;
-  margin: 2rem 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.tag-list li {
-  padding: 0.38rem 0.72rem;
-  border: 1px solid rgba(255, 253, 247, 0.24);
-  border-radius: 999px;
-  color: var(--sand);
-  font-size: 0.75rem;
-  font-weight: 750;
-  letter-spacing: 0.05em;
-}
-
-.project-card-actions {
-  display: flex;
-  min-width: 13.5rem;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 1rem;
-}
-
-.text-link-light {
-  color: var(--white);
-  text-decoration-color: rgba(255, 253, 247, 0.55);
-}
 
 .invitation {
   max-width: 58rem;
@@ -502,74 +410,6 @@ h3 {
 
 .footer-links a:hover {
   color: var(--white);
-}
-
-/* Project index */
-.page-hero {
-  display: grid;
-  grid-template-columns: minmax(0, 1.25fr) minmax(17rem, 0.75fr);
-  align-items: end;
-  gap: clamp(2rem, 7vw, 7rem);
-  padding-block: clamp(5rem, 10vw, 9rem);
-}
-
-.page-hero h1 {
-  max-width: 54rem;
-}
-
-.page-hero-side {
-  padding: 1.5rem 0 0 1.7rem;
-  border-left: 1px solid var(--line);
-  color: var(--muted);
-}
-
-.page-hero-side strong {
-  display: block;
-  margin-bottom: 0.35rem;
-  color: var(--ink);
-  font-family: var(--serif);
-  font-size: 2rem;
-  font-weight: 500;
-}
-
-.projects-section {
-  border-top: 1px solid var(--line);
-}
-
-.project-count {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-}
-
-.project-count h2 {
-  margin-bottom: 0;
-  font-size: clamp(1.9rem, 3vw, 2.7rem);
-}
-
-.project-count p {
-  margin-bottom: 0;
-  color: var(--muted);
-}
-
-.room-note {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 3rem;
-  margin-top: 2rem;
-  padding: 2.5rem 0;
-  border-bottom: 1px solid var(--line);
-}
-
-.room-note h3 {
-  margin-bottom: 0;
-}
-
-.room-note p {
-  margin-bottom: 0;
-  color: var(--muted);
 }
 
 /* Project detail */
@@ -735,7 +575,6 @@ h3 {
 
 @media (max-width: 54rem) {
   .hero,
-  .page-hero,
   .project-hero,
   .content-band-intro,
   .project-next {
@@ -777,18 +616,6 @@ h3 {
     min-height: auto;
   }
 
-  .project-card {
-    grid-template-columns: 1fr;
-  }
-
-  .project-card-actions {
-    min-width: 0;
-  }
-
-  .room-note {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
 }
 
 @media (max-width: 38rem) {
@@ -832,14 +659,6 @@ h3 {
     display: none;
   }
 
-  .project-card {
-    padding: 1.6rem;
-  }
-
-  .project-card h3 {
-    font-size: clamp(2.1rem, 12vw, 3.2rem);
-  }
-
   .project-facts {
     grid-template-columns: 1fr;
   }
@@ -879,7 +698,6 @@ h3 {
     color: #000;
   }
 
-  .project-card,
   .content-band {
     background: #fff;
     color: #000;

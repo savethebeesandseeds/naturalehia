@@ -11,8 +11,8 @@ observe, understand, and care for the living world.
 | [Logic Gates of the Biological Kingdom](projects/logic-gates-of-the-biological-kingdom/README.md) | Build open, evidence-disciplined tools for protein-level Boolean logic research, beginning with an XOR specification. | Stage 1 equilibrium modeling / pre-experimental |
 | [Fostering Cellular Agriculture](projects/fostering-cellular-agriculture/README.md) | Build an open financial standard and instrument family for cellular agriculture from research through mass production. | Participation-pool kernel, strict input, CLI, and first facility adapter v0.1 |
 
-The repository website starts at [`index.html`](index.html), with a browsable
-[projects index](projects/index.html).
+The repository website starts at [`index.html`](index.html), where the
+[projects section](index.html#projects) links to each project’s technical home.
 
 ## Licensing
 
