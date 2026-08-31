@@ -1,0 +1,10 @@
+^C:\WORK\NATURALEHIA\PROJECTS\FOSTERING-CELLULAR-AGRICULTURE\CMAKELISTS.TXT
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Work/Naturalehia/projects/fostering-cellular-agriculture -BC:/Work/Naturalehia/tmp/claim-package-build --check-stamp-file C:/Work/Naturalehia/tmp/claim-package-build/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

@@ -5,11 +5,11 @@ for the open, auditable design of protein-level Boolean logic, beginning with a
 two-input exclusive-OR (XOR) specification and an explicit reset
 requirement.**
 
-> **Project status: research concept / pre-experimental.** No functional
-> protein logic gate has been designed or experimentally validated by this
-> project. The current software evaluates a simplified mathematical
-> specification. Its outputs are not protein sequences and are not evidence of
-> biological function.
+> **Project status: Stage 1 equilibrium modeling / pre-experimental.** No
+> functional protein logic gate has been designed or experimentally validated
+> by this project. The current software evaluates mathematical models. Its
+> outputs are not protein sequences and are not evidence of biological
+> function.
 
 We want this work to be useful to people who come after us. That requires more
 than publishing source code: assumptions must be visible, claims must remain
@@ -37,9 +37,9 @@ XOR is a useful first target because two independent activating effects cannot
 produce it: the joint-input state needs an additional, non-additive coupling
 that turns the response back off.
 
-## Available now
+## Modeling available now
 
-The initial C++ library implements a small phenomenological log-odds model:
+The Stage 0 C++ library implements a small phenomenological log-odds baseline:
 
 ```text
 log_odds(ON) = baseline + A * effect_a + B * effect_b
@@ -62,6 +62,67 @@ bash setup.sh exec make run \
 
 `RUN_ARGS` is parsed by the container shell. Quote the complete assignment as
 shown and use it only for trusted, developer-supplied arguments.
+
+Stage 1 adds a two-state equilibrium binding model over continuous low and high
+input-concentration intervals. It derives the active probability from ON and
+OFF partition functions, locates model-analytic regional extrema, compares the
+independent-binding null with state-specific double-binding coupling, and can
+stress the result over declared independent parameter boxes. Those boxes are
+illustrative ranges, not confidence intervals or fitted biological
+uncertainties.
+
+The equations, operating metrics, proof sketches, regression fixture, and
+limitations are documented in the
+[Stage 1 equilibrium-model specification](docs/EQUILIBRIUM_MODEL.md).
+The separate
+[steady-state acceptance protocol](docs/STAGE_1_ACCEPTANCE_PROTOCOL.md)
+defines tri-state outcomes, criterion provenance, narrow balance and intended
+OFF-activity metrics, and the evidence that remains unavailable.
+
+Run the nominal model bounds, the documented five-percent parameter
+stress box, and the independent-binding null with:
+
+```sh
+bash setup.sh exec make region
+bash setup.sh exec make region \
+  REGION_ARGS='--apo-log-radius 0.05 --positive-radius 0.05 --required-separation 0.3'
+bash setup.sh exec make region REGION_ARGS='--independent-null'
+```
+
+The first two commands reproduce expected model-regression outputs. They do
+not run the complete acceptance protocol or establish Stage 1 acceptance. The
+null model is expected to report `passes_threshold` as `false`; a scientifically
+useful negative result is still a successful program execution.
+
+Audit the coupling terms against the paired independent-binding ablation with
+no acceptance criteria:
+
+```sh
+bash setup.sh exec make coupling-audit
+```
+
+The audit reports `not_assessed` until all criteria are supplied. The checked
+regression-only profile can be exercised explicitly with:
+
+```sh
+bash setup.sh exec make coupling-audit \
+  AUDIT_ARGS='--criteria-label illustrative-regression-v1 --criteria-threshold 0.5 --criteria-min-separation 0.30 --criteria-max-intended-off 0.15 --criteria-max-floor-imbalance 0.05'
+```
+
+Those values were selected after the constructed fixture existed. They are
+software guardrails, not biological thresholds and not a profile for future
+candidate screening.
+
+Emit a logarithmically spaced surface for inspection with:
+
+```sh
+bash setup.sh exec make surface \
+  SURFACE_ARGS='--a-min 0.01 --a-max 10 --a-points 9 --a-spacing log --b-min 0.01 --b-max 10 --b-points 9 --b-spacing log'
+```
+
+`REGION_ARGS`, `SURFACE_ARGS`, and `AUDIT_ARGS` are shell-parsed like
+`RUN_ARGS`; quote the complete assignment and use only trusted,
+developer-supplied arguments.
 
 ## Supported development environment
 
@@ -139,9 +200,10 @@ The release and sanitizer presets are named `linux-release` and
 - Library target: `naturalehia_protein_logic`
 - CMake alias: `Naturalehia::ProteinLogic`
 - C++ namespace: `naturalehia::protein_logic`
-- Command-line program: `naturalehia-protein-logic`
+- Endpoint command-line program: `naturalehia-protein-logic`
+- Equilibrium command-line program: `naturalehia-protein-logic-equilibrium`
 
-The first version has no third-party runtime dependencies. Future dependencies
+The current library has no third-party runtime dependencies. Future dependencies
 must be open source, versioned, attributable, locally runnable, and recorded in
 [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md). A proprietary hosted API
 must not become necessary to reproduce a project result.
@@ -166,6 +228,7 @@ working gate. Four endpoint measurements are not a response surface.
 include/naturalehia/protein_logic/  Public C++ API
 src/                                Library implementation
 apps/cli/                           Command-line evaluator
+apps/equilibrium_cli/               Stage 1 region, surface, and coupling-audit CLI
 tests/                              Deterministic tests and package consumer
 cmake/                              Installed-package configuration
 docs/                               Research charter, roadmap, and safeguards
@@ -177,8 +240,10 @@ setup.sh                            Linux environment setup and lifecycle only
 
 The intended progression is:
 
-1. define the XOR operating region and quantitative acceptance criteria;
-2. compare thermodynamic mechanisms that can generate negative joint coupling;
+1. close the XOR specification and software foundation (complete);
+2. define the continuous XOR operating region, predeclare model-acceptance
+   criteria, and audit mechanisms that can generate negative joint effects
+   (current);
 3. represent the intended active and inactive states in a multistate design
    objective;
 4. generate and rank candidates with open, locally runnable C/C++ tooling;
@@ -188,7 +253,8 @@ The intended progression is:
    other Boolean functions.
 
 See the [research charter](docs/RESEARCH_CHARTER.md),
-[roadmap](docs/ROADMAP.md), and
+[roadmap](docs/ROADMAP.md), [Stage 0 closeout](docs/STAGE_0_CLOSEOUT.md),
+[Stage 1 equilibrium model](docs/EQUILIBRIUM_MODEL.md), and
 [responsible-research policy](docs/RESPONSIBLE_RESEARCH.md).
 
 ## Non-goals

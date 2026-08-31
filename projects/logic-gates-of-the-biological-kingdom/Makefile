@@ -19,6 +19,9 @@ GCC_CXX ?= g++
 CLANG_CC ?= clang
 CLANG_CXX ?= clang++
 RUN_ARGS ?=
+REGION_ARGS ?=
+SURFACE_ARGS ?=
+AUDIT_ARGS ?=
 
 GCC_DEBUG_DIR := $(BUILD_ROOT)/gcc-debug
 GCC_RELEASE_DIR := $(BUILD_ROOT)/gcc-release
@@ -34,8 +37,15 @@ COMMON_CMAKE_ARGS := \
 
 CPP_FILES := \
 	apps/cli/main.cpp \
+	apps/equilibrium_cli/main.cpp \
+	include/naturalehia/protein_logic/equilibrium_acceptance.hpp \
+	include/naturalehia/protein_logic/equilibrium_model.hpp \
 	include/naturalehia/protein_logic/model.hpp \
+	src/equilibrium_acceptance.cpp \
+	src/equilibrium_model.cpp \
 	src/model.cpp \
+	tests/acceptance_tests.cpp \
+	tests/equilibrium_model_tests.cpp \
 	tests/model_tests.cpp \
 	tests/package_consumer/main.cpp
 
@@ -61,6 +71,9 @@ CPP_FILES := \
 	test \
 	sanitize \
 	run \
+	region \
+	surface \
+	coupling-audit \
 	gpu-test
 
 all: build
@@ -76,6 +89,9 @@ help:
 		'  make quality        ShellCheck and C++ formatting verification' \
 		'  make format         Format the maintained C++ files' \
 		'  make run            Build and run the CLI; pass RUN_ARGS="..." if needed' \
+		'  make region         Bound Stage 1 regions; pass REGION_ARGS="..." if needed' \
+		'  make surface        Emit a Stage 1 grid; pass SURFACE_ARGS="..." if needed' \
+		'  make coupling-audit Audit the coupling term; pass AUDIT_ARGS="..." if needed' \
 		'  make gpu-test       Check NVIDIA GPU and driver visibility' \
 		'' \
 		'Container setup remains in setup.sh:' \
@@ -160,6 +176,15 @@ sanitize: quality test-sanitize
 
 run: build-debug
 	"$(GCC_DEBUG_DIR)/naturalehia-protein-logic" $(RUN_ARGS)
+
+region: build-debug
+	"$(GCC_DEBUG_DIR)/naturalehia-protein-logic-equilibrium" region $(REGION_ARGS)
+
+surface: build-debug
+	"$(GCC_DEBUG_DIR)/naturalehia-protein-logic-equilibrium" surface $(SURFACE_ARGS)
+
+coupling-audit: build-debug
+	"$(GCC_DEBUG_DIR)/naturalehia-protein-logic-equilibrium" coupling-audit $(AUDIT_ARGS)
 
 gpu-test:
 	@if ! command -v nvidia-smi >/dev/null 2>&1; then \

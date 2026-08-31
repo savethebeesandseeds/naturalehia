@@ -31,7 +31,9 @@ rights review as well.
 
 The artwork under `assets/homepage-concept/` was generated specifically for the
 Naturalehia homepage on 2026-08-21 and refined on 2026-08-22 with OpenAI's
-built-in ImageGen workflow. The rights-unconfirmed legacy files listed above were
+built-in ImageGen workflow. The cellular-agriculture cow panel was added on
+2026-08-29 with the same workflow, using only generated Naturalehia artwork as
+visual reference. The rights-unconfirmed legacy files listed above were
 not supplied to the generator as inputs. Transparent PNG cutouts in that directory,
 browser-ready WebPs under `assets/homepage-runtime/`, and `assets/favicon.png` are
 mechanical derivatives of the preserved source artwork.
@@ -40,7 +42,23 @@ This section records provenance; it is not a legal opinion or a separate license
 grant. The project maintainer should select and state a redistribution license for
 the generated visual artwork before downstream reuse outside the Naturalehia site.
 
+## Fostering Cellular Agriculture artwork
+
+The project concept and production artwork under
+`projects/fostering-cellular-agriculture/assets/` were generated specifically
+for the Naturalehia project page on 2026-08-28 with OpenAI's built-in ImageGen
+workflow. The established Naturalehia homepage concept and the project's own
+page concept were used as visual references. The delivered production files in
+`assets/homepage-assets/` are text-free RGBA PNG cutouts with transparent
+backgrounds; drafts that rendered a checker pattern or otherwise lacked a real
+alpha channel were not selected for the website.
+
+This records provenance only. The same downstream-reuse caution stated above
+for generated homepage artwork applies to these project assets until the
+maintainer selects and states an artwork license.
+
 Downstream distributors should omit the rights-unconfirmed legacy assets and
-generated homepage artwork unless they have separately obtained permission. To
+generated homepage or project artwork unless they have separately obtained
+permission. To
 provide provenance or licensing information, contact
 [contact@waajacu.com](mailto:contact@waajacu.com).

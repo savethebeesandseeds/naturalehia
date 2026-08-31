@@ -1,6 +1,6 @@
 # Third-party notices
 
-The initial project library and command-line program use only the C++ standard
+The current project library and command-line programs use only the C++ standard
 library and have no third-party runtime dependencies.
 
 The development environment uses, but does not redistribute as part of the

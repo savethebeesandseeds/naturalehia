@@ -21,6 +21,7 @@ WEBP_ASSETS = (
     ("principle-understand-magnifier-transparent.png", "principle-understand-magnifier.webp", (512, 512), 88, False),
     ("project-fauna-bear-panel.png", "project-fauna-bear-panel.webp", (1122, 1402), 88, False),
     ("project-molecular-protein-panel.png", "project-molecular-protein-panel.webp", (1000, 1250), 88, False),
+    ("project-cellular-cow-panel.png", "project-cellular-cow-panel.webp", (1122, 1402), 88, False),
     ("evidence-band-overlay.png", "evidence-band-overlay.webp", (1672, 941), 84, False),
     ("opensource-seed-v2-transparent.png", "opensource-seed-v2.webp", (896, 896), 88, False),
 )

@@ -26,7 +26,10 @@ and timing definitions for logical 0 and 1, and this steady-state mapping:
 
 The molecular response remains analog. A Boolean description is acceptable
 only when a fixed threshold separates the intended ON and OFF regions with a
-reported margin.
+reported margin. The endpoint classifier maps equality to ON for backward
+compatibility. An operating-region success claim additionally requires a
+strictly positive threshold margin, so equality at any regional extremum is
+not accepted as evidence of separation.
 
 For a combinational gate, the final output must not depend materially on the
 order in which inputs arrived. Order dependence, hysteresis, or persistent
@@ -64,6 +67,9 @@ require direct supporting evidence and a documented comparison basis.
    binding affinity, catalysis, or experimental function.
 7. A result must be reproducible from recorded code, inputs, configuration,
    units, tool versions, and random seeds.
+8. A parameter range must be named according to its basis. An independently
+   chosen stress box is not a confidence interval, posterior distribution, or
+   empirical uncertainty estimate.
 
 ## Initial quantitative metric
 
@@ -76,9 +82,46 @@ margin = min(p10, p01) - max(p00, p11)
 
 A positive margin means that some threshold separates the four endpoint
 states. It does not establish a broad operating region, acceptable noise,
-successful reset behavior, a mechanism, or biological validity. Later metrics must extend
-this definition across declared concentration ranges and experimental
-uncertainty.
+successful reset behavior, a mechanism, or biological validity. Later metrics
+must extend this definition across declared concentration ranges and
+experimental uncertainty.
+
+## Stage 1 mechanistic scope
+
+The current equilibrium milestone replaces binary inputs with declared low and
+high concentration intervals. It evaluates a two-conformation binding model:
+
+```text
+Q_s(a,b) = 1 + a/K_A,s + b/K_B,s
+             + omega_s * a*b/(K_A,s*K_B,s)
+
+P_on = Z_ON/(Z_ON + Z_OFF),  Z_s = w_s * Q_s.
+```
+
+The output sigmoid is therefore derived from state partition functions rather
+than imposed as a fitted Hill curve. Regional ON floors and OFF ceilings are
+located at concentration corners exactly in real arithmetic for this model;
+reported values are binary64 approximations. Independent parameter boxes may
+be used to stress the conclusion, but they carry no statistical meaning unless
+supported by a separate measurement and inference procedure.
+
+Independent binding, `omega_ON = omega_OFF = 1`, is the null model. Its ON/OFF
+odds factor into separate A and B effects, so two inputs that each favor ON
+cannot jointly turn the system back OFF. A modeled XOR region therefore
+requires a non-additive mechanism, such as state-dependent double-binding
+coupling, and its existence remains only a model result.
+
+The equations, proof sketches, metrics, fixture, and limitations are specified
+in [the Stage 1 equilibrium-model document](EQUILIBRIUM_MODEL.md). Even a
+positive robust margin does not show that a compatible fold, sequence, kinetic
+response, or biological implementation exists.
+
+The [Stage 1 acceptance protocol](STAGE_1_ACCEPTANCE_PROTOCOL.md) separates
+raw regional bounds from optional caller-supplied criteria. Missing criteria
+remain `not_assessed`. Overall acceptance requires all four criteria to be
+supplied and to pass strictly; supplying only a subset cannot yield a pass. Its
+single-high floor imbalance is a narrow model statistic, intended OFF activity
+is not cross-talk, and the regression profile has no biological standing.
 
 ## Reproducibility record
 
