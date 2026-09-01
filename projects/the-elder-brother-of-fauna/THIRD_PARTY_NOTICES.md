@@ -13,7 +13,8 @@ under that MIT License.
 - License: <https://docs.nvidia.com/cuda/eula/>
 
 The NVIDIA display/compute driver is supplied by the host and is not installed
-inside the project's `naturalehia` development container.
+inside the project's `naturalehia-the-elder-brother-of-fauna` development
+container.
 
 ## LibTorch
 
@@ -23,8 +24,9 @@ inside the project's `naturalehia` development container.
 - PyTorch license: <https://github.com/pytorch/pytorch/blob/main/LICENSE>
 
 The archive is stored only in a local Docker volume/cache. It is not committed
-to or distributed from this repository. The SHA-256 value in `setup.sh` is a
-maintainer-enrolled integrity pin calculated from the official HTTPS artifact;
+to or distributed from this repository. The SHA-256 value in
+`toolchain-locks.sh` is a maintainer-enrolled integrity pin calculated from
+the official HTTPS artifact;
 PyTorch does not publish a companion checksum file for this archive.
 
 ## NVIDIA libraries required by LibTorch
@@ -37,9 +39,10 @@ runtime components, which the LibTorch binary expects in sibling directories:
 - NCCL 2.29.7
 - NVSHMEM 3.4.5
 
-`setup.sh` downloads the matching x86-64 wheels from NVIDIA's package index,
-checks their exact byte lengths and the SHA-256 values published by the
-official PyTorch wheel index, and extracts them into the local
+`setup.sh` uses the locks in `toolchain-locks.sh` to download the matching
+x86-64 wheels from NVIDIA's package index, checks their exact byte lengths and
+the SHA-256 values published by the official PyTorch wheel index, and extracts
+them into the local
 `naturalehia-gpu` volume as an immutable, versioned runtime release selected by
 `$NVIDIA_RUNTIME_ROOT`. Verified archives remain in a root-only cache in that
 volume. The wheels are not committed to or redistributed by this repository.

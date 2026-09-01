@@ -33,11 +33,15 @@ immutable prior release. Create the new manifest only after the verified PDF
 has been copied into this directory; the manifest intentionally does not hash
 itself.
 
-The paper must be built with `latexmk` inside the project's
-`documents-latex:bookworm` container. From Windows PowerShell, run:
+The paper must be built with `latexmk` inside the persistent, digest-pinned
+project container. `container.sh up` installs only missing TeX packages into
+that container; no separate disposable LaTeX container is used. From the
+project directory in Git Bash, WSL with Docker integration, or another Bash
+host, run:
 
-```powershell
-docker run --rm --name documents-latex-fca-whitepaper-v2-1 --mount "type=bind,source=C:\Work\Naturalehia\projects\fostering-cellular-agriculture,target=/work" -w /work/whitepaper documents-latex:bookworm latexmk -pdf -interaction=nonstopmode -halt-on-error -file-line-error -outdir=build-v21 fostering-cellular-agriculture-white-paper.tex
+```sh
+bash container.sh exec /bin/bash -lc \
+  'cd whitepaper && latexmk -pdf -interaction=nonstopmode -halt-on-error -file-line-error -outdir=build-v21 fostering-cellular-agriculture-white-paper.tex'
 ```
 
 Copy the verified file from `build-v21/` to the released PDF path only after

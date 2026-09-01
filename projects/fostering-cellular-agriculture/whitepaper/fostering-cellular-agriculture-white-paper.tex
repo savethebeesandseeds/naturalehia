@@ -872,7 +872,7 @@ For the paper's reported snapshot:
   \item immutable release identity: tag \texttt{fca-whitepaper-v2.1.0}; the tagged \href{https://github.com/savethebeesandseeds/naturalehia/blob/fca-whitepaper-v2.1.0/projects/fostering-cellular-agriculture/whitepaper/release-manifest-v2.1.tsv}{release manifest} records the paper-relevant source, fixture, funding-bridge and released-PDF hashes;
   \item publication boundary: the released \href{https://github.com/savethebeesandseeds/naturalehia/blob/fca-whitepaper-v2.1.0/projects/fostering-cellular-agriculture/docs/CALLABLE_CAPITAL_WAREHOUSE_FUNDING_BRIDGE_V0_1.md}{Callable-Capital and Warehouse Funding Integrity Bridge v0.1} now has checked accounting, provider-lineage, eligibility, maturity and nonanticipativity mechanics, but no checked file-backed transaction or numerical candidate result;
   \item portable execution: the retained quantitative release evidence is produced by the pinned Emscripten container and Node, including every command-line report wrapper;
-  \item paper toolchain: \texttt{latexmk} inside the Debian-based \texttt{documents-latex:bookworm} container.
+  \item paper toolchain: \texttt{latexmk} inside the persistent project container based on the digest-pinned \texttt{emscripten/emsdk:6.0.5} image.
 \end{itemize}
 
 The public browser interface is a readable analytical view of frozen synthetic results, and the same C++ kernel now has a strict WebAssembly build path. Browser interactivity does not itself prove parity or calibration: any published parity claim must remain tied to named structured-output fixtures, input hashes and retained cross-runtime tests.

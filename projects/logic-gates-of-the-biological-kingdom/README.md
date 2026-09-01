@@ -55,8 +55,8 @@ The command-line program ships with an illustrative parameter set and accepts
 alternatives:
 
 ```sh
-bash setup.sh exec make run
-bash setup.sh exec make run \
+bash container.sh exec make run
+bash container.sh exec make run \
   RUN_ARGS='--baseline -4 --input-a 8 --input-b 8 --joint -16 --threshold 0.5'
 ```
 
@@ -83,10 +83,10 @@ Run the nominal model bounds, the documented five-percent parameter
 stress box, and the independent-binding null with:
 
 ```sh
-bash setup.sh exec make region
-bash setup.sh exec make region \
+bash container.sh exec make region
+bash container.sh exec make region \
   REGION_ARGS='--apo-log-radius 0.05 --positive-radius 0.05 --required-separation 0.3'
-bash setup.sh exec make region REGION_ARGS='--independent-null'
+bash container.sh exec make region REGION_ARGS='--independent-null'
 ```
 
 The first two commands reproduce expected model-regression outputs. They do
@@ -98,14 +98,14 @@ Audit the coupling terms against the paired independent-binding ablation with
 no acceptance criteria:
 
 ```sh
-bash setup.sh exec make coupling-audit
+bash container.sh exec make coupling-audit
 ```
 
 The audit reports `not_assessed` until all criteria are supplied. The checked
 regression-only profile can be exercised explicitly with:
 
 ```sh
-bash setup.sh exec make coupling-audit \
+bash container.sh exec make coupling-audit \
   AUDIT_ARGS='--criteria-label illustrative-regression-v1 --criteria-threshold 0.5 --criteria-min-separation 0.30 --criteria-max-intended-off 0.15 --criteria-max-floor-imbalance 0.05'
 ```
 
@@ -116,7 +116,7 @@ candidate screening.
 Emit a logarithmically spaced surface for inspection with:
 
 ```sh
-bash setup.sh exec make surface \
+bash container.sh exec make surface \
   SURFACE_ARGS='--a-min 0.01 --a-max 10 --a-points 9 --a-spacing log --b-min 0.01 --b-max 10 --b-points 9 --b-spacing log'
 ```
 
@@ -127,11 +127,13 @@ developer-supplied arguments.
 ## Supported development environment
 
 Linux is the supported development and CI platform. The canonical development
-environment is a named, persistent Debian container managed entirely by
-`setup.sh`; there is deliberately no Dockerfile. The project uses C++20,
-CMake, GNU Make, Ninja, GCC or Clang, and the C++ standard library. No project
-code or automation is written in Python, and setup verifies that no Python
-interpreter is installed in the canonical container.
+environment is a named, persistent Debian container managed by
+`container.sh`; there is deliberately no Dockerfile. Inside that container,
+`setup.sh` idempotently installs the toolchain and configures the developer
+environment. The project uses C++20, CMake, GNU Make, Ninja, GCC or Clang, and
+the C++ standard library. No project code or automation is written in Python,
+and provisioning verifies that no Python interpreter is installed in the
+canonical container.
 
 The host needs Bash and a local Docker installation using a Linux engine. The
 default environment also requires an NVIDIA GPU made available through the
@@ -139,22 +141,28 @@ NVIDIA Container Toolkit. Create or resume the environment and run its checks
 with:
 
 ```sh
-bash setup.sh up
-bash setup.sh exec make test
-bash setup.sh exec make sanitize
-bash setup.sh exec make gpu-test
+bash container.sh up
+bash container.sh exec make test
+bash container.sh exec make sanitize
+bash container.sh exec make gpu-test
 ```
 
-The container is called `naturalehia-protein-logic`. It shares all host GPUs
+The container and its hostname are
+`naturalehia-logic-gates-of-the-biological-kingdom`. It shares all host GPUs
 with compute and utility capabilities, bind-mounts only this project, and
-keeps build products and its developer home in named volumes. It reserves
+keeps build products and its developer home in the established named volumes
+`naturalehia-protein-logic-build-v1` and
+`naturalehia-protein-logic-home-v1`. Those historical volume names are
+retained so existing project state can be reused safely. The container reserves
 `127.0.0.1:38417` for a future local service; nothing listens on that port yet,
-and the port is not exposed beyond the host. Use `bash setup.sh shell` to enter
-the environment, `bash setup.sh status` to inspect it, and `bash setup.sh stop`
-to stop it without deleting either volume. Once inside the environment, use
-ordinary Make targets such as `make test`, `make sanitize`, and `make run`.
+and the port is not exposed beyond the host. Use `bash container.sh shell` to
+enter the environment, `bash container.sh status` to inspect it, and
+`bash container.sh stop` to stop it without deleting either volume. Once
+inside the environment, use ordinary Make targets such as `make test`,
+`make sanitize`, and `make run`.
 
-`setup.sh` is intentionally limited to provisioning and lifecycle management.
+`container.sh` is the host lifecycle and access interface. `setup.sh` is
+strictly in-container, idempotent dependency installation and configuration.
 The `Makefile` owns builds, tests, quality checks, sanitizer runs, package
 verification, and program execution. GNU Make is provided inside the
 container, so Windows hosts do not need a native `make` installation.
@@ -166,7 +174,7 @@ Git Bash or from WSL with Docker integration; plain PowerShell's `bash` alias
 may select a WSL installation that is not connected to Docker.
 
 Contributors without an NVIDIA runtime can explicitly create a CPU-only
-environment with `NATURALEHIA_PROTEIN_LOGIC_GPU=none bash setup.sh up`. GPU
+environment with `NATURALEHIA_PROTEIN_LOGIC_GPU=none bash container.sh up`. GPU
 sharing remains the default for the canonical research environment.
 
 The base image is pinned by digest. Debian packages are installed from the
@@ -233,7 +241,8 @@ tests/                              Deterministic tests and package consumer
 cmake/                              Installed-package configuration
 docs/                               Research charter, roadmap, and safeguards
 Makefile                            Build, test, quality, and execution targets
-setup.sh                            Linux environment setup and lifecycle only
+container.sh                       Host container lifecycle and access
+setup.sh                           In-container dependency/configuration setup
 ```
 
 ## Research direction

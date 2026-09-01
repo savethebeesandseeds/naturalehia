@@ -387,14 +387,40 @@ value, risk-neutral pricing, a market quote, or evidence of financeability. See
 
 ## Build, test, and run
 
-Requirements: CMake 3.24 or newer and a C++20 compiler.
+The canonical Linux environment is the persistent container managed by
+`container.sh`. It is named and hostnamed
+`naturalehia-fostering-cellular-agriculture`, uses the multi-architecture
+`emscripten/emsdk:6.0.5` image pinned by digest, publishes no ports, requests
+no GPU or other device, and has restart policy `no`. It bind-mounts only this
+project at `/workspace/fostering-cellular-agriculture`; the developer home is
+the guarded named volume
+`naturalehia-fostering-cellular-agriculture-home-v1`.
 
-From this directory:
+The host needs Bash, a local Docker installation using the Linux engine, and
+network access the first time the pinned image or missing white-paper packages
+are installed. From Git Bash, WSL with Docker integration, or another Bash
+host, create or resume the environment with:
 
 ```sh
-cmake --preset dev
-cmake --build --preset dev
-ctest --preset dev
+bash container.sh up
+bash container.sh shell
+```
+
+`setup.sh` is called inside the container by `container.sh`; it only installs
+missing tool and white-paper packages and configures the developer identity and
+home. It is not a lifecycle, build, test, run, or status interface. Existing
+same-name objects with missing or mismatched ownership labels are rejected, as
+are preserved legacy disposable recipe containers. `recreate` transactionally
+replaces only the exact managed container and retains the named home volume.
+
+Project operations remain ordinary CMake/CMakePresets and executable commands.
+The development preset requires CMake 3.24 or newer and a C++20 compiler. Run
+it through the host interface from this directory:
+
+```sh
+bash container.sh exec emcmake cmake --preset dev
+bash container.sh exec cmake --build --preset dev
+bash container.sh exec ctest --preset dev
 ```
 
 Run the illustrative scenario on Windows with a multi-configuration generator:
@@ -586,16 +612,14 @@ exit code zero; it is not evidence of investor demand or capital mobilization.
 Run the additive v0.2 frontier on the same ten-claim pool with an explicit
 Capital Stack v0.2 template:
 
-```powershell
-docker run --rm --name fca-frontier-v02 `
-  --mount type=bind,source=/mnt/host/c/Work/Naturalehia/projects/fostering-cellular-agriculture,target=/work `
-  -w /work emscripten/emsdk:6.0.5 `
-  node build-wasm-v02/naturalehia-capital-mobilization-frontier.js `
-    scenarios/ten-claim-instrument-v1-synthetic/portfolio.cfg `
-    scenarios/ten-claim-instrument-v1-synthetic/event-polytope-v0.2.cfg `
-    scenarios/ten-claim-instrument-v1-synthetic/success-participation.cfg `
-    scenarios/ten-claim-instrument-v1-synthetic/capital-stack-v0.2.cfg `
-    scenarios/ten-claim-instrument-v1-synthetic/capital-mobilization-frontier-v0.2.cfg
+```sh
+bash container.sh exec node \
+  build-wasm-v02/naturalehia-capital-mobilization-frontier.js \
+  scenarios/ten-claim-instrument-v1-synthetic/portfolio.cfg \
+  scenarios/ten-claim-instrument-v1-synthetic/event-polytope-v0.2.cfg \
+  scenarios/ten-claim-instrument-v1-synthetic/success-participation.cfg \
+  scenarios/ten-claim-instrument-v1-synthetic/capital-stack-v0.2.cfg \
+  scenarios/ten-claim-instrument-v1-synthetic/capital-mobilization-frontier-v0.2.cfg
 ```
 
 The checked five-by-five grid evaluates 25 `(q,A)` terms. None passes every

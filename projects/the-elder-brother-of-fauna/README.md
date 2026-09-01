@@ -126,24 +126,30 @@ benchmarks show where they are warranted.
 ## Debian development environment
 
 Development is standardized on the digest-pinned Debian 13 container managed
-by [`setup.sh`](setup.sh). No Dockerfile is used. The script creates a container
-named `naturalehia`, provisions GCC, Clang, CMake, Ninja, ccache, debugging and
-formatting tools, numerical and computer-vision libraries, CUDA 13.1 Update 1,
-GPU-enabled LibTorch 2.13, cuDNN 9.20.0.48, cuSPARSELt 0.8.1, NCCL 2.29.7,
-and NVSHMEM 3.4.5. Every APT installation uses
+by [`container.sh`](container.sh). No Dockerfile is used. Responsibilities are
+deliberately separate: `container.sh` owns host-side lifecycle,
+[`setup.sh`](setup.sh) performs idempotent in-container provisioning as root,
+and the [`Makefile`](Makefile) owns build, test, GPU-smoke, and run tasks.
+
+The persistent container is named
+`naturalehia-the-elder-brother-of-fauna`. It provisions GCC, Clang, CMake,
+Ninja, ccache, debugging and formatting tools, numerical and computer-vision
+libraries, CUDA 13.1 Update 1, GPU-enabled LibTorch 2.13, cuDNN 9.20.0.48,
+cuSPARSELt 0.8.1, NCCL 2.29.7, and NVSHMEM 3.4.5. Every APT installation uses
 `--no-install-recommends`, and all local development builds run inside Linux.
 
 Requirements are Bash, Docker's Linux container engine, and an NVIDIA-capable
 Docker runtime. The locked CUDA and LibTorch artifacts currently require a
-Debian 13 x86-64/amd64 image; `setup.sh` rejects incompatible image overrides.
-The script deliberately requires a local Docker context because repository bind
+Debian 13 x86-64/amd64 image; `container.sh` rejects incompatible image
+overrides. The lifecycle script deliberately requires a local Docker context because repository bind
 mounts resolve on the daemon host. Create the environment and run the project
 and GPU test suites from the repository root with:
 
 ```sh
 cd projects/the-elder-brother-of-fauna
-bash setup.sh test
-bash setup.sh gpu-test
+bash container.sh up
+bash container.sh exec make test
+bash container.sh exec make gpu-test
 ```
 
 The remaining commands in this document assume that project directory is the
@@ -152,11 +158,11 @@ current working directory.
 Useful commands:
 
 ```sh
-bash setup.sh shell
-bash setup.sh gpu-test
-bash setup.sh run --steps 20 --individuals 5 --colonies 2 --seed 42
-bash setup.sh status
-bash setup.sh stop
+bash container.sh shell
+bash container.sh exec make gpu-test
+bash container.sh exec make run RUN_ARGS='--steps 20 --individuals 5 --colonies 2 --seed 42'
+bash container.sh status
+bash container.sh stop
 ```
 
 The Naturalehia repository is bind-mounted at `/workspace/naturalehia`, and
@@ -169,12 +175,22 @@ Checksum-locked LibTorch and NVIDIA runtime releases, plus a root-only verified
 download cache, live in the root-owned `naturalehia-gpu` volume. The CUDA
 toolkit and Debian packages live in the replaceable container filesystem.
 Compiler output and downloaded binaries do not contaminate the host checkout.
+The historical named volumes `naturalehia-build`, `naturalehia-home`, and
+`naturalehia-gpu` are intentionally retained so existing data survives the
+container-name migration. Creation refuses to proceed while either legacy
+container name `naturalehia` or `naturalehia-recreate-backup` still exists;
+inspect and resolve such a container explicitly rather than overwriting it.
+Normal lifecycle operations also refuse any other container attached to one of
+the three retained volumes. During a transactional recreate, the only extra
+attachment allowed is the verified, stopped, managed project backup. `status`
+reports legacy-name and retained-volume attachment conflicts even when the
+canonical container does not exist.
 Build trees are isolated by container configuration, the exact installed
 package manifest, GPU architecture, and artifact manifests, while ccache
 remains reusable. `recreate` retains the previous idle container for rollback
 until the replacement passes structural checks and the CUDA/LibTorch GPU
 smokes. It preserves all managed volumes and refuses unmanaged containers or
-same-named volumes rather than modifying them.
+volumes rather than modifying them.
 
 The base image digest, CUDA top-level package, LibTorch archive, and NVIDIA
 runtime wheels are locked. Debian development packages and CUDA's dependency
@@ -188,7 +204,7 @@ profiling interfaces, and development libraries. LibTorch is installed at the
 versioned path reported by `$LIBTORCH_ROOT`; `$CMAKE_PREFIX_PATH` is configured
 for `find_package(Torch)`. Vendor headers and libraries are exposed through
 `$CUDNN_ROOT`, `$CUSPARSELT_ROOT`, `$NCCL_ROOT`, and `$NVSHMEM_ROOT`.
-`bash setup.sh gpu-test` detects the visible GPUs' compute capabilities,
+`bash container.sh exec make gpu-test` detects the visible GPUs' compute capabilities,
 compiles a native CUDA kernel and a LibTorch C++ program for them, and executes
 both on the GPU. The LibTorch smoke includes a real cuDNN convolution. The
 NVIDIA driver remains on
@@ -207,8 +223,9 @@ Two future interfaces are published to loopback only:
 
 No service listens on either port yet. Override the host ports with
 `NATURALEHIA_HTTP_PORT` and `NATURALEHIA_INGEST_PORT` before first creation;
-then use `bash setup.sh recreate` to apply an immutable container-setting
-change. Run `bash setup.sh help` for the complete lifecycle interface.
+then use `bash container.sh recreate` to apply an immutable container-setting
+change. Run `bash container.sh help` for the complete lifecycle interface and
+`make help` inside the container for project tasks.
 
 The reusable library target is `naturalehia_fauna`, with public CMake alias
 `Naturalehia::Fauna`. The command-line executable is `naturalehia-fauna`.
@@ -225,7 +242,7 @@ Debian shell, configure a release build with benchmarks enabled, and run it
 with:
 
 ```sh
-bash setup.sh shell
+bash container.sh shell
 cmake -S /workspace/naturalehia/projects/the-elder-brother-of-fauna \
   -B /work/naturalehia-build/the-elder-brother-of-fauna/association-benchmark \
   -G Ninja \
@@ -250,7 +267,10 @@ apps/cli/                          Synthetic-data command-line application
 tests/                             Deterministic automated tests
 benchmarks/                        Optional deterministic performance baselines
 cmake/                             Package configuration and GPU smoke tests
-setup.sh                           Debian container lifecycle and Linux build entrypoint
+container.sh                       Host-side Docker lifecycle and verification
+setup.sh                           Idempotent in-container provisioning only
+toolchain-locks.sh                 Shared image, package, and artifact locks
+Makefile                           Build, test, GPU-smoke, and run task runner
 ```
 
 ## Design principles

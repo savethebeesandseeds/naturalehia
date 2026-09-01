@@ -58,16 +58,14 @@ From the project directory, reproduce the consolidated comparison with:
 The additive frontier copies `capital-stack-v0.2.cfg` for every candidate and
 changes only success-cash participation `q` and junior issued principal `A`:
 
-```powershell
-docker run --rm --name fca-frontier-v02 `
-  --mount type=bind,source=/mnt/host/c/Work/Naturalehia/projects/fostering-cellular-agriculture,target=/work `
-  -w /work emscripten/emsdk:6.0.5 `
-  node build-wasm-v02/naturalehia-capital-mobilization-frontier.js `
-    scenarios/ten-claim-instrument-v1-synthetic/portfolio.cfg `
-    scenarios/ten-claim-instrument-v1-synthetic/event-polytope-v0.2.cfg `
-    scenarios/ten-claim-instrument-v1-synthetic/success-participation.cfg `
-    scenarios/ten-claim-instrument-v1-synthetic/capital-stack-v0.2.cfg `
-    scenarios/ten-claim-instrument-v1-synthetic/capital-mobilization-frontier-v0.2.cfg
+```sh
+bash container.sh exec node \
+  build-wasm-v02/naturalehia-capital-mobilization-frontier.js \
+  scenarios/ten-claim-instrument-v1-synthetic/portfolio.cfg \
+  scenarios/ten-claim-instrument-v1-synthetic/event-polytope-v0.2.cfg \
+  scenarios/ten-claim-instrument-v1-synthetic/success-participation.cfg \
+  scenarios/ten-claim-instrument-v1-synthetic/capital-stack-v0.2.cfg \
+  scenarios/ten-claim-instrument-v1-synthetic/capital-mobilization-frontier-v0.2.cfg
 ```
 
 The declared grids are:
@@ -103,16 +101,14 @@ it is not causal assignment of asset loss.
 The downstream records hold `q=1` and `A=20` fixed. First test only the market
 claim's lifetime non-principal priority cap:
 
-```powershell
-docker run --rm --name fca-priority-cap-v02 `
-  --mount type=bind,source=/mnt/host/c/Work/Naturalehia/projects/fostering-cellular-agriculture,target=/work `
-  -w /work emscripten/emsdk:6.0.5 `
-  node build-wasm-v02/naturalehia-market-priority-cap.js `
-    scenarios/ten-claim-instrument-v1-synthetic/portfolio.cfg `
-    scenarios/ten-claim-instrument-v1-synthetic/event-polytope-v0.2.cfg `
-    scenarios/ten-claim-instrument-v1-synthetic/success-participation.cfg `
-    scenarios/ten-claim-instrument-v1-synthetic/capital-stack-v0.2.cfg `
-    scenarios/ten-claim-instrument-v1-synthetic/market-priority-cap-v0.2.cfg
+```sh
+bash container.sh exec node \
+  build-wasm-v02/naturalehia-market-priority-cap.js \
+  scenarios/ten-claim-instrument-v1-synthetic/portfolio.cfg \
+  scenarios/ten-claim-instrument-v1-synthetic/event-polytope-v0.2.cfg \
+  scenarios/ten-claim-instrument-v1-synthetic/success-participation.cfg \
+  scenarios/ten-claim-instrument-v1-synthetic/capital-stack-v0.2.cfg \
+  scenarios/ten-claim-instrument-v1-synthetic/market-priority-cap-v0.2.cfg
 ```
 
 That synthetic sensitivity selects tested `B=24` under a **separate, relaxed
@@ -125,17 +121,15 @@ explicit, hold the claim and all future cash paths fixed and evaluate the
 supplied buyer-price, issuer-cost, support, and independent-hurdle
 sensitivities:
 
-```powershell
-docker run --rm --name fca-issue-price-v02 `
-  --mount type=bind,source=/mnt/host/c/Work/Naturalehia/projects/fostering-cellular-agriculture,target=/work `
-  -w /work emscripten/emsdk:6.0.5 `
-  node build-wasm-v02/naturalehia-issue-price-support.js `
-    scenarios/ten-claim-instrument-v1-synthetic/portfolio.cfg `
-    scenarios/ten-claim-instrument-v1-synthetic/event-polytope-v0.2.cfg `
-    scenarios/ten-claim-instrument-v1-synthetic/success-participation.cfg `
-    scenarios/ten-claim-instrument-v1-synthetic/capital-stack-v0.2.cfg `
-    scenarios/ten-claim-instrument-v1-synthetic/market-priority-cap-v0.2.cfg `
-    scenarios/ten-claim-instrument-v1-synthetic/issue-price-support-v0.2.cfg
+```sh
+bash container.sh exec node \
+  build-wasm-v02/naturalehia-issue-price-support.js \
+  scenarios/ten-claim-instrument-v1-synthetic/portfolio.cfg \
+  scenarios/ten-claim-instrument-v1-synthetic/event-polytope-v0.2.cfg \
+  scenarios/ten-claim-instrument-v1-synthetic/success-participation.cfg \
+  scenarios/ten-claim-instrument-v1-synthetic/capital-stack-v0.2.cfg \
+  scenarios/ten-claim-instrument-v1-synthetic/market-priority-cap-v0.2.cfg \
+  scenarios/ten-claim-instrument-v1-synthetic/issue-price-support-v0.2.cfg
 ```
 
 With `M=80`, issuer cost `F=0`, and wholly synthetic maximum no-rights support

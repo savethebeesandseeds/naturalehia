@@ -23,7 +23,7 @@ to reproduce the result.
 1. Fork the repository and create a focused branch.
 2. From the repository root, run
    `cd projects/the-elder-brother-of-fauna`.
-3. Start the Debian environment with `bash setup.sh up`.
+3. Start the Debian environment with `bash container.sh up`.
 4. Make the change, including tests and relevant documentation.
 5. Build in a warning-enabled configuration and run the full test suite.
 6. Open a pull request that explains the problem, approach, tradeoffs, and how
@@ -32,14 +32,19 @@ to reproduce the result.
 ### Canonical build and test
 
 ```sh
-bash setup.sh test
-bash setup.sh gpu-test  # Required when changing GPU, CUDA, or LibTorch integration.
+bash container.sh exec make test
+bash container.sh exec make gpu-test  # Required for GPU, CUDA, or LibTorch changes.
 ```
 
 All routine compilation, testing, formatting, and debugging should happen in
 the managed Debian container. The cross-platform CI matrix remains responsible
 for portability checks outside that development environment.
 All commands below assume the project directory selected in step 2.
+
+Keep the environment boundaries explicit: `container.sh` owns host-side Docker
+lifecycle, `setup.sh` owns idempotent in-container provisioning, and `Makefile`
+owns build, test, GPU-smoke, and run tasks. Do not add Docker lifecycle commands
+to `setup.sh` or project build targets to `container.sh`.
 
 ## Code organization
 
@@ -114,7 +119,7 @@ The optional association benchmark is configured and run inside the managed
 Debian container:
 
 ```sh
-bash setup.sh shell
+bash container.sh shell
 cmake -S /workspace/naturalehia/projects/the-elder-brother-of-fauna \
   -B /work/naturalehia-build/the-elder-brother-of-fauna/association-benchmark \
   -G Ninja \

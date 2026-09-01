@@ -94,13 +94,13 @@ help:
 		'  make coupling-audit Audit the coupling term; pass AUDIT_ARGS="..." if needed' \
 		'  make gpu-test       Check NVIDIA GPU and driver visibility' \
 		'' \
-		'Container setup remains in setup.sh:' \
-		'  bash setup.sh up' \
-		'  bash setup.sh shell' \
-		'  bash setup.sh exec make test'
+		'Container lifecycle and access remain in container.sh:' \
+		'  bash container.sh up' \
+		'  bash container.sh shell' \
+		'  bash container.sh exec make test'
 
 shell-quality:
-	cd "$(PROJECT_ROOT)" && shellcheck setup.sh
+	cd "$(PROJECT_ROOT)" && shellcheck container.sh setup.sh
 
 format-check:
 	cd "$(PROJECT_ROOT)" && uncrustify --check -c .uncrustify.cfg $(CPP_FILES)
@@ -188,7 +188,7 @@ coupling-audit: build-debug
 
 gpu-test:
 	@if ! command -v nvidia-smi >/dev/null 2>&1; then \
-		echo 'error: nvidia-smi is unavailable; enable GPU sharing in setup.sh' >&2; \
+		echo 'error: nvidia-smi is unavailable; enable GPU sharing in container.sh' >&2; \
 		exit 1; \
 	fi
 	nvidia-smi

@@ -19,24 +19,25 @@ welcome.
 ## Supported workflow
 
 Development and CI are Linux-first. Implementation code is C or C++. Project
-automation uses GNU Make and CMake, while Bash is limited to provisioning and
-managing the persistent environment. Do not introduce Python project code or
+automation uses GNU Make and CMake. The host-side `container.sh` manages and
+accesses the persistent environment, while `setup.sh` performs idempotent
+provisioning only inside it. Do not introduce Python project code or
 automation.
 
 Create or resume the environment, then run the full local check with:
 
 ```sh
-bash setup.sh up
-bash setup.sh exec make test
+bash container.sh up
+bash container.sh exec make test
 ```
 
 For sanitizer coverage:
 
 ```sh
-bash setup.sh exec make sanitize
+bash container.sh exec make sanitize
 ```
 
-Alternatively, use `bash setup.sh shell` once and then invoke `make test`,
+Alternatively, use `bash container.sh shell` once and then invoke `make test`,
 `make sanitize`, and other targets directly inside the container. Native Linux
 contributors may run the same Makefile without the container.
 

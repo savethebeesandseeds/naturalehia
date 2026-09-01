@@ -146,13 +146,13 @@ physically realizable.
 Run the raw audit without acceptance criteria:
 
 ```sh
-bash setup.sh exec make coupling-audit
+bash container.sh exec make coupling-audit
 ```
 
 Run the regression-only protocol explicitly with:
 
 ```sh
-bash setup.sh exec make coupling-audit \
+bash container.sh exec make coupling-audit \
   AUDIT_ARGS='--criteria-label illustrative-regression-v1 --criteria-threshold 0.5 --criteria-min-separation 0.30 --criteria-max-intended-off 0.15 --criteria-max-floor-imbalance 0.05'
 ```
 

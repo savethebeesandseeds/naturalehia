@@ -15,7 +15,7 @@ biological XOR gate exists.
 | Build and test with two supported Linux toolchains | CMake presets, `Makefile`, and the Linux CI workflow | GCC Debug and Release builds and tests passed; the Clang ASan/UBSan run passed | Complete |
 | Install and consume the CMake package | Installed-package configuration and `tests/package_consumer` | The downstream package-consumer build and test passed | Complete |
 | Enforce source and shell quality checks | Uncrustify configuration, ShellCheck configuration, and `make quality` | ShellCheck and Uncrustify checks passed | Complete |
-| Provide a persistent, inspectable Linux environment | `setup.sh`, pinned base-image digest, named-volume and toolchain records | Environment creation/resume, CLI execution, and `nvidia-smi` visibility passed | Complete |
+| Provide a persistent, inspectable Linux environment | `setup.sh` at closeout (now split into `container.sh` and `setup.sh`), pinned base-image digest, named-volume and toolchain records | Environment creation/resume, CLI execution, and `nvidia-smi` visibility passed | Complete |
 | State provenance, claim, and responsible-research limits | Charter, prior-art map, contribution policy, and responsible-research policy | Documentation review found the current outputs described as mathematical model results | Complete |
 
 The local results above were observed in the persistent canonical development

@@ -276,20 +276,17 @@ rejection or establish an executable financing.
 ## CLI and normalized record
 
 The checked v0.2 CLI form uses the prebuilt WebAssembly reporter through Node
-inside the pinned Emscripten image; it does not compile or invoke a native
-Windows executable:
+inside the persistent, digest-pinned Emscripten project container; it does not
+compile or invoke a native Windows executable:
 
-```powershell
-docker run --rm --name fca-frontier-v02 `
-  --mount type=bind,source=/mnt/host/c/Work/Naturalehia/projects/fostering-cellular-agriculture,target=/work `
-  -w /work emscripten/emsdk:6.0.5 `
-  node build-wasm-v02/naturalehia-capital-mobilization-frontier.js `
-    <portfolio.cfg> `
-    <event-polytope.cfg> `
-    <success-participation.cfg> `
-    <capital-stack-v0.2.cfg> `
-    <capital-mobilization-frontier-v0.2.cfg> `
-    [--print-normalized]
+```sh
+bash container.sh exec node \
+  build-wasm-v02/naturalehia-capital-mobilization-frontier.js \
+  path/to/portfolio.cfg \
+  path/to/event-polytope.cfg \
+  path/to/success-participation.cfg \
+  path/to/capital-stack-v0.2.cfg \
+  path/to/capital-mobilization-frontier-v0.2.cfg
 ```
 
 `--print-normalized` appends all five complete reloadable inputs. Economic
