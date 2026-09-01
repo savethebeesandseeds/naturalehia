@@ -40,15 +40,15 @@
   citecolor=Rust,
   urlcolor=Rust,
   pdftitle={Financing Cellular-Agriculture Scale-Up under Correlated Technical Risk},
-  pdfauthor={Naturalehia},
-  pdfsubject={Open financial engineering for cellular agriculture},
+  pdfauthor={Santiago Restrepo Ruiz},
+  pdfsubject={Open financial engineering for cellular agriculture, published by Waajacu Open Source Foundation},
   pdfkeywords={cellular agriculture, financial engineering, milestone-contingent claims, portfolio risk, funding liquidity, expected shortfall}
 }
 
 \pagestyle{fancy}
 \fancyhf{}
 \fancyhead[L]{\footnotesize\color{Forest}\textsc{Financing Cellular-Agriculture Scale-Up}}
-\fancyhead[R]{\footnotesize\color{Rust}\textsc{Working Paper / Version 2.0}}
+\fancyhead[R]{\footnotesize\color{Rust}\textsc{Working Paper / Version 2.1}}
 \fancyfoot[L]{\footnotesize\color{Sage}Open financial engineering / synthetic study}
 \fancyfoot[R]{\footnotesize\color{Forest}\thepage}
 \renewcommand{\headrulewidth}{0.4pt}
@@ -97,7 +97,7 @@
 \pagenumbering{arabic}
 \thispagestyle{empty}
 \vspace*{-12mm}
-{\small\bfseries\color{Rust}\MakeUppercase{Naturalehia Research \enspace/\enspace Financial Engineering Working Paper}}\par
+{\small\bfseries\color{Rust}\MakeUppercase{Waajacu Open Source Foundation \enspace/\enspace Financial Engineering Working Paper}}\par
 \vspace{7mm}
 {\LARGE\bfseries\color{Forest} Financing Cellular-Agriculture Scale-Up under Correlated Technical Risk}\par
 \vspace{2mm}
@@ -107,10 +107,11 @@
 \vspace{4mm}
 
 \begin{tabularx}{\textwidth}{@{}P{0.20\textwidth}Y@{}}
-  \textbf{Author} & Naturalehia Research (collective research authorship)\\
-  \textbf{Version} & 2.0 / 1 September 2026\\
+  \textbf{Author} & Santiago Restrepo Ruiz\\
+  \textbf{Publisher} & Waajacu Open Source Foundation\\
+  \textbf{Version} & 2.1 / 1 September 2026\\
   \textbf{Model case} & Ten synthetic project claims; 100 reference principal; 60-month horizon\\
-  \textbf{Correspondence} & \href{https://naturalehia.waajacu.com/projects/fostering-cellular-agriculture/}{naturalehia.waajacu.com/projects/fostering-cellular-agriculture}\\
+  \textbf{Correspondence} & \href{mailto:Santiago.Restrepo.Ruiz@gmail.com}{\nolinkurl{Santiago.Restrepo.Ruiz@gmail.com}}; \href{https://waajacu.com}{waajacu.com}\\
   \textbf{Release status} & Open working paper; not externally peer reviewed\\
 \end{tabularx}
 
@@ -867,9 +868,9 @@ For the paper's reported snapshot:
   \item monetary convention: synthetic \demounit{}, constant analysis-close basis;
   \item discounting: annual-effective, monthly exponents;
   \item reconciliation tolerance: \(10^{-9}\) for modeled floating identities;
-  \item verification status: the tagged quantitative kernel is unchanged from the version 1.3 release, whose complete warnings-as-errors C++20 Emscripten 6.0.5 Release build and Node-driven suite passed 73 of 73 declared tests, including the strict five-file cohort loader, population-frame Evidence Gate, v0.2 asset-to-liability bridge, direct Claim Ledger integration, frontier core/parser/CLI regressions, issue-price browser target and published-WASM byte-parity check;
-  \item immutable release identity: tag \texttt{fca-whitepaper-v2.0.0}; the tagged \href{https://github.com/savethebeesandseeds/naturalehia/blob/fca-whitepaper-v2.0.0/projects/fostering-cellular-agriculture/whitepaper/release-manifest-v2.0.tsv}{release manifest} records the paper-relevant source, fixture and released-PDF hashes;
-  \item publication boundary: the proposed funding-liquidity extension in this paper has no released quantitative bridge output and is excluded from the tagged 73-test result;
+  \item verification status: the complete current warnings-as-errors C++20 Emscripten 6.0.5 Release build and Node-driven suite passed 75 of 75 declared tests on 1 September 2026. The ten-claim quantitative kernel and reported outputs are unchanged from the version 1.3 release; the two added targets verify the funding-bridge evaluator and its closed configuration parser;
+  \item immutable release identity: tag \texttt{fca-whitepaper-v2.1.0}; the tagged \href{https://github.com/savethebeesandseeds/naturalehia/blob/fca-whitepaper-v2.1.0/projects/fostering-cellular-agriculture/whitepaper/release-manifest-v2.1.tsv}{release manifest} records the paper-relevant source, fixture, funding-bridge and released-PDF hashes;
+  \item publication boundary: the released \href{https://github.com/savethebeesandseeds/naturalehia/blob/fca-whitepaper-v2.1.0/projects/fostering-cellular-agriculture/docs/CALLABLE_CAPITAL_WAREHOUSE_FUNDING_BRIDGE_V0_1.md}{Callable-Capital and Warehouse Funding Integrity Bridge v0.1} now has checked accounting, provider-lineage, eligibility, maturity and nonanticipativity mechanics, but no checked file-backed transaction or numerical candidate result;
   \item portable execution: the retained quantitative release evidence is produced by the pinned Emscripten container and Node, including every command-line report wrapper;
   \item paper toolchain: \texttt{latexmk} inside the Debian-based \texttt{documents-latex:bookworm} container.
 \end{itemize}
@@ -878,7 +879,7 @@ The public browser interface is a readable analytical view of frozen synthetic r
 
 \section{Open-standard and responsibility commitments}
 
-Naturalehia retains no protocol fee, carried interest, instrument royalty or share of financed-company receipts for publishing or adopting this open standard. Underlying project claims may still assign capped commercial, licensing, royalty, capacity, offtake or exit cash to investors; without such rights there may be no investable asset. The zero-rent commitment reduces one conflict but does not improve cash flows or prove investment value.
+The author and Waajacu retain no protocol fee, carried interest, instrument royalty or share of financed-company receipts for publishing or adopting this open standard. Underlying project claims may still assign capped commercial, licensing, royalty, capacity, offtake or exit cash to investors; without such rights there may be no investable asset. The zero-rent commitment reduces one conflict but does not improve cash flows or prove investment value.
 
 The governing charter requires underwriting before advocacy, full visibility of risk transfer, transparent subsidy, no stronger claim than evidence, sponsor accountability, safety and food-integrity protection, conservative animal-impact attribution and an auditable go/no-go decision \citep{fca2026charter}. If rigorous analysis rejects a transaction, the mission is served by not spending scarce capital on terms that conceal failure.
 
@@ -888,19 +889,20 @@ The proposed Multi-Project Milestone Participation is a financial standard befor
 
 The synthetic experiment gives the appropriate first conclusion. Pooling provides some ES95 benefit, but common risk dominates ES99. The central core NPV is slightly positive, yet the adverse permitted NPV is materially negative. Fully funded priority creates drag, and the guarantee adds useful external cash but still cannot satisfy both investor and provider constraints. The additive v0.2 frontier rejects every one of the 25 declared same-pool \((q,A)\) candidates. Its downstream issue-price/support sensitivity shows arithmetic overlap only under invented 0\% and 5\% discount-rate cases with uncommitted support, not at the assumed 8\% investor discount rate, and no overlap is funded or escrowed. None of the current constructions is shown financeable.
 
-The next serious step is empirical: acquire enforceable project cash rights, milestone and recovery data, joint-risk evidence, investor price/hurdle observations and provider capacity terms in the common interface. A nonanticipative funding-liquidity layer can then test whether staged callable commitments or a warehouse reduce dead-cash drag without concealing provider, refinancing or settlement risk. Until that layer passes its accounting, eligibility, recovery and policy-timing controls, this paper claims no funding saving. With admissible facts and mechanics, the framework can test whether a revised instrument is valuable, what risks it distributes across projects and institutions, and how much explicit catalytic support is genuinely required.
+The next serious step is empirical: acquire enforceable project cash rights, milestone and recovery data, joint-risk evidence, investor price/hurdle observations and provider capacity terms in the common interface. The nonanticipative funding-liquidity bridge now passes its synthetic accounting, eligibility, provider-lineage, maturity and policy-timing controls. It does not yet have a checked file-backed transaction, empirical facility evidence or a numerical candidate result, so this paper claims no funding saving. With admissible facts and mechanics, the framework can test whether a revised instrument is valuable, what risks it distributes across projects and institutions, and how much explicit catalytic support is genuinely required.
 
 \clearpage
 \section*{Declarations}
 \addcontentsline{toc}{section}{Declarations}
 
 \textbf{Funding.} No external funding was received for this paper.\\
-\textbf{Authorship and responsibility.} Naturalehia Research is the collective author. It is responsible for the research question, evidence boundary, model specification, calculations and release decision.\\
-\textbf{Author economics.} Naturalehia retains no protocol fee, carried interest, instrument royalty or share of financed-company receipts from adoption of the published standard.\\
+\textbf{Authorship and responsibility.} Santiago Restrepo Ruiz is the author and assumes responsibility for the research question, evidence boundary, model specification, calculations and release decision.\\
+\textbf{Publisher.} Waajacu Open Source Foundation publishes this working paper and the open financial-engineering standard. Publication does not endorse or admit any named issuer, investor, guarantor or project.\\
+\textbf{Author economics.} The author and Waajacu retain no protocol fee, carried interest, instrument royalty or share of financed-company receipts from adoption of the published standard.\\
 \textbf{Conflicts.} No ownership, employment, advisory, consulting or other financial relationship with a named issuer, investor, guarantor or project has been disclosed to or relied upon by this research; no named party is endorsed or admitted. This statement does not substitute for signed author and adviser disclosures before any live transaction or third-party publication.\\
-\textbf{Computational assistance.} AI-assisted drafting and code review were used. All claims, model boundaries, source selection, code, tests and release decisions remain the author's responsibility.\\
+\textbf{Computational assistance.} OpenAI Codex was used for research assistance, drafting, code generation and review, and release verification. It is not an author and cannot assume scholarly responsibility. All claims, model boundaries, source selection, code, tests and release decisions remain the human author's responsibility.\\
 \textbf{External review.} This working paper has not been externally peer reviewed.\\
-\textbf{Data and code.} Source, configurations, documentation and tests for this paper are fixed by release tag \href{https://github.com/savethebeesandseeds/naturalehia/tree/fca-whitepaper-v2.0.0/projects/fostering-cellular-agriculture}{\texttt{fca-whitepaper-v2.0.0}}. The numerical case is synthetic.\\
+\textbf{Data and code.} Source, configurations, documentation and tests for this paper are fixed by release tag \href{https://github.com/savethebeesandseeds/naturalehia/tree/fca-whitepaper-v2.1.0/projects/fostering-cellular-agriculture}{\texttt{fca-whitepaper-v2.1.0}}. The numerical case is synthetic.\\
 \textbf{Use boundary.} The paper is research, not professional advice or an offer. Independent qualified review is required before any transaction.
 
 \bibliographystyle{plainnat}
