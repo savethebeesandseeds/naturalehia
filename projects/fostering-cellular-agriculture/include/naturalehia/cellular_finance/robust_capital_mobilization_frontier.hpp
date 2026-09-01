@@ -14,6 +14,13 @@ namespace naturalehia::cellular_finance {
 
 inline constexpr std::string_view
     kRobustCapitalMobilizationFrontierModelVersion{"0.1.0"};
+// Explicit alias for code that wants to contrast the two entry contracts. The
+// original public ModelVersion name above deliberately remains the v0.1 value.
+inline constexpr std::string_view
+    kRobustCapitalMobilizationFrontierLegacyModelVersion{
+        kRobustCapitalMobilizationFrontierModelVersion};
+inline constexpr std::string_view
+    kRobustCapitalMobilizationFrontierV02ModelVersion{"0.2.0"};
 inline constexpr std::size_t
     kRobustCapitalMobilizationFrontierMaximumCandidates{1'024U};
 inline constexpr std::size_t
@@ -24,7 +31,10 @@ inline constexpr std::size_t
 // Aggregate NPV is the fully-funded two-claim stack's worst-case modelled
 // expected NPV surplus to the portfolio hurdle. Claim NPV uses each claim's
 // separately declared hurdle. These are physical-measure surplus tests, not
-// expected returns, fair value, or prices.
+// expected returns, fair value, or prices. The four compatibility names that
+// contain "loss" or "impairment" dispatch by frontier version: v0.1 uses the
+// legacy tranche loss-layering family, while v0.2 uses E[Q]/M, Q ES95/M,
+// Q ES99/M, and Pr[Q>0], where Q is issued-principal cash shortfall.
 struct RobustCapitalMobilizationFrontierConstraints {
     std::optional<double> minimum_robust_aggregate_npv_million{};
     std::optional<double> minimum_market_robust_npv_margin_fraction{};
@@ -40,16 +50,17 @@ struct RobustCapitalMobilizationFrontierConstraints {
     std::optional<double> maximum_catalytic_npv_concession_million{};
 };
 
-// Version 0.1 evaluates only this declared finite grid. It creates exactly two
-// fully funded claims: funded junior loss-absorbing capital / first-loss layer
-// [0,A] and a market-facing claim [A,K], senior in the modelled waterfall,
-// where K is aggregate project commitment and top stack detachment. The two
-// fully funded claims cover [0,K], with no hidden third claim. The market cap
-// and both physical hurdle rates are fixed across the grid rather than
-// optimized.
+// Both versions evaluate only this declared finite grid. They create exactly
+// two fully funded claims: junior residual capital [0,A] and a market-facing
+// priority claim [A,K]. In v0.1, K is aggregate project commitment and the
+// legacy loss-layering convention applies. In v0.2, K is the separately
+// computed acquisition/primary-funding reserve, contractual asset principal
+// remains a different ledger, BuyerDirectCost stays outside K, and principal
+// risk is the claim's issued-principal cash shortfall Q. The two claims cover
+// [0,K], with no hidden third claim. The market cap and both physical hurdle
+// rates are fixed across the grid rather than optimized.
 struct RobustCapitalMobilizationFrontierConfig {
-    std::string model_version{
-        kRobustCapitalMobilizationFrontierModelVersion};
+    std::string model_version{kRobustCapitalMobilizationFrontierModelVersion};
     std::string scenario_label{
         "unnamed synthetic robust capital-mobilization frontier"};
     std::string source_note{
@@ -96,7 +107,13 @@ struct RobustCapitalMobilizationCandidateAudit {
     double maximum_reduced_cost_optimality_residual{0.0};
     double maximum_tail_mass_violation{0.0};
     double maximum_tail_objective_reconciliation_error{0.0};
+    double maximum_tail_threshold_formula_reconciliation_error{0.0};
+    double maximum_tail_threshold_enumeration_optimality_residual{0.0};
+    double maximum_wal_numerator_reconciliation_error_million_years{0.0};
+    double maximum_wal_denominator_reconciliation_error_million{0.0};
     double maximum_wal_ratio_reconciliation_error_years{0.0};
+    double maximum_wal_root_objective_reconciliation_error_million_years{
+        0.0};
     double maximum_wal_root_objective_absolute_residual_million_years{0.0};
 };
 
@@ -106,6 +123,10 @@ struct RobustCapitalMobilizationFrontierCandidate {
     // M=K-A is the market claim's funded principal notional. It excludes the
     // additional pro-rata pool-cost calls captured in expected contributions.
     double market_notional_million{0.0};
+    // True only for v0.2. When true, every compatibility result name below
+    // that says loss/impairment contains Q-family issued-liability risk and
+    // never a legacy asset-loss placeholder.
+    bool principal_risk_uses_issued_principal_cash_shortfall_q{false};
 
     // Full projections are retained so each reported endpoint remains tied to
     // its own probability witness. Ratios below divide only by fixed notional;
@@ -128,8 +149,8 @@ struct RobustCapitalMobilizationFrontierCandidate {
         market_principal_loss_es95_million{};
     ProbabilityPolytopeUpperExpectedShortfallProjection
         market_principal_loss_es99_million{};
-    // Probability of any modelled principal write-down; this is not an
-    // accounting classification or a legal default determination.
+    // V0.1: probability of any modelled tranche principal write-down.
+    // V0.2: Pr[Q>0]. Neither is an accounting classification or legal default.
     ProbabilityPolytopeMetricRange market_principal_impairment_probability{};
     ProbabilityPolytopeMetricRange market_negative_npv_probability{};
     ProbabilityPolytopeUpperExpectedShortfallProjection
@@ -164,6 +185,16 @@ struct RobustCapitalMobilizationLeastFirstLossPoint {
 };
 
 struct RobustCapitalMobilizationFrontierSummary {
+    std::string model_version{};
+    std::string capital_stack_model_version{};
+    bool principal_risk_uses_issued_principal_cash_shortfall_q{false};
+    bool uses_explicit_asset_liability_accounting{false};
+    double aggregate_project_outlay_limit_million{0.0};
+    double aggregate_contractual_asset_principal_limit_million{0.0};
+    double funded_reserve_and_stack_detachment_million{0.0};
+    // Source-compatibility member name for callers that recompile. It equals K
+    // in both versions; only in v0.1 is K necessarily aggregate commitment.
+    // Public layouts gained v0.2 fields, so no binary ABI stability is claimed.
     double aggregate_commitment_and_stack_detachment_million{0.0};
     // Deterministic resource proxies. Probability work is candidates *
     // scenarios * (scenarios + events + 1). Cash-path work is candidates *
@@ -198,8 +229,8 @@ struct RobustCapitalMobilizationFrontierSummary {
     std::vector<RobustCapitalMobilizationLeastFirstLossPoint>
         least_first_loss_feasible_by_participation{};
 
-    // Pareto dominance minimizes q, A, catalytic NPV concession, market
-    // expected principal loss, principal-loss ES95/99, impairment, negative
+    // Pareto dominance minimizes q, A, catalytic NPV concession, the selected
+    // version's market principal-risk expectation/tails/incidence, negative
     // NPV probability, NPV-shortfall ES95/99, and market WAL. An available WAL
     // is preferred to an unavailable WAL. NPV-surplus mandates remain explicit
     // feasibility constraints; no weighted score silently rewards extracting
@@ -216,6 +247,18 @@ void validate_robust_capital_mobilization_frontier_config(
     const SuccessParticipationConfig& participation,
     const RobustCapitalMobilizationFrontierConfig& frontier);
 
+// V0.2 is additive and requires an independently normalized, fully specified
+// two-claim capital-stack template. The template fixes K, claim identifiers,
+// the priority cap, both physical hurdle sensitivities, and every explicit
+// asset/liability assertion. Its q and A must be present in the tested grids.
+// Candidates copy the validated template and change only q and the boundary A.
+void validate_robust_capital_mobilization_frontier_config(
+    const PortfolioConfig& portfolio,
+    const ProbabilityPolytopeConfig& probability_polytope,
+    const SuccessParticipationConfig& participation,
+    const CapitalStackConfig& base_stack_template,
+    const RobustCapitalMobilizationFrontierConfig& frontier);
+
 // Re-evaluates selected participation cash paths, the two-claim waterfall, and
 // every linear, tail, impairment, and common-measure WAL projection separately
 // for every declared (q,A) pair. At most 1,024 pairs are accepted, subject also
@@ -227,6 +270,17 @@ evaluate_robust_capital_mobilization_frontier(
     const PortfolioConfig& portfolio,
     const ProbabilityPolytopeConfig& probability_polytope,
     const SuccessParticipationConfig& participation,
+    const RobustCapitalMobilizationFrontierConfig& frontier);
+
+// V0.2 overload. Principal-risk mandate/result compatibility fields are
+// populated only from E[Q]/M, Q ES95/M, Q ES99/M, and Pr[Q>0]. Legacy v0.1
+// loss-layering placeholders cannot satisfy a v0.2 mandate.
+[[nodiscard]] RobustCapitalMobilizationFrontierSummary
+evaluate_robust_capital_mobilization_frontier(
+    const PortfolioConfig& portfolio,
+    const ProbabilityPolytopeConfig& probability_polytope,
+    const SuccessParticipationConfig& participation,
+    const CapitalStackConfig& base_stack_template,
     const RobustCapitalMobilizationFrontierConfig& frontier);
 
 } // namespace naturalehia::cellular_finance

@@ -9,12 +9,16 @@
 #include <naturalehia/cellular_finance/success_participation_config.hpp>
 
 #include <algorithm>
+#include <array>
+#include <charconv>
 #include <cmath>
 #include <cstddef>
 #include <filesystem>
 #include <iomanip>
 #include <iostream>
+#include <limits>
 #include <optional>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -30,7 +34,7 @@ void print_usage(std::string_view program) {
         << " <portfolio.cfg> <event-polytope.cfg> "
            "<success-participation.cfg> <base-capital-stack.cfg> "
            "<market-priority-cap.cfg> <issue-price.cfg> "
-           "[--print-normalized]\n"
+           "[--print-normalized|--json]\n"
         << "calibrated_execution_authorized=false\n";
 }
 
@@ -45,6 +49,223 @@ void print_usage(std::string_view program) {
 [[nodiscard]] bool uses_principal_cash_shortfall_v02(
     const cf::CapitalStackConfig& base_stack) noexcept {
     return base_stack.model_version == cf::kCapitalStackModelVersion;
+}
+
+void write_json_string(std::ostream& output, std::string_view value) {
+    constexpr std::array<char, 16U> hex{
+        '0', '1', '2', '3', '4', '5', '6', '7',
+        '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+    output.put('"');
+    for (const char character : value) {
+        const unsigned char byte = static_cast<unsigned char>(character);
+        switch (byte) {
+        case '"':
+            output << "\\\"";
+            break;
+        case '\\':
+            output << "\\\\";
+            break;
+        case '\b':
+            output << "\\b";
+            break;
+        case '\f':
+            output << "\\f";
+            break;
+        case '\n':
+            output << "\\n";
+            break;
+        case '\r':
+            output << "\\r";
+            break;
+        case '\t':
+            output << "\\t";
+            break;
+        default:
+            if (byte < 0x20U) {
+                output << "\\u00" << hex[(byte >> 4U) & 0x0fU]
+                       << hex[byte & 0x0fU];
+            } else {
+                output.put(static_cast<char>(byte));
+            }
+            break;
+        }
+    }
+    output.put('"');
+}
+
+void write_json_number(std::ostream& output, double value) {
+    if (!std::isfinite(value)) {
+        output << "null";
+        return;
+    }
+    value = display_value(value);
+    std::array<char, 128U> buffer{};
+    const auto converted = std::to_chars(buffer.data(),
+        buffer.data() + buffer.size(), value, std::chars_format::fixed, 6);
+    if (converted.ec != std::errc{}) {
+        throw std::logic_error("could not format issue-price-support JSON number");
+    }
+    output.write(buffer.data(), converted.ptr - buffer.data());
+}
+
+void write_json_optional_number(
+    std::ostream& output, const std::optional<double>& value) {
+    if (!value.has_value()) {
+        output << "null";
+        return;
+    }
+    write_json_number(output, *value);
+}
+
+[[nodiscard]] double comparison_tolerance(
+    double first, double second) noexcept {
+    constexpr double absolute_tolerance{1.0e-10};
+    return absolute_tolerance +
+        256.0 * std::numeric_limits<double>::epsilon() *
+            std::max({1.0, std::abs(first), std::abs(second)});
+}
+
+[[nodiscard]] bool meets_maximum(double actual, double maximum) noexcept {
+    return actual <= maximum + comparison_tolerance(actual, maximum);
+}
+
+[[nodiscard]] std::string_view hurdle_source_label(
+    cf::RobustIssuePriceHurdleSourceType source) noexcept {
+    using Source = cf::RobustIssuePriceHurdleSourceType;
+    switch (source) {
+    case Source::SameClaimMarketObservation:
+        return "Same-claim market observation";
+    case Source::ComparableMarketObservation:
+        return "Comparable market observation";
+    case Source::ModelAdjustedComparable:
+        return "Model-adjusted comparable";
+    case Source::InvestorTarget:
+        return "Investor target";
+    case Source::PolicyTarget:
+        return "Policy target";
+    case Source::SyntheticSensitivity:
+        return "Synthetic sensitivity";
+    }
+    return "Unknown source";
+}
+
+[[nodiscard]] std::string_view case_status_label(
+    cf::RobustIssuePriceSupportCaseStatus status) noexcept {
+    using Status = cf::RobustIssuePriceSupportCaseStatus;
+    switch (status) {
+    case Status::HurdleNotIndependentOfReferencePrice:
+        return "Hurdle not financeability-eligible";
+    case Status::NoNonnegativeInvestorPrice:
+        return "No non-negative investor price";
+    case Status::InvestorAndIssuerRequirementsDoNotOverlap:
+        return "Investor and issuer requirements do not overlap";
+    case Status::FinanceablePriceWindow:
+        return "Conditional price window";
+    }
+    return "Unavailable";
+}
+
+[[nodiscard]] std::string_view case_nonclaim_note(
+    const cf::RobustIssuePriceSupportCaseResult& result) noexcept {
+    using Status = cf::RobustIssuePriceSupportCaseStatus;
+    switch (result.status) {
+    case Status::HurdleNotIndependentOfReferencePrice:
+        return "The supplied hurdle is not independent of the reference price, so this row cannot establish a financeability window.";
+    case Status::NoNonnegativeInvestorPrice:
+        return "Fixed modeled claim cash cannot support a non-negative buyer price at this supplied hurdle.";
+    case Status::InvestorAndIssuerRequirementsDoNotOverlap:
+        return "The investor ceiling and issuer funding floor do not overlap under the supplied support capacity.";
+    case Status::FinanceablePriceWindow:
+        if (result.funded_support_covered_price_window_exists) {
+            return "Conditional arithmetic overlap; funded or escrowed support capacity covers the modeled minimum, without establishing demand or execution.";
+        }
+        if (result.documented_support_commitment_covers_overlap) {
+            return "Conditional arithmetic overlap; documented support covers the modeled minimum but is not evidenced as funded or escrowed.";
+        }
+        return "Conditional arithmetic overlap only; the supplied support is not evidenced as funded or escrowed.";
+    }
+    return "No broader financeability claim is made.";
+}
+
+struct JsonRiskMetric {
+    std::string_view key{};
+    std::string_view label{};
+    std::string_view unit{};
+    std::optional<double> value{};
+    std::optional<double> limit{};
+    double display_scale{1.0};
+};
+
+[[nodiscard]] std::array<JsonRiskMetric, 5U> make_json_risk_metrics(
+    const cf::RobustIssuePriceSupportSummary& summary,
+    const cf::RobustMarketPriorityCapConfig& priority_cap,
+    bool cash_shortfall_v02) {
+    std::optional<double> expected_fraction{};
+    std::optional<double> es95_fraction{};
+    std::optional<double> es99_fraction{};
+    std::optional<double> shortfall_probability{};
+    std::optional<double> wal_years{};
+    if (!summary.hurdle_cases.empty()) {
+        const auto& risk = summary.hurdle_cases.front().principal_risk;
+        expected_fraction = risk.expected_principal_loss_fraction.maximum.value;
+        es95_fraction = risk.worst_principal_loss_es95_fraction;
+        es99_fraction = risk.worst_principal_loss_es99_fraction;
+        shortfall_probability =
+            risk.principal_impairment_probability.maximum.value;
+        if (risk.principal_cash_wal_years.has_value()) {
+            wal_years = risk.principal_cash_wal_years->maximum.value_years;
+        }
+    }
+
+    const auto& limits = priority_cap.constraints;
+    return {{
+        {cash_shortfall_v02
+                ? "expectedIssuedPrincipalCashShortfallFraction"
+                : "expectedPrincipalLossFraction",
+            cash_shortfall_v02
+                ? "Expected issued-principal cash shortfall Q"
+                : "Expected principal loss",
+            "percent of M", expected_fraction,
+            limits.maximum_market_expected_loss_fraction, 100.0},
+        {cash_shortfall_v02
+                ? "issuedPrincipalCashShortfallEs95Fraction"
+                : "principalLossEs95Fraction",
+            cash_shortfall_v02
+                ? "Issued-principal cash shortfall Q ES95"
+                : "Principal-loss ES95",
+            "percent of M", es95_fraction,
+            limits.maximum_market_principal_loss_es95_fraction, 100.0},
+        {cash_shortfall_v02
+                ? "issuedPrincipalCashShortfallEs99Fraction"
+                : "principalLossEs99Fraction",
+            cash_shortfall_v02
+                ? "Issued-principal cash shortfall Q ES99"
+                : "Principal-loss ES99",
+            "percent of M", es99_fraction,
+            limits.maximum_market_principal_loss_es99_fraction, 100.0},
+        {cash_shortfall_v02
+                ? "principalCashShortfallProbability"
+                : "principalImpairmentProbability",
+            cash_shortfall_v02
+                ? "Issued-principal cash shortfall probability Pr[Q>0]"
+                : "Principal impairment probability",
+            "percent", shortfall_probability,
+            limits.maximum_market_principal_impairment_probability, 100.0},
+        {"principalCashWalYears", "Principal-cash WAL", "years", wal_years,
+            limits.maximum_market_wal_years, 1.0},
+    }};
+}
+
+[[nodiscard]] std::optional<bool> risk_metric_passes(
+    const JsonRiskMetric& metric) noexcept {
+    if (!metric.limit.has_value()) {
+        return std::nullopt;
+    }
+    if (!metric.value.has_value() || !std::isfinite(*metric.value) ||
+        !std::isfinite(*metric.limit)) {
+        return false;
+    }
+    return meets_maximum(*metric.value, *metric.limit);
 }
 
 void print_index_list(const std::vector<std::size_t>& indices) {
@@ -215,23 +436,40 @@ void print_input_evidence_labels(const cf::PortfolioConfig& portfolio,
 }
 
 void print_fixed_terms(const cf::PortfolioConfig& portfolio,
+    const cf::RobustMarketPriorityCapConfig& priority_cap,
     const cf::RobustIssuePriceSupportConfig& terms,
-    const cf::RobustIssuePriceSupportSummary& summary) {
+    const cf::RobustIssuePriceSupportSummary& summary,
+    bool cash_shortfall_v02) {
     const std::string_view currency = portfolio.currency_label;
     std::cout
         << "Fixed claim, issue sources, and selected priority cap\n"
         << "  overall status: " << cf::to_string(summary.status) << '\n'
         << "  upstream priority-cap status: "
-        << cf::to_string(summary.upstream_priority_cap_status) << '\n'
+        << cf::to_string(summary.upstream_priority_cap_status) << '\n';
+    if (cash_shortfall_v02) {
+        std::cout
+            << "  risk-screen scope: separate relaxed priority-cap and issue-price sensitivity; not the Capital Mobilization Frontier mandate\n"
+            << "  risk-screen label: " << priority_cap.scenario_label << '\n'
+            << "  risk-screen source note: " << priority_cap.source_note
+            << '\n'
+            << "  price or support changes fixed principal-risk metrics: false\n";
+    }
+    std::cout
         << "  fixed underlying success participation q: "
         << summary.fixed_underlying_success_participation_fraction << '\n'
-        << "  fixed junior first-loss capital A: "
+        << (cash_shortfall_v02
+                ? "  fixed junior issued principal A: "
+                : "  fixed junior first-loss capital A: ")
         << summary.fixed_junior_first_loss_million << ' ' << currency
         << " million\n"
-        << "  aggregate commitment and stack detachment K: "
+        << (cash_shortfall_v02
+                ? "  funded reserve and issued-principal stack detachment K: "
+                : "  aggregate commitment and stack detachment K: ")
         << summary.aggregate_commitment_and_stack_detachment_million << ' '
         << currency << " million\n"
-        << "  fixed market claim principal M=K-A: "
+        << (cash_shortfall_v02
+                ? "  fixed market issued principal M=K-A: "
+                : "  fixed market claim principal M=K-A: ")
         << summary.fixed_market_notional_million << ' ' << currency
         << " million\n"
         << "  selected market lifetime priority non-principal cap B: ";
@@ -775,6 +1013,335 @@ void print_interpretation_boundary(const cf::PortfolioConfig& portfolio,
         << "calibrated_execution_authorized=false\n";
 }
 
+void write_json_risk_gate(std::ostream& output,
+    const std::array<JsonRiskMetric, 5U>& metrics,
+    const cf::RobustIssuePriceSupportSummary& summary,
+    const cf::RobustMarketPriorityCapConfig& priority_cap,
+    bool cash_shortfall_v02) {
+    const bool metrics_available = !summary.hurdle_cases.empty();
+    bool any_limit = false;
+    bool every_limit_passes = true;
+    for (const JsonRiskMetric& metric : metrics) {
+        const std::optional<bool> passes = risk_metric_passes(metric);
+        if (passes.has_value()) {
+            any_limit = true;
+            every_limit_passes = every_limit_passes && *passes;
+        }
+    }
+
+    const std::string_view status = !metrics_available
+        ? "unavailable"
+        : !any_limit ? "not-applicable"
+                     : every_limit_passes ? "pass" : "fail";
+    const std::string_view label = !metrics_available
+        ? "Separate sensitivity risk gate unavailable"
+        : !any_limit ? "No separate sensitivity risk limits declared"
+                     : every_limit_passes
+                         ? "Separate sensitivity limits pass"
+                         : "Separate sensitivity limit fails";
+
+    output << "      \"riskGate\": {\n        \"mandateScope\": ";
+    write_json_string(
+        output, "separate-priority-cap-issue-price-sensitivity");
+    output << ",\n        \"mandateLabel\": ";
+    write_json_string(output, priority_cap.scenario_label);
+    output << ",\n        \"mandateSourceNote\": ";
+    write_json_string(output, priority_cap.source_note);
+    output << ",\n        \"isCapitalMobilizationFrontierMandate\": false,\n"
+              "        \"priceOrSupportChangesFixedRiskMetrics\": false,\n"
+              "        \"status\": ";
+    write_json_string(output, status);
+    output << ",\n        \"label\": ";
+    write_json_string(output, label);
+    output << ",\n        \"note\": ";
+    write_json_string(output, cash_shortfall_v02
+            ? "This separate priority-cap and issue-price sensitivity gate is not the Capital Mobilization Frontier mandate. Price and support do not alter contractual market cash, issued-principal cash shortfall Q, Q ES95/ES99, shortfall probability Pr[Q>0], or principal-cash WAL, and cannot cure a failure of those fixed-risk limits."
+            : "This separate priority-cap and issue-price sensitivity gate is not the Capital Mobilization Frontier mandate. Price and support do not alter contractual market cash, principal loss, principal-loss ES95/ES99, impairment probability, or principal-cash WAL, and cannot cure a failure of those fixed-risk limits.");
+    output << ",\n        \"metrics\": [\n";
+    for (std::size_t index = 0U; index < metrics.size(); ++index) {
+        const JsonRiskMetric& metric = metrics[index];
+        const std::optional<bool> passes = risk_metric_passes(metric);
+        output << "          {\n            \"key\": ";
+        write_json_string(output, metric.key);
+        output << ",\n            \"label\": ";
+        write_json_string(output, metric.label);
+        output << ",\n            \"value\": ";
+        if (metric.value.has_value() && std::isfinite(*metric.value)) {
+            write_json_number(output, *metric.value * metric.display_scale);
+        } else {
+            output << "null";
+        }
+        output << ",\n            \"unit\": ";
+        write_json_string(output, metric.unit);
+        output << ",\n            \"limit\": ";
+        if (metric.limit.has_value() && std::isfinite(*metric.limit)) {
+            write_json_number(output, *metric.limit * metric.display_scale);
+        } else {
+            output << "null";
+        }
+        output << ",\n            \"comparator\": \"maximum\",\n"
+                  "            \"status\": ";
+        write_json_string(output,
+            !passes.has_value() ? "not-applicable"
+                                : *passes ? "pass" : "fail");
+        output << "\n          }";
+        if (index + 1U != metrics.size()) {
+            output << ',';
+        }
+        output << '\n';
+    }
+    output << "        ]\n      },\n";
+}
+
+void write_json_case(std::ostream& output, std::size_t index,
+    const cf::RobustIssuePriceSupportCaseResult& result) {
+    output << "        {\n          \"index\": " << index
+           << ",\n          \"id\": ";
+    write_json_string(output, result.case_id);
+    output << ",\n          \"label\": ";
+    write_json_string(output, result.case_id);
+    output << ",\n          \"hurdleRate\": ";
+    write_json_number(output, result.annual_effective_hurdle_rate);
+    output << ",\n          \"sourceLabel\": ";
+    write_json_string(output, hurdle_source_label(result.hurdle_source_type));
+    output << ",\n          \"referencePriceRelation\": ";
+    write_json_string(
+        output, cf::to_string(result.hurdle_reference_price_relation));
+    output << ",\n          \"status\": ";
+    write_json_string(output, cf::to_string(result.status));
+    output << ",\n          \"statusLabel\": ";
+    write_json_string(output, case_status_label(result.status));
+    output << ",\n          \"investorCeiling\": ";
+    write_json_number(
+        output, result.admissible_investor_price_ceiling_million);
+    output << ",\n          \"issuerFloor\": ";
+    write_json_number(output, result.issuer_funding_floor_million);
+    output << ",\n          \"window\": ";
+    if (result.modeled_financeable_price_window_exists &&
+        result.financeable_price_window_lower_million.has_value() &&
+        result.financeable_price_window_upper_million.has_value()) {
+        output << "{\n            \"lower\": ";
+        write_json_number(
+            output, *result.financeable_price_window_lower_million);
+        output << ",\n            \"upper\": ";
+        write_json_number(
+            output, *result.financeable_price_window_upper_million);
+        output << "\n          }";
+    } else {
+        output << "null";
+    }
+    output << ",\n          \"minimumSupport\": ";
+    write_json_optional_number(
+        output, result.minimum_support_capacity_for_overlap_million);
+    output << ",\n          \"supportShortfall\": ";
+    write_json_optional_number(output, result.support_shortfall_million);
+    output << ",\n          \"note\": ";
+    write_json_string(output, case_nonclaim_note(result));
+    output << ",\n          \"referencePriceNumericallyEligible\": "
+           << bool_text(result.reference_price_numerically_eligible)
+           << ",\n          \"referencePriceBlockReason\": ";
+    if (result.reference_price_numerical_block_reason.empty()) {
+        output << "null";
+    } else {
+        write_json_string(
+            output, result.reference_price_numerical_block_reason);
+    }
+    output << ",\n          \"supportEvidence\": {\n"
+              "            \"documentedCommitmentCoversOverlap\": "
+           << bool_text(result.documented_support_commitment_covers_overlap)
+           << ",\n            \"fundedOrEscrowedCapacityCoversOverlap\": "
+           << bool_text(result.funded_support_capacity_covers_overlap)
+           << ",\n            \"fundedOrEscrowedWindowExists\": "
+           << bool_text(result.funded_support_covered_price_window_exists)
+           << "\n          },\n          \"provenance\": {\n"
+              "            \"sourceType\": ";
+    write_json_string(output, cf::to_string(result.hurdle_source_type));
+    output << ",\n            \"asOfDate\": ";
+    write_json_string(output, result.hurdle_as_of_date);
+    output << ",\n            \"sourceReference\": ";
+    write_json_string(output, result.hurdle_source_reference);
+    output << ",\n            \"evidenceRecordId\": ";
+    write_json_string(output, result.hurdle_evidence_record_id);
+    output << ",\n            \"sourceNote\": ";
+    write_json_string(output, result.hurdle_source_note);
+    output << "\n          }\n        }";
+}
+
+void print_json_report(const cf::PortfolioConfig& portfolio,
+    const cf::ProbabilityPolytopeConfig& polytope,
+    const cf::SuccessParticipationConfig& participation,
+    const cf::CapitalStackConfig& base_stack,
+    const cf::RobustMarketPriorityCapConfig& priority_cap,
+    const cf::RobustIssuePriceSupportConfig& issue_price,
+    const cf::RobustIssuePriceSupportSummary& summary) {
+    const bool cash_shortfall_v02 =
+        uses_principal_cash_shortfall_v02(base_stack);
+    const bool all_synthetic = portfolio.synthetic_inputs &&
+        polytope.synthetic_inputs && participation.synthetic_inputs &&
+        base_stack.synthetic_inputs && priority_cap.synthetic_inputs &&
+        issue_price.synthetic_inputs;
+    const std::array<JsonRiskMetric, 5U> risk_metrics =
+        make_json_risk_metrics(summary, priority_cap, cash_shortfall_v02);
+
+    double price_domain_maximum = 0.0;
+    const auto include_price = [&price_domain_maximum](double value) {
+        if (std::isfinite(value)) {
+            price_domain_maximum = std::max(price_domain_maximum, value);
+        }
+    };
+    include_price(summary.reference_gross_issue_price_million);
+    for (const auto& result : summary.hurdle_cases) {
+        include_price(result.admissible_investor_price_ceiling_million);
+        include_price(result.issuer_funding_floor_million);
+        if (result.financeable_price_window_lower_million.has_value()) {
+            include_price(*result.financeable_price_window_lower_million);
+        }
+        if (result.financeable_price_window_upper_million.has_value()) {
+            include_price(*result.financeable_price_window_upper_million);
+        }
+    }
+
+    std::ostringstream output;
+    output << "{\n  \"financeabilityWindow\": {\n"
+              "    \"schemaVersion\": \"1.0\",\n"
+              "    \"status\": ";
+    write_json_string(output, cf::to_string(summary.status));
+    output << ",\n    \"unavailableReason\": ";
+    if (summary.hurdle_cases.empty()) {
+        write_json_string(output,
+            "Upstream priority-cap selection is unavailable, so no hurdle case was projected.");
+    } else {
+        output << "null";
+    }
+    output << ",\n    \"unit\": ";
+    write_json_string(
+        output, std::string(portfolio.currency_label) + " million");
+    output << ",\n    \"referencePrice\": ";
+    write_json_number(output, summary.reference_gross_issue_price_million);
+    output << ",\n    \"priceDomain\": ";
+    if (price_domain_maximum > 0.0 && std::isfinite(price_domain_maximum)) {
+        output << "{\n      \"minimum\": 0.000000,\n"
+                  "      \"maximum\": ";
+        write_json_number(output, price_domain_maximum);
+        output << "\n    }";
+    } else {
+        output << "null";
+    }
+    output << ",\n    \"capitalStackModelVersion\": ";
+    write_json_string(output, base_stack.model_version);
+    output << ",\n    \"principalRiskMetricFamily\": ";
+    write_json_string(output, cash_shortfall_v02
+            ? "issued-principal-cash-shortfall-q"
+            : "legacy-principal-loss-layering");
+    output << ",\n    \"fixedTerms\": {\n"
+              "      \"participationFraction\": ";
+    write_json_number(
+        output, summary.fixed_underlying_success_participation_fraction);
+    output << ",\n      \"juniorIssuedPrincipal\": ";
+    write_json_number(output, summary.fixed_junior_first_loss_million);
+    output << ",\n      \"stackDetachment\": ";
+    write_json_number(
+        output, summary.aggregate_commitment_and_stack_detachment_million);
+    output << ",\n      \"marketIssuedPrincipal\": ";
+    write_json_number(output, summary.fixed_market_notional_million);
+    output << ",\n      \"selectedMarketPriorityNonprincipalCap\": ";
+    write_json_optional_number(
+        output, summary.selected_market_priority_nonprincipal_cap_million);
+    output << ",\n      \"issuerFundingFloor\": ";
+    write_json_number(output, summary.issuer_funding_floor_million);
+    output << ",\n      \"maximumSupportCapacity\": ";
+    write_json_number(output, summary.maximum_issue_support_million);
+    output << "\n    },\n";
+    write_json_risk_gate(
+        output, risk_metrics, summary, priority_cap, cash_shortfall_v02);
+    output << "    \"cases\": [\n";
+    for (std::size_t index = 0U; index < summary.hurdle_cases.size();
+         ++index) {
+        write_json_case(output, index, summary.hurdle_cases[index]);
+        if (index + 1U != summary.hurdle_cases.size()) {
+            output << ',';
+        }
+        output << '\n';
+    }
+    output << "    ],\n    \"provenance\": {\n"
+              "      \"allInputsSynthetic\": "
+           << bool_text(all_synthetic)
+           << ",\n      \"issuePriceSupportModelVersion\": ";
+    write_json_string(output, issue_price.model_version);
+    output << ",\n      \"scenarioLabel\": ";
+    write_json_string(output, issue_price.scenario_label);
+    output << ",\n      \"inputs\": {\n"
+              "        \"portfolio\": {\"syntheticInputs\": "
+           << bool_text(portfolio.synthetic_inputs) << ", \"sourceNote\": ";
+    write_json_string(output, portfolio.source_note);
+    output << "},\n        \"eventPolytope\": {\"syntheticInputs\": "
+           << bool_text(polytope.synthetic_inputs) << ", \"sourceNote\": ";
+    write_json_string(output, polytope.source_note);
+    output << "},\n        \"successParticipation\": {\"syntheticInputs\": "
+           << bool_text(participation.synthetic_inputs)
+           << ", \"sourceNote\": ";
+    write_json_string(output, participation.source_note);
+    output << "},\n        \"baseCapitalStack\": {\"syntheticInputs\": "
+           << bool_text(base_stack.synthetic_inputs) << ", \"sourceNote\": ";
+    write_json_string(output, base_stack.source_note);
+    output << "},\n        \"marketPriorityCap\": {\"syntheticInputs\": "
+           << bool_text(priority_cap.synthetic_inputs)
+           << ", \"sourceNote\": ";
+    write_json_string(output, priority_cap.source_note);
+    output << "},\n        \"issuePriceSupport\": {\"syntheticInputs\": "
+           << bool_text(issue_price.synthetic_inputs)
+           << ", \"sourceNote\": ";
+    write_json_string(output, issue_price.source_note);
+    output << "}\n      },\n      \"referencePrice\": {\n"
+              "        \"recordId\": ";
+    write_json_string(output, issue_price.reference_price.record_id);
+    output << ",\n        \"status\": ";
+    write_json_string(output, cf::to_string(summary.reference_price_status));
+    output << ",\n        \"sourceReference\": ";
+    write_json_string(output, issue_price.reference_price.source_reference);
+    output << ",\n        \"evidenceRecordId\": ";
+    write_json_string(output, issue_price.reference_price.evidence_record_id);
+    output << ",\n        \"buyerCashPaymentEvidenced\": "
+           << bool_text(issue_price.reference_price.buyer_cash_payment_evidenced)
+           << ",\n        \"settlementEvidenced\": "
+           << bool_text(issue_price.reference_price.settlement_evidenced)
+           << "\n      },\n      \"support\": {\n        \"id\": ";
+    write_json_string(output, issue_price.support.support_id);
+    output << ",\n        \"status\": ";
+    write_json_string(output, cf::to_string(summary.support_capacity_status));
+    output << ",\n        \"asOfDate\": ";
+    write_json_string(output, issue_price.support.as_of_date);
+    output << ",\n        \"sourceReference\": ";
+    write_json_string(output, issue_price.support.source_reference);
+    output << ",\n        \"evidenceRecordId\": ";
+    write_json_string(output, issue_price.support.evidence_record_id);
+    output << ",\n        \"sourceNote\": ";
+    write_json_string(output, issue_price.support.source_note);
+    output << ",\n        \"fundingEvidenced\": "
+           << bool_text(issue_price.support.funding_evidenced)
+           << ",\n        \"settlementEvidenced\": "
+           << bool_text(issue_price.support.settlement_evidenced)
+           << "\n      }\n    },\n    \"nonClaimNotes\": [\n      ";
+    write_json_string(output,
+        "A conditional price window is arithmetic under fixed modeled cash paths and a supplied independent hurdle; it is not fair value, an executable offer, or investor demand.");
+    output << ",\n      ";
+    write_json_string(output, cash_shortfall_v02
+            ? "Issued-principal cash shortfall Q, Q ES95/ES99, Pr[Q>0], and WAL are physical-measure analyses; Q is not contractual asset loss, accounting impairment, legal default, or an assumed post-horizon recovery value."
+            : "Principal loss, impairment probability, tails, and WAL are physical-measure analyses; they are not fair value, a rating, accounting impairment, or legal default.");
+    output << ",\n      ";
+    write_json_string(output,
+        "A documented support commitment, funded or escrowed capacity, and support cash settled to this issue are distinct evidence states.");
+    output << ",\n      ";
+    write_json_string(output, summary.model_limitation);
+    output << ",\n      ";
+    write_json_string(output,
+        "This output does not establish capital mobilization, financing additionality, deployment, displacement, animal-welfare impact, legal enforceability, tax treatment, or regulatory treatment.");
+    output << "\n    ],\n    \"calibratedExecutionAuthorized\": false\n"
+              "  }\n}\n";
+
+    std::cout << output.str();
+}
+
 void print_report(const cf::PortfolioConfig& portfolio,
     const cf::ProbabilityPolytopeConfig& polytope,
     const cf::SuccessParticipationConfig& participation,
@@ -796,7 +1363,8 @@ void print_report(const cf::PortfolioConfig& portfolio,
                  "or recommendation.\n\n";
     print_input_evidence_labels(portfolio, polytope, participation,
         base_stack, priority_cap, issue_price);
-    print_fixed_terms(portfolio, issue_price, summary);
+    print_fixed_terms(portfolio, priority_cap, issue_price, summary,
+        cash_shortfall_v02);
     print_work_and_summary_invariants(summary);
     std::cout << "Every supplied hurdle case\n";
     if (summary.hurdle_cases.empty()) {
@@ -842,12 +1410,16 @@ void print_normalized_inputs(const cf::PortfolioConfig& portfolio,
 int main(int argc, char** argv) {
     if ((argc != 7 && argc != 8) ||
         (argc == 8 &&
-            std::string_view(argv[7]) != "--print-normalized")) {
+            std::string_view(argv[7]) != "--print-normalized" &&
+            std::string_view(argv[7]) != "--json")) {
         print_usage(argc > 0 ? std::string_view(argv[0])
                              : std::string_view("issue-price-support"));
         return 1;
     }
-    const bool print_normalized = argc == 8;
+    const bool print_normalized = argc == 8 &&
+        std::string_view(argv[7]) == "--print-normalized";
+    const bool print_json =
+        argc == 8 && std::string_view(argv[7]) == "--json";
 
     cf::PortfolioConfig portfolio;
     cf::ProbabilityPolytopeConfig polytope;
@@ -878,11 +1450,16 @@ int main(int argc, char** argv) {
         const cf::RobustIssuePriceSupportSummary summary =
             cf::evaluate_robust_issue_price_support(portfolio, polytope,
                 participation, base_stack, priority_cap, issue_price);
-        print_report(portfolio, polytope, participation, base_stack,
-            priority_cap, issue_price, summary);
-        if (print_normalized) {
-            print_normalized_inputs(portfolio, polytope, participation,
-                base_stack, priority_cap, issue_price);
+        if (print_json) {
+            print_json_report(portfolio, polytope, participation, base_stack,
+                priority_cap, issue_price, summary);
+        } else {
+            print_report(portfolio, polytope, participation, base_stack,
+                priority_cap, issue_price, summary);
+            if (print_normalized) {
+                print_normalized_inputs(portfolio, polytope, participation,
+                    base_stack, priority_cap, issue_price);
+            }
         }
         std::cout.flush();
         if (!std::cout) {

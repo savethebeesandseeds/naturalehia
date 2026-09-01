@@ -257,6 +257,12 @@ void require_safe_text(std::string_view value, std::string_view description) {
         ".amount_million";
 }
 
+[[nodiscard]] std::string junior_issued_principal_grid_key(
+    std::size_t index) {
+    return "junior_issued_principal_grid." + std::to_string(index + 1U) +
+        ".amount_million";
+}
+
 void require_finite(double value, std::string_view description) {
     if (!std::isfinite(value)) {
         throw std::invalid_argument(
@@ -308,8 +314,11 @@ void canonicalize_grid(std::vector<double>& values,
 [[nodiscard]] RobustCapitalMobilizationFrontierConfig
 canonicalized_and_validated(
     RobustCapitalMobilizationFrontierConfig config) {
-    if (config.model_version !=
-        kRobustCapitalMobilizationFrontierModelVersion) {
+    const bool is_v01 = config.model_version ==
+        kRobustCapitalMobilizationFrontierModelVersion;
+    const bool is_v02 = config.model_version ==
+        kRobustCapitalMobilizationFrontierV02ModelVersion;
+    if (!is_v01 && !is_v02) {
         throw std::invalid_argument(
             "unsupported capital-mobilization-frontier model version");
     }
@@ -319,7 +328,7 @@ canonicalized_and_validated(
         "capital-mobilization-frontier source note");
     if (!config.synthetic_inputs) {
         throw std::invalid_argument(
-            "capital-mobilization-frontier v0.1 accepts synthetic inputs only");
+            "capital-mobilization-frontier accepts synthetic inputs only");
     }
     if (!is_safe_identifier(config.catalytic_claim_id) ||
         !is_safe_identifier(config.market_claim_id) ||
@@ -396,39 +405,68 @@ canonicalized_and_validated(
 
 [[nodiscard]] RobustCapitalMobilizationFrontierConfig parse_raw(
     const RawMap& raw) {
-    static const std::unordered_set<std::string> fixed_keys{
+    const std::string& model_version =
+        required(raw, "frontier.model_version").value;
+    const bool is_v02 =
+        model_version == kRobustCapitalMobilizationFrontierV02ModelVersion;
+    if (model_version !=
+            kRobustCapitalMobilizationFrontierModelVersion &&
+        !is_v02) {
+        throw std::invalid_argument(
+            "unsupported capital-mobilization-frontier model version");
+    }
+
+    std::unordered_set<std::string> fixed_keys{
         "frontier.model_version",
         "frontier.label",
         "frontier.source_note",
         "frontier.synthetic_inputs",
-        "frontier.catalytic_claim_id",
         "frontier.market_claim_id",
         "frontier.market_priority_nonprincipal_cap_million",
-        "frontier.catalytic_annual_physical_hurdle_rate",
         "frontier.market_annual_physical_hurdle_rate",
-        "frontier.catalytic_target_npv_million",
         "participation_grid.count",
-        "catalytic_first_loss_grid.count",
         "mandate.minimum_robust_aggregate_npv_million",
         "mandate.minimum_market_robust_npv_margin_fraction",
-        "mandate.maximum_market_expected_loss_fraction",
-        "mandate.maximum_market_principal_loss_es95_fraction",
-        "mandate.maximum_market_principal_loss_es99_fraction",
-        "mandate.maximum_market_principal_impairment_probability",
         "mandate.maximum_market_negative_npv_probability",
         "mandate.maximum_market_npv_shortfall_es95_fraction",
         "mandate.maximum_market_npv_shortfall_es99_fraction",
         "mandate.maximum_market_wal_years",
-        "mandate.maximum_catalytic_first_loss_million",
-        "mandate.maximum_catalytic_npv_concession_million",
     };
+    if (is_v02) {
+        fixed_keys.insert({
+            "frontier.junior_claim_id",
+            "frontier.junior_annual_physical_hurdle_rate",
+            "frontier.junior_target_npv_million",
+            "junior_issued_principal_grid.count",
+            "mandate.maximum_market_expected_issued_principal_cash_shortfall_fraction",
+            "mandate.maximum_market_issued_principal_cash_shortfall_es95_fraction",
+            "mandate.maximum_market_issued_principal_cash_shortfall_es99_fraction",
+            "mandate.maximum_market_principal_cash_shortfall_probability",
+            "mandate.maximum_junior_issued_principal_million",
+            "mandate.maximum_junior_npv_concession_million",
+        });
+    } else {
+        fixed_keys.insert({
+            "frontier.catalytic_claim_id",
+            "frontier.catalytic_annual_physical_hurdle_rate",
+            "frontier.catalytic_target_npv_million",
+            "catalytic_first_loss_grid.count",
+            "mandate.maximum_market_expected_loss_fraction",
+            "mandate.maximum_market_principal_loss_es95_fraction",
+            "mandate.maximum_market_principal_loss_es99_fraction",
+            "mandate.maximum_market_principal_impairment_probability",
+            "mandate.maximum_catalytic_first_loss_million",
+            "mandate.maximum_catalytic_npv_concession_million",
+        });
+    }
     for (const std::string& key : fixed_keys) {
         (void)required(raw, key);
     }
     const std::size_t participation_count =
         parse_size(required(raw, "participation_grid.count"));
-    const std::size_t first_loss_count =
-        parse_size(required(raw, "catalytic_first_loss_grid.count"));
+    const std::size_t first_loss_count = parse_size(required(raw,
+        is_v02 ? "junior_issued_principal_grid.count"
+               : "catalytic_first_loss_grid.count"));
     if (participation_count == 0U ||
         participation_count > kMaximumGridEntries ||
         first_loss_count == 0U || first_loss_count > kMaximumGridEntries) {
@@ -449,7 +487,8 @@ canonicalized_and_validated(
         expected.emplace(participation_grid_key(index));
     }
     for (std::size_t index = 0U; index < first_loss_count; ++index) {
-        expected.emplace(first_loss_grid_key(index));
+        expected.emplace(is_v02 ? junior_issued_principal_grid_key(index)
+                                : first_loss_grid_key(index));
     }
     for (const auto& [key, value] : raw) {
         if (!expected.contains(key)) {
@@ -466,18 +505,21 @@ canonicalized_and_validated(
     config.source_note = parse_text(required(raw, "frontier.source_note"));
     config.synthetic_inputs =
         parse_bool(required(raw, "frontier.synthetic_inputs"));
-    config.catalytic_claim_id =
-        parse_text(required(raw, "frontier.catalytic_claim_id"));
+    config.catalytic_claim_id = parse_text(required(raw,
+        is_v02 ? "frontier.junior_claim_id"
+               : "frontier.catalytic_claim_id"));
     config.market_claim_id =
         parse_text(required(raw, "frontier.market_claim_id"));
     config.market_priority_nonprincipal_cap_million = parse_double(required(
         raw, "frontier.market_priority_nonprincipal_cap_million"));
-    config.catalytic_annual_physical_hurdle_rate = parse_double(required(
-        raw, "frontier.catalytic_annual_physical_hurdle_rate"));
+    config.catalytic_annual_physical_hurdle_rate = parse_double(required(raw,
+        is_v02 ? "frontier.junior_annual_physical_hurdle_rate"
+               : "frontier.catalytic_annual_physical_hurdle_rate"));
     config.market_annual_physical_hurdle_rate = parse_double(required(
         raw, "frontier.market_annual_physical_hurdle_rate"));
-    config.catalytic_target_npv_million = parse_double(
-        required(raw, "frontier.catalytic_target_npv_million"));
+    config.catalytic_target_npv_million = parse_double(required(raw,
+        is_v02 ? "frontier.junior_target_npv_million"
+               : "frontier.catalytic_target_npv_million"));
 
     config.participation_fraction_grid.reserve(participation_count);
     for (std::size_t index = 0U; index < participation_count; ++index) {
@@ -486,8 +528,9 @@ canonicalized_and_validated(
     }
     config.catalytic_first_loss_million_grid.reserve(first_loss_count);
     for (std::size_t index = 0U; index < first_loss_count; ++index) {
-        config.catalytic_first_loss_million_grid.push_back(
-            parse_double(required(raw, first_loss_grid_key(index))));
+        config.catalytic_first_loss_million_grid.push_back(parse_double(
+            required(raw, is_v02 ? junior_issued_principal_grid_key(index)
+                                 : first_loss_grid_key(index))));
     }
 
     RobustCapitalMobilizationFrontierConstraints& limits =
@@ -498,16 +541,22 @@ canonicalized_and_validated(
         required(raw,
             "mandate.minimum_market_robust_npv_margin_fraction"));
     limits.maximum_market_expected_loss_fraction = parse_optional_double(
-        required(raw, "mandate.maximum_market_expected_loss_fraction"));
+        required(raw, is_v02
+                ? "mandate.maximum_market_expected_issued_principal_cash_shortfall_fraction"
+                : "mandate.maximum_market_expected_loss_fraction"));
     limits.maximum_market_principal_loss_es95_fraction = parse_optional_double(
-        required(raw,
-            "mandate.maximum_market_principal_loss_es95_fraction"));
+        required(raw, is_v02
+                ? "mandate.maximum_market_issued_principal_cash_shortfall_es95_fraction"
+                : "mandate.maximum_market_principal_loss_es95_fraction"));
     limits.maximum_market_principal_loss_es99_fraction = parse_optional_double(
-        required(raw,
-            "mandate.maximum_market_principal_loss_es99_fraction"));
+        required(raw, is_v02
+                ? "mandate.maximum_market_issued_principal_cash_shortfall_es99_fraction"
+                : "mandate.maximum_market_principal_loss_es99_fraction"));
     limits.maximum_market_principal_impairment_probability =
         parse_optional_double(required(raw,
-            "mandate.maximum_market_principal_impairment_probability"));
+            is_v02
+                ? "mandate.maximum_market_principal_cash_shortfall_probability"
+                : "mandate.maximum_market_principal_impairment_probability"));
     limits.maximum_market_negative_npv_probability = parse_optional_double(
         required(raw, "mandate.maximum_market_negative_npv_probability"));
     limits.maximum_market_npv_shortfall_es95_fraction = parse_optional_double(
@@ -519,10 +568,13 @@ canonicalized_and_validated(
     limits.maximum_market_wal_years = parse_optional_double(
         required(raw, "mandate.maximum_market_wal_years"));
     limits.maximum_catalytic_first_loss_million = parse_optional_double(
-        required(raw, "mandate.maximum_catalytic_first_loss_million"));
+        required(raw, is_v02
+                ? "mandate.maximum_junior_issued_principal_million"
+                : "mandate.maximum_catalytic_first_loss_million"));
     limits.maximum_catalytic_npv_concession_million = parse_optional_double(
-        required(raw,
-            "mandate.maximum_catalytic_npv_concession_million"));
+        required(raw, is_v02
+                ? "mandate.maximum_junior_npv_concession_million"
+                : "mandate.maximum_catalytic_npv_concession_million"));
     return canonicalized_and_validated(std::move(config));
 }
 
@@ -591,17 +643,23 @@ void print_normalized_robust_capital_mobilization_frontier_config(
     output << "frontier.source_note=" << canonical.source_note << '\n';
     output << "frontier.synthetic_inputs=" << canonical.synthetic_inputs
            << '\n';
-    output << "frontier.catalytic_claim_id=" << canonical.catalytic_claim_id
-           << '\n';
+    const bool is_v02 = canonical.model_version ==
+        kRobustCapitalMobilizationFrontierV02ModelVersion;
+    output << (is_v02 ? "frontier.junior_claim_id="
+                      : "frontier.catalytic_claim_id=")
+           << canonical.catalytic_claim_id << '\n';
     output << "frontier.market_claim_id=" << canonical.market_claim_id
            << '\n';
     output << "frontier.market_priority_nonprincipal_cap_million="
            << canonical.market_priority_nonprincipal_cap_million << '\n';
-    output << "frontier.catalytic_annual_physical_hurdle_rate="
+    output << (is_v02
+            ? "frontier.junior_annual_physical_hurdle_rate="
+            : "frontier.catalytic_annual_physical_hurdle_rate=")
            << canonical.catalytic_annual_physical_hurdle_rate << '\n';
     output << "frontier.market_annual_physical_hurdle_rate="
            << canonical.market_annual_physical_hurdle_rate << '\n';
-    output << "frontier.catalytic_target_npv_million="
+    output << (is_v02 ? "frontier.junior_target_npv_million="
+                      : "frontier.catalytic_target_npv_million=")
            << canonical.catalytic_target_npv_million << '\n';
     output << "participation_grid.count="
            << canonical.participation_fraction_grid.size() << '\n';
@@ -610,11 +668,14 @@ void print_normalized_robust_capital_mobilization_frontier_config(
         output << participation_grid_key(index) << '='
                << canonical.participation_fraction_grid[index] << '\n';
     }
-    output << "catalytic_first_loss_grid.count="
+    output << (is_v02 ? "junior_issued_principal_grid.count="
+                      : "catalytic_first_loss_grid.count=")
            << canonical.catalytic_first_loss_million_grid.size() << '\n';
     for (std::size_t index = 0U;
          index < canonical.catalytic_first_loss_million_grid.size(); ++index) {
-        output << first_loss_grid_key(index) << '='
+        output << (is_v02 ? junior_issued_principal_grid_key(index)
+                          : first_loss_grid_key(index))
+               << '='
                << canonical.catalytic_first_loss_million_grid[index] << '\n';
     }
 
@@ -625,16 +686,25 @@ void print_normalized_robust_capital_mobilization_frontier_config(
     print_optional(output,
         "mandate.minimum_market_robust_npv_margin_fraction",
         limits.minimum_market_robust_npv_margin_fraction);
-    print_optional(output, "mandate.maximum_market_expected_loss_fraction",
+    print_optional(output,
+        is_v02
+            ? "mandate.maximum_market_expected_issued_principal_cash_shortfall_fraction"
+            : "mandate.maximum_market_expected_loss_fraction",
         limits.maximum_market_expected_loss_fraction);
     print_optional(output,
-        "mandate.maximum_market_principal_loss_es95_fraction",
+        is_v02
+            ? "mandate.maximum_market_issued_principal_cash_shortfall_es95_fraction"
+            : "mandate.maximum_market_principal_loss_es95_fraction",
         limits.maximum_market_principal_loss_es95_fraction);
     print_optional(output,
-        "mandate.maximum_market_principal_loss_es99_fraction",
+        is_v02
+            ? "mandate.maximum_market_issued_principal_cash_shortfall_es99_fraction"
+            : "mandate.maximum_market_principal_loss_es99_fraction",
         limits.maximum_market_principal_loss_es99_fraction);
     print_optional(output,
-        "mandate.maximum_market_principal_impairment_probability",
+        is_v02
+            ? "mandate.maximum_market_principal_cash_shortfall_probability"
+            : "mandate.maximum_market_principal_impairment_probability",
         limits.maximum_market_principal_impairment_probability);
     print_optional(output,
         "mandate.maximum_market_negative_npv_probability",
@@ -647,10 +717,13 @@ void print_normalized_robust_capital_mobilization_frontier_config(
         limits.maximum_market_npv_shortfall_es99_fraction);
     print_optional(output, "mandate.maximum_market_wal_years",
         limits.maximum_market_wal_years);
-    print_optional(output, "mandate.maximum_catalytic_first_loss_million",
+    print_optional(output,
+        is_v02 ? "mandate.maximum_junior_issued_principal_million"
+               : "mandate.maximum_catalytic_first_loss_million",
         limits.maximum_catalytic_first_loss_million);
     print_optional(output,
-        "mandate.maximum_catalytic_npv_concession_million",
+        is_v02 ? "mandate.maximum_junior_npv_concession_million"
+               : "mandate.maximum_catalytic_npv_concession_million",
         limits.maximum_catalytic_npv_concession_million);
 
     if (!output) {

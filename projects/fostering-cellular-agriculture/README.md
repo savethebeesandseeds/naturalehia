@@ -40,12 +40,11 @@ the underlying project claims.
 The consolidated C++ comparison is `naturalehia-instrument-family`; its seven
 reproducible inputs and invocation are documented with the
 [ten-claim synthetic fixture](scenarios/ten-claim-instrument-v1-synthetic/README.md).
-The retained version-1 construction passed 68 of 68 tests in both Debug and
-Release, with identical consolidated output and zero reported monetary
-reconciliation error across the five composing engines. The current suite adds
-the Capital Stack v0.2 bridge and its direct Claim Ledger integration: 70 of 70
-tests pass in the pinned Emscripten 6.0.5 Release build when every executable
-and CLI wrapper runs through Node.
+The complete current warnings-as-errors C++20 suite passes 72 of 72 tests in
+the pinned Emscripten 6.0.5 Release build when every executable and CLI wrapper
+runs through Node. The record includes the retained version-1 construction,
+Capital Stack v0.2 bridge and direct Claim Ledger integration, the v0.2
+capital-mobilization frontier, and the issue-price browser target.
 
 > **Current status:** this repository implements an open financial standard that
 > keeps cash sources, contractual loss, dependence, and evidence quality
@@ -239,17 +238,18 @@ avoidable animal use.
   concentration, dependence, premium feasibility, and catalytic gaps without
   creating another solver.
 - A deterministic C++20 robust capital-mobilization frontier over a declared
-  finite `q`-by-`A` grid. Each candidate creates one funded junior
-  loss-absorbing claim and one market-facing priority claim, re-projects the
-  whole structure and market claim through the event probability set. It
-  reports total cash contributions, principal and total distributions, and
-  complete NPV ranges; separately tests NPV margin, expected principal loss,
-  principal-loss and NPV-shortfall ES95/ES99, principal impairment, negative
-  NPV, common-measure WAL, funded first loss, and catalytic NPV concession;
-  and retains every endpoint's own witness. It reports feasible,
-  nondominated, least-tested-first-loss, and minimum-tested-participation
-  results without claiming price, rating, continuous optimality, investor
-  demand, or actual capital mobilization. Candidate count and combined
+  finite `q`-by-`A` grid. Legacy v0.1 generates its two-claim at-par structure
+  and retains principal-loss layering. Additive v0.2 takes a separately
+  validated Capital Stack v0.2 template, changes only `q` and junior issued
+  principal `A`, and routes market principal risk exclusively through
+  `E[Q]/M`, Q-ES95/M, Q-ES99/M, and `Pr[Q>0]`. Both versions re-project the
+  whole structure through the event probability set, report contributions,
+  principal and total distributions, complete NPV ranges, shortfall tails,
+  negative-NPV probability, common-measure WAL, junior concession, and every
+  endpoint's own witness. They report feasible, nondominated, least-tested-
+  junior, and minimum-tested-participation results without claiming price,
+  rating, continuous optimality, investor demand, or actual capital
+  mobilization. Candidate count and combined
   probability-projection, individual portfolio-record, project-path, and
   two-claim monthly waterfall work are all covered by one fail-closed resource
   bound.
@@ -580,6 +580,35 @@ probability witnesses, and numerical controls. Add `--print-normalized` to
 append all four reloadable inputs. No feasible point is a valid result with
 exit code zero; it is not evidence of investor demand or capital mobilization.
 
+Run the additive v0.2 frontier on the same ten-claim pool with an explicit
+Capital Stack v0.2 template:
+
+```powershell
+docker run --rm --name fca-frontier-v02 `
+  --mount type=bind,source=/mnt/host/c/Work/Naturalehia/projects/fostering-cellular-agriculture,target=/work `
+  -w /work emscripten/emsdk:6.0.5 `
+  node build-wasm-v02/naturalehia-capital-mobilization-frontier.js `
+    scenarios/ten-claim-instrument-v1-synthetic/portfolio.cfg `
+    scenarios/ten-claim-instrument-v1-synthetic/event-polytope-v0.2.cfg `
+    scenarios/ten-claim-instrument-v1-synthetic/success-participation.cfg `
+    scenarios/ten-claim-instrument-v1-synthetic/capital-stack-v0.2.cfg `
+    scenarios/ten-claim-instrument-v1-synthetic/capital-mobilization-frontier-v0.2.cfg
+```
+
+The checked five-by-five grid evaluates 25 `(q,A)` terms. None passes every
+declared synthetic mandate: feasible and nondominated feasible indices are
+`none`, and minimum tested feasible `q` is `none`. The fixture separately
+reports project-outlay limit 100, contractual asset-principal limit 100, and
+funded reserve/issued principal `K=100`; their equality is fixture-specific.
+`A` layers liability shortfall `Q`, not asset writeoff `L` or continuing asset
+principal `O`. This is a finite-grid rejection, not a universal impossibility
+claim. The same-pool scenario README gives the downstream `B=24` priority-cap
+selection and conditional issue-price/support windows. That downstream record
+uses a separate, relaxed sensitivity mandate; it does not reverse the strict
+frontier's rejection of the same `q=1`, `A=20`, `M=80` point, and price or
+support cannot cure its fixed `Q`-risk failure. No reported window is backed
+by funded or escrowed support.
+
 Hold one tested `q`-by-`A` structure fixed and test only the market claim's
 lifetime non-principal priority cap:
 
@@ -819,6 +848,8 @@ each relevant jurisdiction before solicitation or execution.
 | [Capital Stack Asset-to-Liability Bridge v0.2 Verification](docs/CAPITAL_STACK_ASSET_LIABILITY_BRIDGE_VERIFICATION_V0_2.md) | Exact 8/10 and 12/10 `L/O/Q` hand tables, staggered-use and simultaneous-surplus checks, high-scale minimum-tranche boundary, event-polytope coverage, and focused WebAssembly results |
 | [Robust Capital-Mobilization Frontier v0.1](docs/ROBUST_CAPITAL_MOBILIZATION_FRONTIER_V0_1.md) | Implemented finite `q`-by-`A` market-claim feasibility frontier, two funded claims, twelve optional mandates, endpoint witnesses, Pareto reporting, and institutional boundaries |
 | [Robust Capital-Mobilization Frontier v0.1 Verification](docs/ROBUST_CAPITAL_MOBILIZATION_FRONTIER_VERIFICATION_V0_1.md) | Hand reconciliation, strict Debug/Release record, parser and CLI controls, independent 228-candidate oracle, exposure correction, resource guard, and residual limitations |
+| [Robust Capital-Mobilization Frontier v0.2](docs/ROBUST_CAPITAL_MOBILIZATION_FRONTIER_V0_2.md) | Additive Capital Stack v0.2 five-input frontier, strict `Q` risk family, separate outlay/asset-principal/reserve ledgers, 25-candidate same-pool rejection, and conditional issue-price/support handoff |
+| [Robust Capital-Mobilization Frontier v0.2 Verification](docs/ROBUST_CAPITAL_MOBILIZATION_FRONTIER_VERIFICATION_V0_2.md) | `L`/`Q` divergence oracles, version and parser closure, Emscripten Release/Node CLI regression, ten-claim empty feasible set, and explicit non-claims |
 | [Robust Market Non-Principal Priority-Cap Term v0.1](docs/ROBUST_MARKET_PRIORITY_CAP_TERM_V0_1.md) | Implemented fixed-`q`, fixed-`A` finite lifetime-cap adequacy grid, junior-transfer account, exact `8/15` hand boundary, resource guard, and pricing limitations |
 | [Robust Market Non-Principal Priority-Cap v0.1 Verification](docs/ROBUST_MARKET_PRIORITY_CAP_VERIFICATION_V0_1.md) | Hand reconciliation, strict Debug/Release record, parser and CLI controls, cash-transfer audit correction, frontier cross-check, resource guard, and residual limitations |
 | [Robust Issue-Price Support Term v0.1](docs/ROBUST_ISSUE_PRICE_SUPPORT_TERM_V0_1.md) | Implemented fixed-claim buyer-price ceiling, issuer floor, no-rights support gap, non-circular hurdle provenance, evidence hierarchy, exact hand fixture, and resource boundary |

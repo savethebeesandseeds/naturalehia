@@ -81,6 +81,38 @@ void expect_runtime_error(
         "mandate.maximum_catalytic_npv_concession_million=0.42\n";
 }
 
+[[nodiscard]] std::string valid_v02_config() {
+    return
+        "frontier.model_version=0.2.0\n"
+        "frontier.label=Finite v0.2 issued-principal frontier parser test\n"
+        "frontier.source_note=Unvalidated synthetic Q parser terms only\n"
+        "frontier.synthetic_inputs=true\n"
+        "frontier.junior_claim_id=junior\n"
+        "frontier.market_claim_id=market\n"
+        "frontier.market_priority_nonprincipal_cap_million=1\n"
+        "frontier.junior_annual_physical_hurdle_rate=0\n"
+        "frontier.market_annual_physical_hurdle_rate=0\n"
+        "frontier.junior_target_npv_million=0\n"
+        "participation_grid.count=2\n"
+        "participation_grid.1.fraction=1\n"
+        "participation_grid.2.fraction=0.9\n"
+        "junior_issued_principal_grid.count=2\n"
+        "junior_issued_principal_grid.1.amount_million=6\n"
+        "junior_issued_principal_grid.2.amount_million=4\n"
+        "mandate.minimum_robust_aggregate_npv_million=0\n"
+        "mandate.minimum_market_robust_npv_margin_fraction=0\n"
+        "mandate.maximum_market_expected_issued_principal_cash_shortfall_fraction=0.05\n"
+        "mandate.maximum_market_issued_principal_cash_shortfall_es95_fraction=0.5\n"
+        "mandate.maximum_market_issued_principal_cash_shortfall_es99_fraction=0.5\n"
+        "mandate.maximum_market_principal_cash_shortfall_probability=0.1\n"
+        "mandate.maximum_market_negative_npv_probability=0.1\n"
+        "mandate.maximum_market_npv_shortfall_es95_fraction=0.51\n"
+        "mandate.maximum_market_npv_shortfall_es99_fraction=0.51\n"
+        "mandate.maximum_market_wal_years=none\n"
+        "mandate.maximum_junior_issued_principal_million=6\n"
+        "mandate.maximum_junior_npv_concession_million=0.42\n";
+}
+
 [[nodiscard]] cf::RobustCapitalMobilizationFrontierConfig parse(
     std::string text) {
     std::istringstream input(std::move(text));
@@ -99,13 +131,16 @@ void replace_once(std::string& text, std::string_view old_value,
 void test_parse_canonical_round_trip() {
     const cf::RobustCapitalMobilizationFrontierConfig config =
         parse(valid_config());
-    check(config.participation_fraction_grid.size() == 2U &&
+    check(cf::kRobustCapitalMobilizationFrontierModelVersion == "0.1.0" &&
+            config.model_version ==
+                cf::kRobustCapitalMobilizationFrontierModelVersion &&
+            config.participation_fraction_grid.size() == 2U &&
             config.participation_fraction_grid[0] <
                 config.participation_fraction_grid[1] &&
             config.catalytic_first_loss_million_grid.size() == 4U &&
             config.catalytic_first_loss_million_grid.front() < 9.0 &&
             config.catalytic_first_loss_million_grid.back() == 16.0,
-        "parser canonicalizes both grids into ascending order");
+        "the legacy public constant remains the v0.1 parser contract and both grids are canonicalized");
     check(!config.constraints.maximum_market_wal_years.has_value() &&
             config.constraints.maximum_market_expected_loss_fraction ==
                 0.05,
@@ -201,6 +236,58 @@ void test_closed_schema_and_numeric_guardrails() {
         "candidate cross-products above 1,024 are rejected before expansion");
 }
 
+void test_v02_schema_uses_q_and_issued_principal_language() {
+    const cf::RobustCapitalMobilizationFrontierConfig config =
+        parse(valid_v02_config());
+    check(cf::kRobustCapitalMobilizationFrontierV02ModelVersion == "0.2.0" &&
+            config.model_version ==
+                cf::kRobustCapitalMobilizationFrontierV02ModelVersion &&
+            config.catalytic_claim_id == "junior" &&
+            config.market_claim_id == "market" &&
+            config.participation_fraction_grid.front() == 0.9 &&
+            config.catalytic_first_loss_million_grid.front() == 4.0 &&
+            config.constraints.maximum_market_expected_loss_fraction ==
+                0.05,
+        "v0.2 parser maps the honest Q schema to the version-aware engine fields");
+
+    std::ostringstream first;
+    cf::print_normalized_robust_capital_mobilization_frontier_config(
+        first, config);
+    const std::string normalized = first.str();
+    const cf::RobustCapitalMobilizationFrontierConfig reparsed =
+        parse(normalized);
+    std::ostringstream second;
+    cf::print_normalized_robust_capital_mobilization_frontier_config(
+        second, reparsed);
+    check(normalized == second.str() &&
+            normalized.find("junior_issued_principal_grid.count=2\n") !=
+                std::string::npos &&
+            normalized.find(
+                "mandate.maximum_market_expected_issued_principal_cash_shortfall_fraction=0.050000000000000003\n") !=
+                std::string::npos &&
+            normalized.find(
+                "mandate.maximum_market_principal_cash_shortfall_probability=0.10000000000000001\n") !=
+                std::string::npos &&
+            normalized.find("principal_loss") == std::string::npos &&
+            normalized.find("impairment") == std::string::npos &&
+            normalized.find("catalytic_first_loss") == std::string::npos,
+        "v0.2 normalized output is byte stable and never relabels Q as principal loss or impairment");
+
+    std::string legacy_risk_key = valid_v02_config();
+    replace_once(legacy_risk_key,
+        "mandate.maximum_market_expected_issued_principal_cash_shortfall_fraction=0.05",
+        "mandate.maximum_market_expected_loss_fraction=0.05");
+    expect_invalid_argument([&] { (void)parse(legacy_risk_key); },
+        "v0.2 rejects the legacy principal-loss mandate schema");
+
+    std::string v02_key_in_legacy = valid_config();
+    replace_once(v02_key_in_legacy,
+        "mandate.maximum_market_principal_impairment_probability=0.1",
+        "mandate.maximum_market_principal_cash_shortfall_probability=0.1");
+    expect_invalid_argument([&] { (void)parse(v02_key_in_legacy); },
+        "v0.1 rejects the v0.2 Q-incidence mandate schema");
+}
+
 void test_text_bom_and_stream_guardrails() {
     std::string unsafe_id = valid_config();
     replace_once(unsafe_id,
@@ -274,6 +361,7 @@ void test_text_bom_and_stream_guardrails() {
 int main() {
     test_parse_canonical_round_trip();
     test_closed_schema_and_numeric_guardrails();
+    test_v02_schema_uses_q_and_issued_principal_language();
     test_text_bom_and_stream_guardrails();
 
     if (failures != 0) {

@@ -1512,6 +1512,437 @@
 
 .comparison-footnotes strong { color: var(--cell-gold-light); }
 
+.financeability-section {
+  position: relative;
+  padding: 42px 0;
+  border-top: 1px solid var(--cell-line);
+  background:
+    radial-gradient(circle at 18% 8%, rgba(255, 255, 255, 0.4), transparent 31%),
+    var(--cell-paper);
+}
+
+.financeability-boundary {
+  margin-top: 14px !important;
+  padding: 10px 12px;
+  border-left: 2px solid var(--cell-rust);
+  background: rgba(140, 81, 56, 0.07);
+  color: var(--cell-rust);
+  font-family: var(--cell-mono);
+  font-size: 7px;
+  line-height: 1.45;
+}
+
+.financeability-layout {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.62fr) minmax(0, 1.38fr);
+  gap: 16px;
+  align-items: stretch;
+  margin-top: 18px;
+}
+
+.financeability-risk-gate {
+  padding: 17px;
+  border: 1px solid var(--cell-dark);
+  background: var(--cell-dark);
+  color: var(--cell-paper-light);
+}
+
+.financeability-risk-gate[data-status="pass"] {
+  box-shadow: inset 3px 0 0 var(--cell-gold);
+}
+
+.financeability-risk-gate[data-status="fail"] {
+  box-shadow: inset 3px 0 0 var(--cell-rust);
+}
+
+.financeability-risk-gate[data-status="not-applicable"],
+.financeability-risk-gate[data-status="unavailable"] {
+  border-style: dashed;
+}
+
+.financeability-risk-gate header {
+  display: grid;
+  gap: 7px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(238, 227, 212, 0.2);
+}
+
+.financeability-risk-gate header span,
+.financeability-case-heading span,
+.financeability-case-decision span {
+  color: var(--cell-gold);
+  font-family: var(--cell-mono);
+  font-size: 6px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.financeability-risk-gate header strong {
+  color: var(--cell-paper-light);
+  font-family: var(--cell-serif);
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.08;
+}
+
+.financeability-risk-gate[data-status="fail"] header strong,
+.financeability-risk-gate[data-status="fail"] header span {
+  color: var(--cell-gold-light);
+}
+
+.financeability-risk-gate > p {
+  margin-top: 12px !important;
+  color: rgba(238, 227, 212, 0.68);
+  font-size: 7px;
+  line-height: 1.5;
+}
+
+.financeability-fixed-terms {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  margin-top: 12px;
+  border: 1px solid rgba(238, 227, 212, 0.18);
+  background: rgba(238, 227, 212, 0.18);
+}
+
+.financeability-fixed-terms[hidden] { display: none; }
+
+.financeability-fixed-terms > span {
+  min-width: 0;
+  padding: 6px;
+  background: var(--cell-dark);
+}
+
+.financeability-fixed-terms .financeability-fixed-terms-title {
+  grid-column: 1 / -1;
+  color: var(--cell-gold);
+  font-family: var(--cell-mono);
+  font-size: 6px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.financeability-fixed-terms small,
+.financeability-fixed-terms strong {
+  display: block;
+  overflow-wrap: anywhere;
+  font-family: var(--cell-mono);
+  font-size: 5.7px;
+  font-weight: 400;
+  line-height: 1.3;
+}
+
+.financeability-fixed-terms small { color: rgba(238, 227, 212, 0.52); }
+.financeability-fixed-terms strong { margin-top: 3px; color: var(--cell-paper-light); }
+
+.financeability-risk-gate dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 13px 0 0;
+  border-top: 1px solid rgba(238, 227, 212, 0.18);
+  border-left: 1px solid rgba(238, 227, 212, 0.18);
+}
+
+.financeability-risk-gate dl:empty {
+  display: none;
+}
+
+.financeability-risk-gate dl div {
+  min-width: 0;
+  padding: 9px;
+  border-right: 1px solid rgba(238, 227, 212, 0.18);
+  border-bottom: 1px solid rgba(238, 227, 212, 0.18);
+}
+
+.financeability-risk-gate dt,
+.financeability-risk-gate dd {
+  margin: 0;
+  font-family: var(--cell-mono);
+  font-size: 6px;
+  line-height: 1.35;
+}
+
+.financeability-risk-gate dt { color: rgba(238, 227, 212, 0.55); }
+.financeability-risk-gate dd { margin-top: 5px; color: var(--cell-paper-light); }
+.financeability-risk-gate dd small { display: block; margin-top: 3px; color: rgba(238, 227, 212, 0.48); }
+.financeability-risk-gate [data-metric-status="pass"] dd { color: var(--cell-gold-light); }
+.financeability-risk-gate [data-metric-status="fail"] dd { color: #e3a98d; }
+
+.financeability-chart-shell {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--cell-dark);
+  background: rgba(238, 227, 212, 0.56);
+}
+
+.financeability-scale {
+  display: grid;
+  grid-template-columns: 145px minmax(0, 1fr) 180px;
+  gap: 13px;
+  align-items: end;
+  padding-bottom: 8px;
+  color: var(--cell-muted);
+  font-family: var(--cell-mono);
+  font-size: 6px;
+}
+
+.financeability-scale[hidden] { display: none; }
+
+.financeability-scale-axis {
+  position: relative;
+  grid-column: 2;
+  height: 14px;
+  border-bottom: 1px solid var(--cell-line);
+}
+
+.financeability-scale-axis span {
+  position: absolute;
+  bottom: 2px;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.financeability-scale-axis span:first-child { transform: none; }
+.financeability-scale-axis span:last-child { transform: translateX(-100%); }
+
+.financeability-cases {
+  border-top: 1px solid var(--cell-line);
+}
+
+.financeability-case {
+  display: grid;
+  grid-template-columns: 145px minmax(0, 1fr) 180px;
+  gap: 13px;
+  align-items: center;
+  min-height: 92px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--cell-line);
+}
+
+.financeability-case-heading strong,
+.financeability-case-heading small,
+.financeability-case-decision strong,
+.financeability-case-decision small {
+  display: block;
+}
+
+.financeability-case-heading strong {
+  margin-top: 5px;
+  color: var(--cell-ink);
+  font-family: var(--cell-serif);
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1.05;
+}
+
+.financeability-case-heading small {
+  margin-top: 6px;
+  color: var(--cell-muted);
+  font-size: 6px;
+  line-height: 1.3;
+}
+
+.financeability-track {
+  position: relative;
+  height: 48px;
+  overflow: hidden;
+  background:
+    linear-gradient(90deg, var(--cell-line) 1px, transparent 1px) 0 0 / 25% 100%,
+    rgba(255, 255, 255, 0.18);
+}
+
+.financeability-track::before {
+  position: absolute;
+  top: 23px;
+  right: 0;
+  left: 0;
+  border-top: 1px solid var(--cell-line);
+  content: "";
+}
+
+.financeability-band,
+.financeability-marker {
+  position: absolute;
+  left: var(--price-left, 0%);
+}
+
+.financeability-band {
+  width: var(--price-width, 0%);
+  min-width: 1px;
+}
+
+.financeability-band-investor {
+  top: 11px;
+  height: 4px;
+  background: var(--cell-gold);
+}
+
+.financeability-band-issuer {
+  top: 32px;
+  height: 4px;
+  background: var(--cell-dark);
+}
+
+.financeability-band-window {
+  top: 18px;
+  height: 11px;
+  background: rgba(222, 179, 93, 0.62);
+}
+
+.financeability-band-gap {
+  top: 18px;
+  height: 11px;
+  background: repeating-linear-gradient(135deg, rgba(140, 81, 56, 0.82) 0 3px, rgba(140, 81, 56, 0.2) 3px 6px);
+}
+
+.financeability-marker {
+  z-index: 2;
+  top: 3px;
+  width: 1px;
+  height: 42px;
+  border-left: 1px solid currentColor;
+  color: var(--cell-rust);
+}
+
+.financeability-marker span {
+  position: absolute;
+  left: 3px;
+  color: currentColor;
+  font-family: var(--cell-mono);
+  font-size: 6px;
+  line-height: 1;
+}
+
+.financeability-marker.is-edge-right span {
+  right: 3px;
+  left: auto;
+}
+
+.financeability-marker-ceiling span { top: 0; }
+.financeability-marker-floor { color: var(--cell-dark); }
+.financeability-marker-floor span { bottom: 0; }
+.financeability-marker-reference { border-left-style: dashed; color: var(--cell-muted); }
+.financeability-marker-reference span { top: 17px; }
+
+.financeability-track[data-unscaled="true"]::after {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(238, 227, 212, 0.88);
+  color: var(--cell-muted);
+  content: "Numerical boundary not available";
+  font-family: var(--cell-mono);
+  font-size: 6px;
+}
+
+.financeability-price-readout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin-top: 5px;
+  color: var(--cell-muted);
+  font-family: var(--cell-mono);
+  font-size: 5.8px;
+}
+
+.financeability-price-readout strong {
+  color: var(--cell-ink);
+  font-weight: 400;
+}
+
+.financeability-case-decision {
+  min-height: 52px;
+  padding-left: 11px;
+  border-left: 2px solid var(--cell-line);
+}
+
+.financeability-case.is-window .financeability-case-decision { border-color: var(--cell-gold); }
+.financeability-case.is-gap .financeability-case-decision,
+.financeability-case.is-no-price .financeability-case-decision { border-color: var(--cell-rust); }
+.financeability-case.is-ineligible .financeability-case-decision,
+.financeability-case.is-unavailable .financeability-case-decision { border-left-style: dashed; }
+
+.financeability-case-decision strong {
+  margin-top: 5px;
+  color: var(--cell-ink);
+  font-family: var(--cell-mono);
+  font-size: 7px;
+  font-weight: 400;
+  line-height: 1.3;
+}
+
+.financeability-case-decision small {
+  margin-top: 6px;
+  color: var(--cell-muted);
+  font-size: 6px;
+  line-height: 1.35;
+}
+
+.financeability-unavailable {
+  display: grid;
+  min-height: 210px;
+  place-content: center;
+  padding: 28px;
+  text-align: center;
+}
+
+.financeability-unavailable span {
+  color: var(--cell-rust);
+  font-family: var(--cell-mono);
+  font-size: 7px;
+  text-transform: uppercase;
+}
+
+.financeability-unavailable strong {
+  max-width: 500px;
+  margin-top: 8px;
+  color: var(--cell-ink);
+  font-family: var(--cell-serif);
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 1.12;
+}
+
+.financeability-unavailable p {
+  max-width: 520px;
+  margin-top: 9px !important;
+  color: var(--cell-muted);
+  font-size: 7px;
+  line-height: 1.5;
+}
+
+.financeability-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 15px;
+  padding-top: 11px;
+  color: var(--cell-muted);
+  font-family: var(--cell-mono);
+  font-size: 6px;
+}
+
+.financeability-legend[hidden] { display: none; }
+
+.financeability-legend span {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.financeability-legend i {
+  display: inline-block;
+  width: 20px;
+  height: 4px;
+}
+
+.financeability-legend .legend-investor { background: var(--cell-gold); }
+.financeability-legend .legend-issuer { background: var(--cell-dark); }
+.financeability-legend .legend-window { height: 9px; background: rgba(222, 179, 93, 0.62); }
+.financeability-legend .legend-gap { height: 9px; background: repeating-linear-gradient(135deg, rgba(140, 81, 56, 0.82) 0 3px, rgba(140, 81, 56, 0.2) 3px 6px); }
+.financeability-legend .legend-reference { width: 1px; height: 12px; border-left: 1px dashed var(--cell-muted); }
+
 .evidence-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1728,10 +2159,30 @@
   .comparison-row > div:first-child strong,
   .comparison-row > div:first-child small,
   .comparison-footnotes p,
+  .financeability-boundary,
+  .financeability-risk-gate > p,
+  .financeability-risk-gate dt,
+  .financeability-risk-gate dd,
+  .financeability-fixed-terms small,
+  .financeability-fixed-terms strong,
+  .financeability-case-heading small,
+  .financeability-case-decision small,
+  .financeability-price-readout,
+  .financeability-unavailable p,
+  .financeability-legend,
   .evidence-grid li,
   .investability-test p,
   .investability-test a,
   .open-standard-grid > p { font-size: 9px; }
+  .financeability-risk-gate header span,
+  .financeability-fixed-terms .financeability-fixed-terms-title,
+  .financeability-case-heading span,
+  .financeability-case-decision span,
+  .financeability-scale { font-size: 8px; }
+  .financeability-risk-gate header strong { font-size: 24px; }
+  .financeability-case-heading strong { font-size: 22px; }
+  .financeability-case-decision strong { font-size: 9px; }
+  .financeability-unavailable strong { font-size: 24px; }
   .risk-matrix button { font-size: 8px; }
   .scenario-result > header span,
   .scenario-weight span { font-size: 8px; }
@@ -1757,6 +2208,10 @@
   .cash-source-chart,
   .risk-matrix-wrap {
     grid-column: 1 / -1;
+  }
+
+  .financeability-layout {
+    grid-template-columns: 1fr;
   }
 
   .claim-stage-rail {
@@ -1791,6 +2246,7 @@
   .risk-layout,
   .tail-reading,
   .scenario-layout,
+  .financeability-layout,
   .open-standard-grid,
   .investability-test {
     grid-template-columns: 1fr;
@@ -1831,6 +2287,17 @@
   .scenario-totals dt,
   .state-legend,
   .comparison-footnotes p,
+  .financeability-boundary,
+  .financeability-risk-gate > p,
+  .financeability-risk-gate dt,
+  .financeability-risk-gate dd,
+  .financeability-fixed-terms small,
+  .financeability-fixed-terms strong,
+  .financeability-case-heading small,
+  .financeability-case-decision small,
+  .financeability-price-readout,
+  .financeability-unavailable p,
+  .financeability-legend,
   .evidence-grid li,
   .investability-test p,
   .investability-test a,
@@ -1852,6 +2319,16 @@
   .comparison-track { height: 20px; }
   .comparison-row > div:last-child { display: flex; justify-content: space-between; }
   .comparison-row > div:last-child strong { display: inline; margin-left: 4px; }
+  .financeability-scale { display: none !important; }
+  .financeability-case { grid-template-columns: 1fr; gap: 9px; min-height: 0; padding: 16px 0; }
+  .financeability-case-heading span,
+  .financeability-case-decision span { font-size: 9px; }
+  .financeability-case-heading strong { font-size: 24px; }
+  .financeability-case-decision { min-height: 0; }
+  .financeability-case-decision strong { font-size: 11px; }
+  .financeability-risk-gate header span { font-size: 9px; }
+  .financeability-risk-gate header strong { font-size: 24px; }
+  .financeability-unavailable strong { font-size: 24px; }
   .evidence-grid article { min-height: 0; }
   .evidence-grid h3 { font-size: 24px; }
   .investability-test { gap: 14px; }
@@ -1871,6 +2348,14 @@
 
   .scenario-totals {
     grid-template-columns: 1fr;
+  }
+
+  .financeability-risk-gate dl {
+    grid-template-columns: 1fr;
+  }
+
+  .financeability-fixed-terms {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .cash-source-row {

@@ -415,6 +415,95 @@ if(NATURALEHIA_CELLULAR_FINANCE_BUILD_CLI)
         cf_issue_price_support_cli
     )
 
+    if(EMSCRIPTEN)
+        set(
+            cellular_finance_browser_input_dir
+            "${CMAKE_CURRENT_SOURCE_DIR}/scenarios/ten-claim-instrument-v1-synthetic"
+        )
+        set(
+            cellular_finance_browser_inputs
+            "${cellular_finance_browser_input_dir}/portfolio.cfg"
+            "${cellular_finance_browser_input_dir}/event-polytope-v0.2.cfg"
+            "${cellular_finance_browser_input_dir}/success-participation.cfg"
+            "${cellular_finance_browser_input_dir}/capital-stack-v0.2.cfg"
+            "${cellular_finance_browser_input_dir}/market-priority-cap-v0.2.cfg"
+            "${cellular_finance_browser_input_dir}/issue-price-support-v0.2.cfg"
+        )
+        set(
+            cellular_finance_browser_output_dir
+            "${CMAKE_CURRENT_BINARY_DIR}/browser-assets"
+        )
+
+        add_executable(
+            cf_issue_price_support_browser
+            apps/issue_price_support_cli/main.cpp
+        )
+        target_link_libraries(
+            cf_issue_price_support_browser
+            PRIVATE Naturalehia::CellularFinance
+        )
+        target_compile_features(
+            cf_issue_price_support_browser
+            PRIVATE cxx_std_20
+        )
+        set_target_properties(
+            cf_issue_price_support_browser
+            PROPERTIES
+                CXX_EXTENSIONS OFF
+                OUTPUT_NAME "naturalehia-issue-price-support-browser"
+                RUNTIME_OUTPUT_DIRECTORY "${cellular_finance_browser_output_dir}"
+                SUFFIX ".mjs"
+        )
+        cellular_finance_set_compile_policy(
+            cf_issue_price_support_browser
+        )
+        target_link_options(
+            cf_issue_price_support_browser
+            PRIVATE
+                # The Release/Node verification build may set NODERAWFS
+                # globally. This browser target needs Emscripten's virtual
+                # filesystem for its embedded inputs, so override that
+                # setting locally without changing any Node CLI target.
+                "SHELL:-sNODERAWFS=0"
+                "SHELL:-sMODULARIZE=1"
+                "SHELL:-sEXPORT_ES6=1"
+                "SHELL:-sEXPORT_NAME=createNaturalehiaIssuePriceSupportModule"
+                "SHELL:-sENVIRONMENT=web"
+                "SHELL:-sEXIT_RUNTIME=1"
+                "SHELL:-sALLOW_MEMORY_GROWTH=1"
+                "SHELL:-sSTACK_SIZE=1048576"
+                "SHELL:-sFILESYSTEM=1"
+                "SHELL:--embed-file \"${cellular_finance_browser_input_dir}/portfolio.cfg@/financeability-inputs/portfolio.cfg\""
+                "SHELL:--embed-file \"${cellular_finance_browser_input_dir}/event-polytope-v0.2.cfg@/financeability-inputs/event-polytope-v0.2.cfg\""
+                "SHELL:--embed-file \"${cellular_finance_browser_input_dir}/success-participation.cfg@/financeability-inputs/success-participation.cfg\""
+                "SHELL:--embed-file \"${cellular_finance_browser_input_dir}/capital-stack-v0.2.cfg@/financeability-inputs/capital-stack-v0.2.cfg\""
+                "SHELL:--embed-file \"${cellular_finance_browser_input_dir}/market-priority-cap-v0.2.cfg@/financeability-inputs/market-priority-cap-v0.2.cfg\""
+                "SHELL:--embed-file \"${cellular_finance_browser_input_dir}/issue-price-support-v0.2.cfg@/financeability-inputs/issue-price-support-v0.2.cfg\""
+        )
+        set_property(
+            TARGET cf_issue_price_support_browser
+            APPEND PROPERTY LINK_DEPENDS ${cellular_finance_browser_inputs}
+        )
+
+        add_custom_target(
+            cf_issue_price_support_browser_assets
+            COMMAND
+                ${CMAKE_COMMAND} -E make_directory
+                "${CMAKE_CURRENT_SOURCE_DIR}/assets/wasm"
+            COMMAND
+                ${CMAKE_COMMAND} -E copy_if_different
+                "$<TARGET_FILE:cf_issue_price_support_browser>"
+                "${CMAKE_CURRENT_SOURCE_DIR}/assets/wasm/naturalehia-issue-price-support-browser.mjs"
+            COMMAND
+                ${CMAKE_COMMAND} -E copy_if_different
+                "$<TARGET_FILE_DIR:cf_issue_price_support_browser>/naturalehia-issue-price-support-browser.wasm"
+                "${CMAKE_CURRENT_SOURCE_DIR}/assets/wasm/naturalehia-issue-price-support-browser.wasm"
+            DEPENDS cf_issue_price_support_browser
+            COMMENT "Publishing the browser financeability module to the static site"
+            VERBATIM
+        )
+    endif()
+
     add_executable(
         cf_hurdle_evidence_cli
         apps/hurdle_evidence_cli/main.cpp
@@ -1759,6 +1848,16 @@ if(BUILD_TESTING)
         )
 
         add_test(
+            NAME cf_frontier_v02_cli_synthetic
+            COMMAND
+                ${CMAKE_COMMAND}
+                "-DPROGRAM=$<TARGET_FILE:cf_frontier_cli>"
+                "-DPROGRAM_EMULATOR=${cellular_finance_program_emulator}"
+                -DFIXTURE=${CMAKE_CURRENT_SOURCE_DIR}/scenarios/ten-claim-instrument-v1-synthetic
+                -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/check_capital_mobilization_frontier_v02_cli.cmake
+        )
+
+        add_test(
             NAME cf_priority_cap_cli_synthetic
             COMMAND
                 ${CMAKE_COMMAND}
@@ -1777,6 +1876,23 @@ if(BUILD_TESTING)
                 -DFIXTURE=${CMAKE_CURRENT_SOURCE_DIR}/scenarios/market-priority-cap-v0.1-synthetic
                 -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/check_issue_price_support_cli.cmake
         )
+
+        if(EMSCRIPTEN)
+            add_test(
+                NAME cf_issue_price_support_browser_assets_match_published
+                COMMAND
+                    ${CMAKE_COMMAND}
+                    "-DBUILT_MJS=$<TARGET_FILE:cf_issue_price_support_browser>"
+                    "-DBUILT_WASM=$<TARGET_FILE_DIR:cf_issue_price_support_browser>/naturalehia-issue-price-support-browser.wasm"
+                    -DPUBLISHED_MJS=${CMAKE_CURRENT_SOURCE_DIR}/assets/wasm/naturalehia-issue-price-support-browser.mjs
+                    -DPUBLISHED_WASM=${CMAKE_CURRENT_SOURCE_DIR}/assets/wasm/naturalehia-issue-price-support-browser.wasm
+                    -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/check_issue_price_support_browser_assets.cmake
+            )
+            set_tests_properties(
+                cf_issue_price_support_browser_assets_match_published
+                PROPERTIES LABELS "browser;wasm;published-provenance"
+            )
+        endif()
 
         add_test(
             NAME cf_hurdle_evidence_cli_synthetic

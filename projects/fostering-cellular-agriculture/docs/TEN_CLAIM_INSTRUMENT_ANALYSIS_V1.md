@@ -204,13 +204,88 @@ fixture remains unchanged: it has zero investor premium capacity and a
 0.800000 claim-only catalytic gap before provider expenses. The ten-claim
 result is a new, harder sensitivity and does not overwrite that control result.
 
+## Capital Mobilization Frontier v0.2: same-pool term rejection
+
+The additive frontier keeps the ten project paths, event-constrained physical
+probability set, claim identifiers, `B=24` lifetime market priority cap, 15%
+junior hurdle, 8% market hurdle, and zero junior target NPV fixed. It crosses:
+
+```text
+q = 0.5, 0.625, 0.75, 0.875, 1
+A = 10, 20, 30, 40, 50
+```
+
+for exactly 25 tested candidates. `q` changes only declared eligible success
+cash. `A` is funded junior issued principal in liability-`Q` shortfall
+coordinates, not causal attribution of asset loss.
+
+The fixture reports an aggregate project-outlay limit of 100, an aggregate
+contractual asset-principal limit of 100, and a separately funded reserve and
+issued-principal detachment `K=100`. The equality is specific to this retained
+at-par case. Asset writeoff `L_s`, continuing asset principal `O_s`, and
+issued-principal cash shortfall `Q_s` remain separate facts.
+
+Under the supplied synthetic mandate, no candidate is feasible. The feasible
+and nondominated feasible index sets are empty, and there is no minimum tested
+feasible `q`. Two diagnostics are:
+
+| `(q,A;M)` | Robust market NPV | Worst `E[Q]/M` | Q ES95/99 over `M` | Max `Pr[Q>0]` | Max `Pr[NPV<0]` |
+|---|---:|---:|---:|---:|---:|
+| `(1,20;80)` | -25.733095 | 27.377875% | 87.5% / 87.5% | 60% | 100% |
+| `(1,50;50)` | -5.569641 | about 12.161% | 80% / 80% | 28% | 54% |
+
+The mandate caps those fields at 10%, 50%/60%, 35%, and 35%, respectively,
+and also tests NPV-shortfall tails, WAL, junior principal, and junior NPV
+concession. Aggregate NPV is absent rather than silently defaulted.
+
+This is a finite-grid rejection. It is not a proof that every untested
+structure fails, and it does not estimate price, demand, or capital mobilized.
+
+## Conditional issue-price/support window
+
+The next tested channel holds the same `q=1`, `A=20`, `M=80` claim and future
+cash paths fixed, selects `B=24` from the finite priority-cap sensitivity, and
+compares an investor robust price ceiling with the issuer floor
+`max(0,M+F-G)`. The synthetic inputs set issuer cost `F=0`, maximum no-rights
+support `G=20`, and settled support `S_obs=0`, so the modeled issuer floor is
+60.
+
+This downstream priority-cap record uses a **separate, relaxed issue-price
+sensitivity mandate**, not the strict frontier mandate above. Its fixed-risk
+limits are 30% for `E[Q]/M`, 90% for both Q tails, 60% for `Pr[Q>0]`, and five
+years for WAL. The strict 25-candidate frontier instead caps the corresponding
+same-point risks at 10%, 50%/60%, 35%, and ten years, and rejects this
+`q=1`, `A=20`, `M=80` point. Therefore a downstream “separate sensitivity
+limits pass” result is not a reversal of the frontier decision. Price and
+support can change NPV and the issue funding identity; they cannot change `Q`,
+Q-ES95/99, `Pr[Q>0]`, or WAL, and cannot cure that fixed-risk failure.
+
+| Independent synthetic hurdle | Robust price ceiling `P*` | Arithmetic overlap |
+|---:|---:|---|
+| 0% | 74.575200 | `[60,74.575200]` |
+| 5% | 60.955502 | `[60,60.955502]` |
+| 8% | 54.266905 | none |
+| 10%, 15%, 20% | below 60 | none |
+
+The module's `financeable-window-found` status means only that the 0% and 5%
+synthetic cases have arithmetic overlap. It simultaneously reports no
+funded/escrowed-support-covered case. The reference price, hurdle cases, and
+support capacity are invented; no support commitment, authority, budget,
+funding, escrow, or settlement is evidenced. The 8% market-hurdle case used by
+the frontier does not overlap the issuer floor, and the separate relaxed risk
+screen does not make the same point acceptable under the strict frontier
+mandate. These outputs are a conditional research boundary, not an executable
+issue.
+
 ## What the comparison proves—and does not
 
 The engines reconcile project cash, recovery, reserve return, support transfer,
 principal, loss, exposure, and tranche allocation. They show that the current
-synthetic success rights do not clear the adverse probability envelope.
-Pooling supplies a modest ES95 benefit, but common factors dominate the far
-tail. First loss moves risk; a guarantee transfers it; neither creates cash.
+synthetic success rights do not clear the adverse probability envelope, and
+that no declared v0.2 `q`-by-`A` point clears the supplied mandate. Pooling
+supplies a modest ES95 benefit, but common factors dominate the far tail.
+Funded junior principal moves liability cash shortfall; a guarantee transfers
+defined asset loss; neither creates project cash.
 
 Real use still requires authenticated contracts, empirical claim and recovery
 data, defensible dependence bounds, investor hurdle evidence, legal

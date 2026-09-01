@@ -153,6 +153,172 @@ foreach(index RANGE 0 4)
     endif()
 endforeach()
 
+# The opt-in JSON path must be deterministic, browser-parseable, and use the
+# v0.2 issued-principal cash-shortfall vocabulary for the same-pool fixture.
+# The default v0.1 human report above remains the byte-stable legacy surface.
+set(v02_fixture
+    "${CMAKE_CURRENT_LIST_DIR}/../scenarios/ten-claim-instrument-v1-synthetic")
+set(v02_portfolio "${v02_fixture}/portfolio.cfg")
+set(v02_polytope "${v02_fixture}/event-polytope-v0.2.cfg")
+set(v02_participation "${v02_fixture}/success-participation.cfg")
+set(v02_stack "${v02_fixture}/capital-stack-v0.2.cfg")
+set(v02_cap "${v02_fixture}/market-priority-cap-v0.2.cfg")
+set(v02_issue "${v02_fixture}/issue-price-support-v0.2.cfg")
+
+execute_process(
+    COMMAND ${PROGRAM_COMMAND} "${v02_portfolio}" "${v02_polytope}"
+        "${v02_participation}" "${v02_stack}" "${v02_cap}"
+        "${v02_issue}"
+    RESULT_VARIABLE v02_human_result
+    OUTPUT_VARIABLE v02_human_output
+    ERROR_VARIABLE v02_human_error
+)
+if(NOT v02_human_result EQUAL 0 OR NOT v02_human_error STREQUAL "")
+    message(FATAL_ERROR
+        "v0.2 issue-price-support human report failed (${v02_human_result}):\n${v02_human_error}")
+endif()
+foreach(fragment IN ITEMS
+        "risk-screen scope: separate relaxed priority-cap and issue-price sensitivity; not the Capital Mobilization Frontier mandate"
+        "risk-screen label: Ten-claim separate relaxed issue-price risk sensitivity"
+        "strict 25-candidate frontier rejects the same q=1, A=20, M=80 point"
+        "price or support cannot cure its fixed Q risk failure"
+        "price or support changes fixed principal-risk metrics: false"
+        "fixed junior issued principal A: 20.000000 DEMO million"
+        "funded reserve and issued-principal stack detachment K: 100.000000 DEMO million"
+        "fixed market issued principal M=K-A: 80.000000 DEMO million")
+    string(FIND "${v02_human_output}" "${fragment}" position)
+    if(position EQUAL -1)
+        message(FATAL_ERROR
+            "v0.2 issue-price-support human report is missing:\n${fragment}\n\n${v02_human_output}")
+    endif()
+endforeach()
+
+execute_process(
+    COMMAND ${PROGRAM_COMMAND} "${v02_portfolio}" "${v02_polytope}"
+        "${v02_participation}" "${v02_stack}" "${v02_cap}"
+        "${v02_issue}" --json
+    RESULT_VARIABLE json_result
+    OUTPUT_VARIABLE json_output
+    ERROR_VARIABLE json_error
+)
+if(NOT json_result EQUAL 0)
+    message(FATAL_ERROR
+        "v0.2 issue-price-support JSON run failed (${json_result}):\n${json_error}")
+endif()
+if(NOT json_error STREQUAL "")
+    message(FATAL_ERROR
+        "successful issue-price-support JSON must not mix diagnostics into stderr:\n${json_error}")
+endif()
+string(JSON json_status GET "${json_output}" financeabilityWindow status)
+string(JSON json_case_count LENGTH "${json_output}"
+    financeabilityWindow cases)
+string(JSON json_risk_metric_count LENGTH "${json_output}"
+    financeabilityWindow riskGate metrics)
+string(JSON json_case_0_status GET "${json_output}"
+    financeabilityWindow cases 0 status)
+string(JSON json_case_1_status GET "${json_output}"
+    financeabilityWindow cases 1 status)
+if(NOT json_status STREQUAL "financeable-window-found" OR
+        NOT json_case_count EQUAL 6 OR
+        NOT json_risk_metric_count EQUAL 5 OR
+        NOT json_case_0_status STREQUAL "financeable-price-window" OR
+        NOT json_case_1_status STREQUAL "financeable-price-window")
+    message(FATAL_ERROR
+        "v0.2 issue-price-support JSON has the wrong status/case/risk schema")
+endif()
+foreach(index RANGE 2 5)
+    string(JSON case_status GET "${json_output}"
+        financeabilityWindow cases ${index} status)
+    if(NOT case_status STREQUAL
+            "investor-and-issuer-requirements-do-not-overlap")
+        message(FATAL_ERROR
+            "only the zero- and five-percent hurdle cases may have windows")
+    endif()
+endforeach()
+foreach(fragment IN ITEMS
+        "\"financeabilityWindow\""
+        "\"capitalStackModelVersion\": \"0.2.0\""
+        "\"principalRiskMetricFamily\": \"issued-principal-cash-shortfall-q\""
+        "\"mandateScope\": \"separate-priority-cap-issue-price-sensitivity\""
+        "\"mandateLabel\": \"Ten-claim separate relaxed issue-price risk sensitivity\""
+        "\"isCapitalMobilizationFrontierMandate\": false"
+        "\"priceOrSupportChangesFixedRiskMetrics\": false"
+        "\"label\": \"Separate sensitivity limits pass\""
+        "strict 25-candidate frontier rejects the same q=1, A=20, M=80 point"
+        "cannot cure its fixed Q risk failure"
+        "\"selectedMarketPriorityNonprincipalCap\": 24.000000"
+        "\"issuerFundingFloor\": 60.000000"
+        "\"label\": \"Expected issued-principal cash shortfall Q\""
+        "\"label\": \"Issued-principal cash shortfall Q ES95\""
+        "\"label\": \"Issued-principal cash shortfall Q ES99\""
+        "\"label\": \"Issued-principal cash shortfall probability Pr[Q>0]\""
+        "\"investorCeiling\": 74.575200"
+        "\"investorCeiling\": 60.955502"
+        "\"investorCeiling\": 54.266905"
+        "\"investorCeiling\": 50.313857"
+        "\"investorCeiling\": 41.898625"
+        "\"investorCeiling\": 35.170807"
+        "\"minimumSupport\": 5.424800"
+        "\"minimumSupport\": 19.044498"
+        "\"minimumSupport\": 25.733095"
+        "\"minimumSupport\": 29.686143"
+        "\"minimumSupport\": 38.101375"
+        "\"minimumSupport\": 44.829193"
+        "\"provenance\""
+        "\"nonClaimNotes\""
+        "\"calibratedExecutionAuthorized\": false")
+    string(FIND "${json_output}" "${fragment}" position)
+    if(position EQUAL -1)
+        message(FATAL_ERROR
+            "v0.2 issue-price-support JSON is missing:\n${fragment}\n\n${json_output}")
+    endif()
+endforeach()
+foreach(forbidden IN ITEMS
+        "SYNTHETIC ROBUST ISSUE-PRICE SUPPORT TERM"
+        "Fixed risk mandates pass"
+        "Fixed risk mandate fails"
+        "\"key\": \"expectedPrincipalLossFraction\""
+        "\"key\": \"principalImpairmentProbability\""
+        ": NaN" ": Inf" ": -Inf" ": Infinity")
+    string(FIND "${json_output}" "${forbidden}" position)
+    if(NOT position EQUAL -1)
+        message(FATAL_ERROR
+            "v0.2 issue-price-support JSON contains forbidden text: ${forbidden}")
+    endif()
+endforeach()
+
+execute_process(
+    COMMAND ${PROGRAM_COMMAND} "${v02_portfolio}" "${v02_polytope}"
+        "${v02_participation}" "${v02_stack}" "${v02_cap}"
+        "${v02_issue}" --json
+    RESULT_VARIABLE repeated_json_result
+    OUTPUT_VARIABLE repeated_json_output
+    ERROR_VARIABLE repeated_json_error
+)
+if(NOT repeated_json_result EQUAL 0 OR NOT repeated_json_error STREQUAL "" OR
+        NOT repeated_json_output STREQUAL json_output)
+    message(FATAL_ERROR
+        "issue-price-support JSON must be byte-deterministic across identical runs")
+endif()
+
+execute_process(
+    COMMAND ${PROGRAM_COMMAND} "${v02_portfolio}" "${v02_polytope}"
+        "${v02_participation}" "${v02_stack}" "${v02_cap}"
+        "${v02_issue}.missing" --json
+    RESULT_VARIABLE json_failure_result
+    OUTPUT_VARIABLE json_failure_output
+    ERROR_VARIABLE json_failure_error
+)
+if(NOT json_failure_result EQUAL 2 OR NOT json_failure_output STREQUAL "")
+    message(FATAL_ERROR
+        "failed JSON runs must keep stdout empty so diagnostics cannot be parsed as JSON")
+endif()
+string(FIND "${json_failure_error}"
+    "issue-price-support input/configuration failed:" position)
+if(position EQUAL -1)
+    message(FATAL_ERROR "failed JSON runs need a scoped stderr diagnostic")
+endif()
+
 # Normalized output must expose all six reloadable files. Extract each one,
 # reload them together, and require a byte-stable six-file normalized suffix.
 execute_process(
@@ -591,6 +757,10 @@ endif()
 string(FIND "${usage_error}" "usage:" position)
 if(position EQUAL -1)
     message(FATAL_ERROR "issue-price-support grammar errors must print usage")
+endif()
+string(FIND "${usage_error}" "[--print-normalized|--json]" position)
+if(position EQUAL -1)
+    message(FATAL_ERROR "issue-price-support usage must advertise --json")
 endif()
 
 execute_process(

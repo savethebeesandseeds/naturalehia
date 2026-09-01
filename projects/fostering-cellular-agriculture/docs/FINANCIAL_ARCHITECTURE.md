@@ -66,6 +66,30 @@ The current ten-claim synthetic fixture is mechanically implemented but fails
 the robust adverse-NPV and support-feasibility tests. It is defined,
 measurable, and rejectable; it is not shown attractive or financeable.
 
+The additive Capital Mobilization Frontier v0.2 makes that rejection more
+specific. On the same pool it holds `B=24`, the 15%/8% junior/market hurdle
+sensitivities, claim terms, cash paths, and physical probability set fixed,
+then crosses five success-participation values with five junior issued-
+principal boundaries. None of the 25 tested `(q,A)` candidates passes every
+declared synthetic mandate. The aggregate project-outlay and contractual
+asset-principal limits are both 100 in this retained at-par fixture, while the
+v0.2 stack separately funds reserve and issued principal `K=100`. Asset
+writeoff `L_s`, continuing principal `O_s`, and issued-principal cash shortfall
+`Q_s` remain distinct; `A` layers only `Q`.
+
+That finite-grid rejection does not prove that untested terms fail. It identifies
+the next conditional channel: hold the claim and future cash fixed, then test
+whether an independently evidenced buyer price and hurdle can overlap the
+issuer funding floor after a separately authorized no-rights support source.
+The current synthetic issue-price/support sensitivity has arithmetic overlap
+only at invented 0% and 5% hurdles, not at 8% or above, and no overlap is backed
+by funded or escrowed support. Its priority-cap gate is a separate, relaxed
+sensitivity mandate, not the strict frontier mandate. The strict frontier still
+rejects the same `q=1`, `A=20`, `M=80` point, and price or support cannot change
+its fixed `Q` risk, tails, incidence, or WAL. The downstream result is not a
+quote, fair value, demand, support commitment, or evidence of capital
+mobilization.
+
 Naturalehia retains no protocol fee, carried interest, instrument royalty, or
 share of financed-company receipts. This open-standard commitment does not
 remove the investor's need for enforceable repayment and success cash from the

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 
+#include <naturalehia/cellular_finance/capital_stack_config.hpp>
 #include <naturalehia/cellular_finance/portfolio_config.hpp>
 #include <naturalehia/cellular_finance/probability_polytope_config.hpp>
 #include <naturalehia/cellular_finance/robust_capital_mobilization_frontier.hpp>
@@ -25,8 +26,12 @@ void print_usage(std::string_view program) {
     std::cerr
         << "usage: " << program
         << " <portfolio.cfg> <event-polytope.cfg> "
-           "<success-participation.cfg> <frontier.cfg> "
+           "<success-participation.cfg> <frontier-v0.1.cfg> "
            "[--print-normalized]\n"
+        << "   or: " << program
+        << " <portfolio.cfg> <event-polytope.cfg> "
+           "<success-participation.cfg> <base-capital-stack-v0.2.cfg> "
+           "<frontier-v0.2.cfg> [--print-normalized]\n"
         << "calibrated_execution_authorized=false\n";
 }
 
@@ -161,21 +166,30 @@ void print_index_list(const std::vector<std::size_t>& values) {
 }
 
 void print_candidate_constraint_results(
-    const cf::RobustCapitalMobilizationConstraintPasses& passes) {
+    const cf::RobustCapitalMobilizationConstraintPasses& passes,
+    bool uses_q) {
     std::cout << "  declared constraint results\n"
               << "    minimum robust aggregate NPV: "
               << pass_text(passes.robust_aggregate_npv) << '\n'
               << "    minimum market robust NPV margin: "
               << pass_text(passes.market_robust_npv_margin) << '\n'
-              << "    maximum market expected principal loss: "
+              << (uses_q
+                      ? "    maximum market expected issued-principal cash shortfall Q: "
+                      : "    maximum market expected principal loss: ")
               << pass_text(passes.market_expected_loss_fraction) << '\n'
-              << "    maximum market principal-loss ES95: "
+              << (uses_q
+                      ? "    maximum market issued-principal cash-shortfall Q ES95: "
+                      : "    maximum market principal-loss ES95: ")
               << pass_text(passes.market_principal_loss_es95_fraction)
               << '\n'
-              << "    maximum market principal-loss ES99: "
+              << (uses_q
+                      ? "    maximum market issued-principal cash-shortfall Q ES99: "
+                      : "    maximum market principal-loss ES99: ")
               << pass_text(passes.market_principal_loss_es99_fraction)
               << '\n'
-              << "    maximum market principal impairment probability: "
+              << (uses_q
+                      ? "    maximum market Pr[Q>0]: "
+                      : "    maximum market principal impairment probability: ")
               << pass_text(passes.market_principal_impairment_probability)
               << '\n'
               << "    maximum market negative-NPV probability: "
@@ -188,9 +202,11 @@ void print_candidate_constraint_results(
               << '\n'
               << "    maximum market WAL: "
               << pass_text(passes.market_wal) << '\n'
-              << "    maximum catalytic first loss: "
+              << (uses_q ? "    maximum junior issued principal A: "
+                         : "    maximum catalytic first loss: ")
               << pass_text(passes.catalytic_first_loss) << '\n'
-              << "    maximum catalytic NPV concession: "
+              << (uses_q ? "    maximum junior NPV concession: "
+                         : "    maximum catalytic NPV concession: ")
               << pass_text(passes.catalytic_npv_concession) << '\n';
 }
 
@@ -216,7 +232,9 @@ void print_candidate(std::size_t index,
               << " | maximum="
               << candidate.aggregate_fully_funded_npv_million.maximum.value
               << ' ' << currency << " million\n"
-              << "  catalytic NPV | minimum (robust)="
+              << (candidate.principal_risk_uses_issued_principal_cash_shortfall_q
+                      ? "  junior NPV | minimum (robust)="
+                      : "  catalytic NPV | minimum (robust)=")
               << candidate.robust_catalytic_npv_million << " | central="
               << candidate.catalytic_npv_million.central << " | maximum="
               << candidate.catalytic_npv_million.maximum.value << ' '
@@ -255,23 +273,31 @@ void print_candidate(std::size_t index,
               << candidate.market_expected_principal_cash_distribution_million
                      .maximum.value
               << ' ' << currency << " million\n"
-              << "  worst expected market principal loss: "
+              << (candidate.principal_risk_uses_issued_principal_cash_shortfall_q
+                      ? "  worst expected market issued-principal cash shortfall Q: "
+                      : "  worst expected market principal loss: ")
               << candidate.worst_market_expected_loss_fraction * 100.0
               << " percent of market notional | "
               << candidate.worst_market_expected_loss_fraction *
                      candidate.market_notional_million
               << ' ' << currency << " million\n"
-              << "  worst market principal-loss ES95: "
+              << (candidate.principal_risk_uses_issued_principal_cash_shortfall_q
+                      ? "  worst market issued-principal cash-shortfall Q ES95: "
+                      : "  worst market principal-loss ES95: ")
               << candidate.worst_market_principal_loss_es95_fraction * 100.0
               << " percent of market notional | "
               << candidate.market_principal_loss_es95_million.maximum.value
               << ' ' << currency << " million\n"
-              << "  worst market principal-loss ES99: "
+              << (candidate.principal_risk_uses_issued_principal_cash_shortfall_q
+                      ? "  worst market issued-principal cash-shortfall Q ES99: "
+                      : "  worst market principal-loss ES99: ")
               << candidate.worst_market_principal_loss_es99_fraction * 100.0
               << " percent of market notional | "
               << candidate.market_principal_loss_es99_million.maximum.value
               << ' ' << currency << " million\n"
-              << "  worst market principal impairment probability: "
+              << (candidate.principal_risk_uses_issued_principal_cash_shortfall_q
+                      ? "  worst market Pr[Q>0]: "
+                      : "  worst market principal impairment probability: ")
               << candidate.worst_market_principal_impairment_probability *
                      100.0
               << " percent\n"
@@ -297,10 +323,13 @@ void print_candidate(std::size_t index,
     } else {
         std::cout << "  market principal-cash WAL: unavailable\n";
     }
-    std::cout << "  catalytic NPV concession: "
+    std::cout << (candidate.principal_risk_uses_issued_principal_cash_shortfall_q
+                      ? "  junior NPV concession: "
+                      : "  catalytic NPV concession: ")
               << candidate.catalytic_npv_concession_million << ' '
               << currency << " million\n";
-    print_candidate_constraint_results(candidate.constraint_passes);
+    print_candidate_constraint_results(candidate.constraint_passes,
+        candidate.principal_risk_uses_issued_principal_cash_shortfall_q);
     std::cout << '\n';
 }
 
@@ -356,11 +385,13 @@ void print_wal_witness(std::size_t candidate_index,
 void print_candidate_witnesses(std::size_t index,
     const cf::RobustCapitalMobilizationFrontierCandidate& candidate,
     std::string_view currency) {
+    const bool uses_q =
+        candidate.principal_risk_uses_issued_principal_cash_shortfall_q;
     const auto& scenarios =
         candidate.market_principal_loss_es95_million.scenario_probabilities;
     print_linear_witness(index, "aggregate fully funded NPV", "minimum",
         candidate.aggregate_fully_funded_npv_million.minimum, scenarios);
-    print_linear_witness(index, "catalytic NPV", "minimum",
+    print_linear_witness(index, uses_q ? "junior NPV" : "catalytic NPV", "minimum",
         candidate.catalytic_npv_million.minimum, scenarios);
     print_linear_witness(index, "market NPV", "minimum",
         candidate.market_npv_million.minimum, scenarios);
@@ -376,7 +407,9 @@ void print_candidate_witnesses(std::size_t index,
         "maximum",
         candidate.market_expected_total_distributions_million.maximum,
         scenarios);
-    print_linear_witness(index, "market expected principal loss fraction",
+    print_linear_witness(index,
+        uses_q ? "market expected issued-principal cash shortfall Q fraction"
+               : "market expected principal loss fraction",
         "maximum", candidate.market_expected_loss_fraction.maximum,
         scenarios);
     print_linear_witness(index, "market expected principal cash", "minimum",
@@ -385,13 +418,19 @@ void print_candidate_witnesses(std::size_t index,
     print_linear_witness(index, "market expected principal cash", "maximum",
         candidate.market_expected_principal_cash_distribution_million.maximum,
         scenarios);
-    print_tail_witness(index, "market principal-loss ES95",
+    print_tail_witness(index,
+        uses_q ? "market issued-principal cash-shortfall Q ES95"
+               : "market principal-loss ES95",
         candidate.market_principal_loss_es95_million.maximum, scenarios,
         currency);
-    print_tail_witness(index, "market principal-loss ES99",
+    print_tail_witness(index,
+        uses_q ? "market issued-principal cash-shortfall Q ES99"
+               : "market principal-loss ES99",
         candidate.market_principal_loss_es99_million.maximum, scenarios,
         currency);
-    print_linear_witness(index, "market principal impairment probability",
+    print_linear_witness(index,
+        uses_q ? "market Pr[Q>0]"
+               : "market principal impairment probability",
         "maximum", candidate.market_principal_impairment_probability.maximum,
         scenarios);
     print_linear_witness(index, "market negative-NPV probability", "maximum",
@@ -450,6 +489,8 @@ void print_report(const cf::PortfolioConfig& portfolio,
     const cf::RobustCapitalMobilizationFrontierConfig& terms,
     const cf::RobustCapitalMobilizationFrontierSummary& summary) {
     const std::string_view currency = portfolio.currency_label;
+    const bool uses_q =
+        summary.principal_risk_uses_issued_principal_cash_shortfall_q;
     std::cout << std::fixed << std::setprecision(6)
               << "SYNTHETIC ROBUST CAPITAL-MOBILIZATION FRONTIER\n"
               << "Finite physical-probability mandate test only; not a price, "
@@ -457,13 +498,31 @@ void print_report(const cf::PortfolioConfig& portfolio,
               ;
     print_analysis_basis(portfolio, polytope, participation);
     std::cout << "Fixed instrument terms\n"
-              << "  label: " << terms.scenario_label << '\n'
-              << "  aggregate commitment and stack detachment K: "
-              << summary.aggregate_commitment_and_stack_detachment_million
+              << "  label: " << terms.scenario_label << '\n';
+    if (uses_q) {
+        std::cout
+              << "  frontier model version: " << summary.model_version << '\n'
+              << "  capital-stack model version: "
+              << summary.capital_stack_model_version << '\n'
+              << "  aggregate project outlay limit: "
+              << summary.aggregate_project_outlay_limit_million << ' '
+              << currency << " million\n"
+              << "  aggregate contractual asset-principal limit: "
+              << summary.aggregate_contractual_asset_principal_limit_million
               << ' ' << currency << " million\n"
-              << "  catalytic claim: " << terms.catalytic_claim_id
-              << " | fully funded junior loss-absorbing layer [0,A]\n"
-              << "  market claim: " << terms.market_claim_id
+              << "  funded reserve and issued-principal stack detachment K: "
+              << summary.funded_reserve_and_stack_detachment_million << ' '
+              << currency << " million\n"
+              << "  junior claim: " << terms.catalytic_claim_id
+              << " | fully funded issued-principal cash-shortfall layer [0,A]; not causal asset-loss attribution\n";
+    } else {
+        std::cout << "  aggregate commitment and stack detachment K: "
+                  << summary.aggregate_commitment_and_stack_detachment_million
+                  << ' ' << currency << " million\n"
+                  << "  catalytic claim: " << terms.catalytic_claim_id
+                  << " | fully funded junior loss-absorbing layer [0,A]\n";
+    }
+    std::cout << "  market claim: " << terms.market_claim_id
               << " | fully funded priority layer [A,K]\n"
               << "  market notional M=K-A: funded principal notional; it "
                  "excludes additional pro-rata pool-cost calls\n"
@@ -472,18 +531,22 @@ void print_report(const cf::PortfolioConfig& portfolio,
               << "  market lifetime priority non-principal cap: "
               << terms.market_priority_nonprincipal_cap_million << ' '
               << currency << " million\n"
-              << "  catalytic annual physical-measure hurdle: "
+              << (uses_q ? "  junior annual physical-measure hurdle: "
+                         : "  catalytic annual physical-measure hurdle: ")
               << terms.catalytic_annual_physical_hurdle_rate * 100.0
               << " percent\n"
               << "  market annual physical-measure hurdle: "
               << terms.market_annual_physical_hurdle_rate * 100.0
               << " percent\n"
-              << "  catalytic target NPV: "
+              << (uses_q ? "  junior target NPV: "
+                         : "  catalytic target NPV: ")
               << terms.catalytic_target_npv_million << ' ' << currency
               << " million\n"
               << "  tested participation grid q: ";
     print_grid(summary.evaluated_participation_fraction_grid);
-    std::cout << "\n  tested catalytic first-loss grid A: ";
+    std::cout << (uses_q
+            ? "\n  tested junior issued-principal grid A: "
+            : "\n  tested catalytic first-loss grid A: ");
     print_grid(summary.evaluated_catalytic_first_loss_million_grid);
     std::cout << ' ' << currency << " million\n"
               << "  tested candidate count: " << summary.candidates.size()
@@ -512,16 +575,24 @@ void print_report(const cf::PortfolioConfig& portfolio,
     print_optional_term("minimum market robust NPV margin",
         limits.minimum_market_robust_npv_margin_fraction,
         "fraction of market notional");
-    print_optional_term("maximum market expected principal loss",
+    print_optional_term(uses_q
+            ? "maximum market expected issued-principal cash shortfall Q"
+            : "maximum market expected principal loss",
         limits.maximum_market_expected_loss_fraction,
         "fraction of market notional");
-    print_optional_term("maximum market principal-loss ES95",
+    print_optional_term(uses_q
+            ? "maximum market issued-principal cash-shortfall Q ES95"
+            : "maximum market principal-loss ES95",
         limits.maximum_market_principal_loss_es95_fraction,
         "fraction of market notional");
-    print_optional_term("maximum market principal-loss ES99",
+    print_optional_term(uses_q
+            ? "maximum market issued-principal cash-shortfall Q ES99"
+            : "maximum market principal-loss ES99",
         limits.maximum_market_principal_loss_es99_fraction,
         "fraction of market notional");
-    print_optional_term("maximum market principal impairment probability",
+    print_optional_term(uses_q
+            ? "maximum market Pr[Q>0]"
+            : "maximum market principal impairment probability",
         limits.maximum_market_principal_impairment_probability, "probability");
     print_optional_term("maximum market negative-NPV probability",
         limits.maximum_market_negative_npv_probability, "probability");
@@ -533,10 +604,12 @@ void print_report(const cf::PortfolioConfig& portfolio,
         "fraction of market notional");
     print_optional_term("maximum market WAL",
         limits.maximum_market_wal_years, "years");
-    print_optional_term("maximum catalytic first loss",
+    print_optional_term(uses_q ? "maximum junior issued principal A"
+                               : "maximum catalytic first loss",
         limits.maximum_catalytic_first_loss_million,
         std::string(currency) + " million");
-    print_optional_term("maximum catalytic NPV concession",
+    print_optional_term(uses_q ? "maximum junior NPV concession"
+                               : "maximum catalytic NPV concession",
         limits.maximum_catalytic_npv_concession_million,
         std::string(currency) + " million");
     std::cout << "  declared mandate count: "
@@ -557,7 +630,9 @@ void print_report(const cf::PortfolioConfig& portfolio,
     } else {
         std::cout << "none";
     }
-    std::cout << "\n  least tested feasible A by q\n";
+    std::cout << (uses_q
+            ? "\n  least tested feasible junior issued principal A by q\n"
+            : "\n  least tested feasible A by q\n");
     if (summary.least_first_loss_feasible_by_participation.empty()) {
         std::cout << "    none\n";
     } else {
@@ -610,16 +685,15 @@ void print_report(const cf::PortfolioConfig& portfolio,
               << "  Different metrics can have different adverse probability "
                  "witnesses; their endpoints must not be assembled into one "
                  "forecast or scenario.\n"
-              << "  Fully funded junior loss-absorbing capital is an investor "
-                 "claim in this model, not a guarantee, insurance policy, or "
-                 "a debt characterization. It redistributes modeled cash and "
-                 "loss; it does not create project value.\n"
-              << "  Pool costs are additional pro-rata calls included in "
-                 "reported contributions and NPV. Every principal-loss and "
-                 "NPV-shortfall fraction uses funded principal notional M, "
-                 "not all-in contributions.\n"
-              << "  Physical expected principal loss is not IFRS 9 ECL, Basel "
-                 "regulatory EL, accounting impairment, or legal default.\n"
+              << (uses_q
+                    ? "  Fully funded junior capital is an investor claim whose [0,A] layer absorbs issued-principal cash shortfall Q in the modeled liability waterfall. It is not causal attribution of asset loss, a guarantee, insurance policy, or debt characterization; it does not create project value.\n"
+                    : "  Fully funded junior loss-absorbing capital is an investor claim in this model, not a guarantee, insurance policy, or a debt characterization. It redistributes modeled cash and loss; it does not create project value.\n")
+              << (uses_q
+                    ? "  Pool and buyer-direct costs are additional pro-rata calls included in contributions and NPV. Every Q and NPV-shortfall fraction uses market issued principal M, not all-in contributions.\n"
+                    : "  Pool costs are additional pro-rata calls included in reported contributions and NPV. Every principal-loss and NPV-shortfall fraction uses funded principal notional M, not all-in contributions.\n")
+              << (uses_q
+                    ? "  Issued-principal cash shortfall Q is not contractual asset loss L, outstanding asset principal, IFRS 9 ECL, Basel regulatory EL, accounting impairment, recovery, or legal default.\n"
+                    : "  Physical expected principal loss is not IFRS 9 ECL, Basel regulatory EL, accounting impairment, or legal default.\n")
               << "  Core model limitation: " << summary.model_limitation
               << '\n'
               << "  No fair value, market price, spread, rating, legal "
@@ -650,6 +724,7 @@ void print_report(const cf::PortfolioConfig& portfolio,
 void print_normalized_inputs(const cf::PortfolioConfig& portfolio,
     const cf::ProbabilityPolytopeConfig& polytope,
     const cf::SuccessParticipationConfig& participation,
+    const std::optional<cf::CapitalStackConfig>& base_stack,
     const cf::RobustCapitalMobilizationFrontierConfig& frontier) {
     std::cout << "\nNormalized portfolio configuration\n";
     cf::print_normalized_portfolio_config(std::cout, portfolio);
@@ -658,6 +733,10 @@ void print_normalized_inputs(const cf::PortfolioConfig& portfolio,
     std::cout << "\nNormalized success-participation configuration\n";
     cf::print_normalized_success_participation_config(
         std::cout, participation);
+    if (base_stack.has_value()) {
+        std::cout << "\nNormalized base-capital-stack configuration\n";
+        cf::print_normalized_capital_stack_config(std::cout, *base_stack);
+    }
     std::cout << "\nNormalized capital-mobilization-frontier configuration\n";
     cf::print_normalized_robust_capital_mobilization_frontier_config(
         std::cout, frontier);
@@ -666,17 +745,23 @@ void print_normalized_inputs(const cf::PortfolioConfig& portfolio,
 } // namespace
 
 int main(int argc, char** argv) {
-    if ((argc != 5 && argc != 6) ||
-        (argc == 6 && std::string_view(argv[5]) != "--print-normalized")) {
+    const bool legacy_form = argc == 5 ||
+        (argc == 6 && std::string_view(argv[5]) == "--print-normalized");
+    const bool v02_form =
+        (argc == 6 && !std::string_view(argv[5]).starts_with("--")) ||
+        (argc == 7 && std::string_view(argv[6]) == "--print-normalized");
+    if (!legacy_form && !v02_form) {
         print_usage(argc > 0 ? std::string_view(argv[0])
                              : std::string_view("frontier"));
         return 1;
     }
-    const bool print_normalized = argc == 6;
+    const bool print_normalized =
+        (legacy_form && argc == 6) || (v02_form && argc == 7);
 
     cf::PortfolioConfig portfolio;
     cf::ProbabilityPolytopeConfig polytope;
     cf::SuccessParticipationConfig participation;
+    std::optional<cf::CapitalStackConfig> base_stack;
     cf::RobustCapitalMobilizationFrontierConfig frontier;
     try {
         portfolio = cf::load_portfolio_config(std::filesystem::path(argv[1]));
@@ -684,8 +769,15 @@ int main(int argc, char** argv) {
             std::filesystem::path(argv[2]));
         participation = cf::load_success_participation_config(
             std::filesystem::path(argv[3]));
-        frontier = cf::load_robust_capital_mobilization_frontier_config(
-            std::filesystem::path(argv[4]));
+        if (v02_form) {
+            base_stack = cf::load_capital_stack_config(
+                std::filesystem::path(argv[4]));
+            frontier = cf::load_robust_capital_mobilization_frontier_config(
+                std::filesystem::path(argv[5]));
+        } else {
+            frontier = cf::load_robust_capital_mobilization_frontier_config(
+                std::filesystem::path(argv[4]));
+        }
     } catch (const std::exception& error) {
         std::cerr << "capital-mobilization-frontier input/configuration failed: "
                   << error.what()
@@ -694,13 +786,15 @@ int main(int argc, char** argv) {
     }
 
     try {
-        const cf::RobustCapitalMobilizationFrontierSummary summary =
-            cf::evaluate_robust_capital_mobilization_frontier(
-                portfolio, polytope, participation, frontier);
+        const cf::RobustCapitalMobilizationFrontierSummary summary = v02_form
+            ? cf::evaluate_robust_capital_mobilization_frontier(portfolio,
+                  polytope, participation, *base_stack, frontier)
+            : cf::evaluate_robust_capital_mobilization_frontier(
+                  portfolio, polytope, participation, frontier);
         print_report(portfolio, polytope, participation, frontier, summary);
         if (print_normalized) {
-            print_normalized_inputs(
-                portfolio, polytope, participation, frontier);
+            print_normalized_inputs(portfolio, polytope, participation,
+                base_stack, frontier);
         }
     } catch (const std::exception& error) {
         std::cerr << "capital-mobilization-frontier analysis failed: "

@@ -7,6 +7,10 @@ for the project's technical financial white paper.
 - `references.bib` is the source bibliography.
 - `fostering-cellular-agriculture-white-paper.pdf` is the public artifact.
 
+Version 1.2 adds the Capital Mobilization Frontier v0.2 same-pool rejection and
+the conditional issue-price/support window while preserving the legacy v0.1
+frontier record and all execution non-claims.
+
 The paper must be built with `latexmk` inside the project's
 `documents-latex:bookworm` container. From the repository root, the equivalent
 Linux-container command is:

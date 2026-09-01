@@ -107,8 +107,8 @@
 
         <div class="runtime-notice">
           <span class="runtime-light" aria-hidden="true"></span>
-          <p><strong>Interactive analytical preview.</strong> Values are a precomputed replay of the validated C++ synthetic fixture. The live WebAssembly engine is not yet connected or parity-certified.</p>
-          <span>Debug 68/68 · Release 68/68 · Reconciliations 0</span>
+          <p><strong>Validated analytical preview.</strong> Construction values retain the frozen C++ synthetic fixture; the financeability boundary is also computed in-browser by the published C++ WebAssembly module. Neither is market calibration.</p>
+          <span>Emscripten Release 72/72 · Published WASM byte parity · Reconciliations 0</span>
         </div>
         <noscript><p class="noscript-notice">The central instrument snapshot remains readable, but claim, factor and scenario exploration requires JavaScript. The complete result is available in the <a href="./docs/TEN_CLAIM_INSTRUMENT_ANALYSIS_V1.md">ten-claim analysis</a>.</p></noscript>
       </div>
@@ -250,10 +250,48 @@
       </div>
     </section>
 
+    <section class="financeability-section" id="financeability-window" aria-labelledby="financeability-heading">
+      <div class="cell-shell">
+        <header class="investor-section-heading">
+          <div><p class="cell-kicker">07 / Conditional issue boundary</p><h2 id="financeability-heading">Where investor value and issuer funding overlap.</h2></div>
+          <p>Each row tests one supplied hurdle independently. The investor ceiling <em>U</em> protects the stated return requirement; the issuer floor <em>L</em> protects the complete issue funding identity.</p>
+        </header>
+
+        <p class="financeability-boundary" id="financeability-boundary">Synthetic physical-measure sensitivity; not fair value, a bid, an observed hurdle, provider capacity, or evidence of demand.</p>
+
+        <div class="financeability-layout">
+          <aside class="financeability-risk-gate" id="financeability-risk-gate" data-status="unavailable" aria-live="polite">
+            <header><span id="financeability-risk-scope">Separate relaxed issue-price sensitivity mandate</span><strong id="financeability-risk-status">Model unavailable</strong></header>
+            <p id="financeability-risk-note">This is not the strict Capital Mobilization Frontier mandate. That 25-candidate frontier rejects the same q=1, A=20, M=80 point, and changing price or support cannot cure its fixed issued-principal-risk failure.</p>
+            <div class="financeability-fixed-terms" id="financeability-fixed-terms" hidden aria-label="Fixed tested terms"></div>
+            <dl id="financeability-risk-metrics"></dl>
+          </aside>
+
+          <div class="financeability-chart-shell" aria-describedby="financeability-boundary">
+            <div class="financeability-scale" id="financeability-scale" hidden></div>
+            <div class="financeability-cases" id="financeability-cases" aria-live="polite">
+              <div class="financeability-unavailable" role="status">
+                <span>Model unavailable</span>
+                <strong>Financeability-window output has not been published for this instrument.</strong>
+                <p>The page will show tested investor ceilings, issuer floors, reference price and support gaps only after a verified model result is supplied.</p>
+              </div>
+            </div>
+            <div class="financeability-legend" id="financeability-legend" hidden aria-label="Financeability chart legend">
+              <span><i class="legend-investor" aria-hidden="true"></i>Investor-acceptable price</span>
+              <span><i class="legend-issuer" aria-hidden="true"></i>Issuer-fundable price</span>
+              <span><i class="legend-window" aria-hidden="true"></i>Conditional overlap</span>
+              <span><i class="legend-gap" aria-hidden="true"></i>Funding gap</span>
+              <span><i class="legend-reference" aria-hidden="true"></i>Reference price</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section class="evidence-section" id="evidence" aria-labelledby="evidence-heading">
       <div class="cell-shell">
         <header class="investor-section-heading">
-          <div><p class="cell-kicker">07 / From model to investable asset</p><h2 id="evidence-heading">What must become real.</h2></div>
+          <div><p class="cell-kicker">08 / From model to investable asset</p><h2 id="evidence-heading">What must become real.</h2></div>
           <p>The model is valuable because it can refuse weak terms. A live instrument requires evidence strong enough to replace every invented economic input.</p>
         </header>
         <div class="evidence-grid">

@@ -102,7 +102,7 @@ void validate_optional(const std::optional<double>& value,
     return result;
 }
 
-[[nodiscard]] CapitalStackConfig make_two_claim_stack(
+[[nodiscard]] CapitalStackConfig make_legacy_two_claim_stack(
     const RobustCapitalMobilizationFrontierConfig& frontier,
     double participation_fraction, double first_loss_million,
     double commitment_million) {
@@ -130,6 +130,78 @@ void validate_optional(const std::optional<double>& value,
             frontier.market_annual_physical_hurdle_rate, false},
     };
     return stack;
+}
+
+[[nodiscard]] CapitalStackConfig make_v02_candidate_stack(
+    const CapitalStackConfig& base_stack_template,
+    double participation_fraction, double first_loss_million) {
+    CapitalStackConfig stack = base_stack_template;
+    stack.underlying_success_participation_fraction = participation_fraction;
+    stack.tranches[0].detachment_million = first_loss_million;
+    stack.tranches[1].attachment_million = first_loss_million;
+    return stack;
+}
+
+enum class PrincipalRiskMetricFamily {
+    LegacyLossLayeringV01,
+    IssuedPrincipalCashShortfallQV02,
+};
+
+[[nodiscard]] PrincipalRiskMetricFamily principal_risk_metric_family(
+    std::string_view capital_stack_model_version) {
+    if (capital_stack_model_version == kCapitalStackLegacyModelVersion) {
+        return PrincipalRiskMetricFamily::LegacyLossLayeringV01;
+    }
+    if (capital_stack_model_version == kCapitalStackModelVersion) {
+        return PrincipalRiskMetricFamily::IssuedPrincipalCashShortfallQV02;
+    }
+    throw std::invalid_argument(
+        "frontier does not support the capital-stack model version");
+}
+
+void require_principal_risk_metric_family(
+    const CapitalStackConfig& requested,
+    const CapitalStackProbabilityPolytopeSummary& evaluated) {
+    const PrincipalRiskMetricFamily family =
+        principal_risk_metric_family(requested.model_version);
+    const bool legacy_is_applicable =
+        family == PrincipalRiskMetricFamily::LegacyLossLayeringV01;
+    if (evaluated.model_version != requested.model_version ||
+        evaluated.legacy_v01_loss_layering_metrics_are_applicable !=
+            legacy_is_applicable) {
+        throw std::logic_error(
+            "frontier capital-stack principal-risk metric family is unavailable");
+    }
+    for (const CapitalStackProbabilityPolytopeTrancheSummary& tranche :
+         evaluated.tranches) {
+        if (tranche.legacy_v01_loss_layering_metrics_are_applicable !=
+            legacy_is_applicable) {
+            throw std::logic_error(
+                "frontier tranche principal-risk metric family is unavailable");
+        }
+    }
+    for (const CapitalStackScenarioResult& scenario : evaluated.scenarios) {
+        for (const CapitalStackTrancheScenarioResult& tranche :
+             scenario.tranches) {
+            if (tranche.legacy_v01_loss_layering_metrics_are_applicable !=
+                legacy_is_applicable) {
+                throw std::logic_error(
+                    "frontier scenario principal-risk metric family is unavailable");
+            }
+        }
+    }
+}
+
+[[nodiscard]] ProbabilityPolytopeMetricRange divide_metric_range(
+    ProbabilityPolytopeMetricRange value, double divisor) noexcept {
+    value.minimum.value /= divisor;
+    value.minimum.objective_reconciliation_error /= divisor;
+    value.minimum.optimality_residual /= divisor;
+    value.central /= divisor;
+    value.maximum.value /= divisor;
+    value.maximum.objective_reconciliation_error /= divisor;
+    value.maximum.optimality_residual /= divisor;
+    return value;
 }
 
 [[nodiscard]] double comparison_tolerance(
@@ -213,10 +285,15 @@ void validate_optional(const std::optional<double>& value,
         stack.maximum_reserve_shortfall_million,
         stack.maximum_subscription_reconciliation_error_million,
         stack.maximum_pool_cost_call_reconciliation_error_million,
+        stack.maximum_buyer_direct_cost_call_reconciliation_error_million,
         stack.maximum_principal_distribution_reconciliation_error_million,
+        stack.maximum_contractual_principal_surplus_reconciliation_error_million,
+        stack.maximum_unused_reserve_surplus_reconciliation_error_million,
         stack.maximum_nonprincipal_distribution_reconciliation_error_million,
         stack.maximum_priority_nonprincipal_cap_violation_million,
         stack.maximum_realized_loss_reconciliation_error_million,
+        stack.maximum_contractual_asset_loss_preservation_error_million,
+        stack.maximum_contractual_asset_outstanding_preservation_error_million,
         stack.maximum_unresolved_exposure_reconciliation_error_million,
         stack.maximum_nominal_net_cash_reconciliation_error_million,
         stack.maximum_stack_npv_reconciliation_error_million,
@@ -228,13 +305,13 @@ void validate_optional(const std::optional<double>& value,
     const ProbabilityPolytopeConfig& probability_polytope,
     const SuccessParticipationConfig& participation,
     const RobustCapitalMobilizationFrontierConfig& frontier,
+    const CapitalStackConfig& stack_terms,
     double participation_fraction, double first_loss_million,
     double commitment_million) {
-    const CapitalStackConfig stack_terms = make_two_claim_stack(frontier,
-        participation_fraction, first_loss_million, commitment_million);
     const CapitalStackProbabilityPolytopeSummary stack =
         evaluate_capital_stack_probability_polytope(
             portfolio, probability_polytope, participation, stack_terms);
+    require_principal_risk_metric_family(stack_terms, stack);
     if (stack.tranches.size() != 2U ||
         stack.tranches[0].tranche_id != frontier.catalytic_claim_id ||
         stack.tranches[1].tranche_id != frontier.market_claim_id) {
@@ -251,6 +328,11 @@ void validate_optional(const std::optional<double>& value,
     candidate.participation_fraction = participation_fraction;
     candidate.catalytic_first_loss_million = first_loss_million;
     candidate.market_notional_million = commitment_million - first_loss_million;
+    const PrincipalRiskMetricFamily risk_family =
+        principal_risk_metric_family(stack_terms.model_version);
+    candidate.principal_risk_uses_issued_principal_cash_shortfall_q =
+        risk_family ==
+        PrincipalRiskMetricFamily::IssuedPrincipalCashShortfallQV02;
     candidate.aggregate_fully_funded_npv_million =
         stack.expected_fully_funded_stack_npv_at_pool_hurdle_million;
     candidate.catalytic_npv_million =
@@ -261,16 +343,28 @@ void validate_optional(const std::optional<double>& value,
         market.expected_contributions_million;
     candidate.market_expected_total_distributions_million =
         market.expected_total_distributions_million;
-    candidate.market_expected_loss_fraction =
-        market.expected_realized_principal_loss_fraction;
     candidate.market_expected_principal_cash_distribution_million =
         market.expected_principal_cash_distribution_million;
-    candidate.market_principal_loss_es95_million =
-        market.principal_loss_expected_shortfall_95_million;
-    candidate.market_principal_loss_es99_million =
-        market.principal_loss_expected_shortfall_99_million;
-    candidate.market_principal_impairment_probability =
-        market.principal_impairment_probability;
+    if (risk_family == PrincipalRiskMetricFamily::LegacyLossLayeringV01) {
+        candidate.market_expected_loss_fraction =
+            market.expected_realized_principal_loss_fraction;
+        candidate.market_principal_loss_es95_million =
+            market.principal_loss_expected_shortfall_95_million;
+        candidate.market_principal_loss_es99_million =
+            market.principal_loss_expected_shortfall_99_million;
+        candidate.market_principal_impairment_probability =
+            market.principal_impairment_probability;
+    } else {
+        candidate.market_expected_loss_fraction = divide_metric_range(
+            market.expected_principal_cash_shortfall_million,
+            market.notional_million);
+        candidate.market_principal_loss_es95_million =
+            market.principal_cash_shortfall_expected_shortfall_95_million;
+        candidate.market_principal_loss_es99_million =
+            market.principal_cash_shortfall_expected_shortfall_99_million;
+        candidate.market_principal_impairment_probability =
+            market.principal_cash_shortfall_probability;
+    }
     candidate.market_negative_npv_probability =
         market.negative_npv_probability;
     candidate.market_npv_shortfall_es95_million =
@@ -372,8 +466,19 @@ void validate_optional(const std::optional<double>& value,
         stack.maximum_tail_mass_violation;
     candidate.audit.maximum_tail_objective_reconciliation_error =
         stack.maximum_tail_objective_reconciliation_error;
+    candidate.audit.maximum_tail_threshold_formula_reconciliation_error =
+        stack.maximum_tail_threshold_formula_reconciliation_error;
+    candidate.audit.maximum_tail_threshold_enumeration_optimality_residual =
+        stack.maximum_tail_threshold_enumeration_optimality_residual;
+    candidate.audit.maximum_wal_numerator_reconciliation_error_million_years =
+        stack.maximum_wal_numerator_reconciliation_error_million_years;
+    candidate.audit.maximum_wal_denominator_reconciliation_error_million =
+        stack.maximum_wal_denominator_reconciliation_error_million;
     candidate.audit.maximum_wal_ratio_reconciliation_error_years =
         stack.maximum_wal_ratio_reconciliation_error_years;
+    candidate.audit
+        .maximum_wal_root_objective_reconciliation_error_million_years =
+        stack.maximum_wal_root_objective_reconciliation_error_million_years;
     candidate.audit
         .maximum_wal_root_objective_absolute_residual_million_years =
         stack.maximum_wal_root_objective_absolute_residual_million_years;
@@ -453,23 +558,22 @@ void validate_optional(const std::optional<double>& value,
         first.worst_market_wal_years, second.worst_market_wal_years);
 }
 
-} // namespace
+struct ValidatedFrontierGrid {
+    std::vector<double> participation{};
+    std::vector<double> junior_layer_million{};
+};
 
-void validate_robust_capital_mobilization_frontier_config(
+[[nodiscard]] ValidatedFrontierGrid validate_common_frontier_inputs(
     const PortfolioConfig& portfolio,
     const ProbabilityPolytopeConfig& probability_polytope,
     const SuccessParticipationConfig& participation,
-    const RobustCapitalMobilizationFrontierConfig& frontier) {
-    if (frontier.model_version !=
-        kRobustCapitalMobilizationFrontierModelVersion) {
-        throw std::invalid_argument(
-            "unsupported robust capital-mobilization frontier model version");
-    }
+    const RobustCapitalMobilizationFrontierConfig& frontier,
+    double stack_detachment_million) {
     if (!frontier.synthetic_inputs || !portfolio.synthetic_inputs ||
         !probability_polytope.synthetic_inputs ||
         !participation.synthetic_inputs) {
         throw std::invalid_argument(
-            "robust capital-mobilization frontier v0.1 accepts synthetic inputs only");
+            "robust capital-mobilization frontier accepts synthetic inputs only");
     }
     if (frontier.participation_fraction_grid.empty() ||
         frontier.catalytic_first_loss_million_grid.empty()) {
@@ -490,29 +594,29 @@ void validate_robust_capital_mobilization_frontier_config(
     (void)checked_structural_work_units(portfolio, candidate_count,
         probability_polytope.scenario_probabilities.size(),
         probability_polytope.events.size(), portfolio.horizon_months);
-    const double commitment_million = aggregate_commitment(portfolio);
-    if (!(commitment_million > 0.0)) {
+    if (!(stack_detachment_million > 0.0) ||
+        !std::isfinite(stack_detachment_million)) {
         throw std::invalid_argument(
-            "frontier aggregate commitment must be positive");
+            "frontier funded reserve and stack detachment must be positive and finite");
     }
 
-    const std::vector<double> participation_grid = sorted_unique_grid(
+    ValidatedFrontierGrid result;
+    result.participation = sorted_unique_grid(
         frontier.participation_fraction_grid,
         "frontier participation grid");
-    for (const double fraction : participation_grid) {
-        require_unit_interval(fraction,
-            "frontier participation fraction");
+    for (const double fraction : result.participation) {
+        require_unit_interval(fraction, "frontier participation fraction");
     }
-    const std::vector<double> first_loss_grid = sorted_unique_grid(
+    result.junior_layer_million = sorted_unique_grid(
         frontier.catalytic_first_loss_million_grid,
         "frontier catalytic first-loss grid");
-    for (const double first_loss : first_loss_grid) {
-        require_finite(first_loss, "frontier catalytic first loss");
-        if (first_loss < kMinimumGeneratedClaimNotionalMillion ||
-            commitment_million - first_loss <
+    for (const double junior_layer : result.junior_layer_million) {
+        require_finite(junior_layer, "frontier catalytic first loss");
+        if (junior_layer < kMinimumGeneratedClaimNotionalMillion ||
+            stack_detachment_million - junior_layer <
                 kMinimumGeneratedClaimNotionalMillion) {
             throw std::invalid_argument(
-                "frontier catalytic and market claim notionals must each be at least one base currency unit");
+                "frontier junior and market claim notionals must each be at least one base currency unit");
         }
     }
 
@@ -536,14 +640,14 @@ void validate_robust_capital_mobilization_frontier_config(
     validate_optional(limits.minimum_market_robust_npv_margin_fraction,
         "minimum market robust NPV margin", require_finite);
     validate_optional(limits.maximum_market_expected_loss_fraction,
-        "maximum market expected-loss fraction", require_unit_interval);
-    validate_optional(limits.maximum_market_principal_loss_es95_fraction,
-        "maximum market principal-loss ES95 fraction", require_unit_interval);
-    validate_optional(limits.maximum_market_principal_loss_es99_fraction,
-        "maximum market principal-loss ES99 fraction", require_unit_interval);
-    validate_optional(limits.maximum_market_principal_impairment_probability,
-        "maximum market principal-impairment probability",
+        "maximum market principal-risk expectation fraction",
         require_unit_interval);
+    validate_optional(limits.maximum_market_principal_loss_es95_fraction,
+        "maximum market principal-risk ES95 fraction", require_unit_interval);
+    validate_optional(limits.maximum_market_principal_loss_es99_fraction,
+        "maximum market principal-risk ES99 fraction", require_unit_interval);
+    validate_optional(limits.maximum_market_principal_impairment_probability,
+        "maximum market principal-risk incidence", require_unit_interval);
     validate_optional(limits.maximum_market_negative_npv_probability,
         "maximum market negative-NPV probability", require_unit_interval);
     validate_optional(limits.maximum_market_npv_shortfall_es95_fraction,
@@ -556,28 +660,152 @@ void validate_robust_capital_mobilization_frontier_config(
         "maximum catalytic first loss", require_non_negative);
     validate_optional(limits.maximum_catalytic_npv_concession_million,
         "maximum catalytic NPV concession", require_non_negative);
+    return result;
+}
+
+void require_v02_base_stack_template(
+    const PortfolioConfig& portfolio,
+    const ProbabilityPolytopeConfig& probability_polytope,
+    const SuccessParticipationConfig& participation,
+    const CapitalStackConfig& base_stack,
+    const RobustCapitalMobilizationFrontierConfig& frontier,
+    const ValidatedFrontierGrid& grid) {
+    if (base_stack.model_version != kCapitalStackModelVersion) {
+        throw std::invalid_argument(
+            "frontier v0.2 base stack must use capital-stack model version 0.2.0");
+    }
+    validate_capital_stack_probability_polytope(
+        portfolio, probability_polytope, participation, base_stack);
+    if (base_stack.tranches.size() != 2U ||
+        !base_stack.tranches[0].is_first_loss_residual ||
+        base_stack.tranches[1].is_first_loss_residual) {
+        throw std::invalid_argument(
+            "frontier v0.2 base stack must contain exactly one junior residual and one market priority claim");
+    }
+    const CapitalStackTrancheConfig& junior = base_stack.tranches[0];
+    const CapitalStackTrancheConfig& market = base_stack.tranches[1];
+    if (junior.id != frontier.catalytic_claim_id ||
+        market.id != frontier.market_claim_id ||
+        junior.priority_nonprincipal_cap_million != 0.0 ||
+        market.priority_nonprincipal_cap_million !=
+            frontier.market_priority_nonprincipal_cap_million ||
+        junior.annual_physical_hurdle_rate !=
+            frontier.catalytic_annual_physical_hurdle_rate ||
+        market.annual_physical_hurdle_rate !=
+            frontier.market_annual_physical_hurdle_rate) {
+        throw std::invalid_argument(
+            "frontier v0.2 base stack claim ids, priority cap, and hurdle terms must match the frontier term record");
+    }
+    if (std::find(grid.participation.begin(), grid.participation.end(),
+            base_stack.underlying_success_participation_fraction) ==
+            grid.participation.end() ||
+        std::find(grid.junior_layer_million.begin(),
+            grid.junior_layer_million.end(), junior.detachment_million) ==
+            grid.junior_layer_million.end()) {
+        throw std::invalid_argument(
+            "frontier v0.2 tested grids must contain the base stack q and junior boundary A");
+    }
+}
+
+} // namespace
+
+void validate_robust_capital_mobilization_frontier_config(
+    const PortfolioConfig& portfolio,
+    const ProbabilityPolytopeConfig& probability_polytope,
+    const SuccessParticipationConfig& participation,
+    const RobustCapitalMobilizationFrontierConfig& frontier) {
+    if (frontier.model_version !=
+        kRobustCapitalMobilizationFrontierModelVersion) {
+        throw std::invalid_argument(
+            "four-input robust capital-mobilization frontier requires model version 0.1.0");
+    }
+    const double commitment_million = aggregate_commitment(portfolio);
+    const ValidatedFrontierGrid grid = validate_common_frontier_inputs(
+        portfolio, probability_polytope, participation, frontier,
+        commitment_million);
 
     // This representative generated stack makes the fixed claim terms and
     // all structural assertions pass through the existing stack validator.
     // Every other pair changes only q and the already range-checked boundary A.
     validate_capital_stack_probability_polytope(portfolio,
         probability_polytope, participation,
-        make_two_claim_stack(frontier, participation_grid.front(),
-            first_loss_grid.front(), commitment_million));
+        make_legacy_two_claim_stack(frontier, grid.participation.front(),
+            grid.junior_layer_million.front(), commitment_million));
 }
 
-RobustCapitalMobilizationFrontierSummary
-evaluate_robust_capital_mobilization_frontier(
+void validate_robust_capital_mobilization_frontier_config(
     const PortfolioConfig& portfolio,
     const ProbabilityPolytopeConfig& probability_polytope,
     const SuccessParticipationConfig& participation,
+    const CapitalStackConfig& base_stack_template,
     const RobustCapitalMobilizationFrontierConfig& frontier) {
-    validate_robust_capital_mobilization_frontier_config(
-        portfolio, probability_polytope, participation, frontier);
+    if (frontier.model_version !=
+        kRobustCapitalMobilizationFrontierV02ModelVersion) {
+        throw std::invalid_argument(
+            "five-input robust capital-mobilization frontier requires model version 0.2.0");
+    }
+    if (base_stack_template.model_version != kCapitalStackModelVersion ||
+        base_stack_template.tranches.size() != 2U) {
+        throw std::invalid_argument(
+            "frontier v0.2 requires a two-claim capital-stack v0.2 base template");
+    }
+    const double stack_detachment_million =
+        base_stack_template.tranches.back().detachment_million;
+    const ValidatedFrontierGrid grid = validate_common_frontier_inputs(
+        portfolio, probability_polytope, participation, frontier,
+        stack_detachment_million);
+    require_v02_base_stack_template(portfolio, probability_polytope,
+        participation, base_stack_template, frontier, grid);
+
+    const CapitalStackConfig representative = make_v02_candidate_stack(
+        base_stack_template, grid.participation.front(),
+        grid.junior_layer_million.front());
+    validate_capital_stack_probability_polytope(portfolio,
+        probability_polytope, participation, representative);
+}
+
+namespace {
+
+[[nodiscard]] RobustCapitalMobilizationFrontierSummary
+evaluate_frontier_impl(
+    const PortfolioConfig& portfolio,
+    const ProbabilityPolytopeConfig& probability_polytope,
+    const SuccessParticipationConfig& participation,
+    const CapitalStackConfig* base_stack_template,
+    const RobustCapitalMobilizationFrontierConfig& frontier) {
+    if (base_stack_template == nullptr) {
+        validate_robust_capital_mobilization_frontier_config(
+            portfolio, probability_polytope, participation, frontier);
+    } else {
+        validate_robust_capital_mobilization_frontier_config(portfolio,
+            probability_polytope, participation, *base_stack_template,
+            frontier);
+    }
 
     RobustCapitalMobilizationFrontierSummary summary;
-    summary.aggregate_commitment_and_stack_detachment_million =
+    summary.model_version = frontier.model_version;
+    summary.capital_stack_model_version = base_stack_template == nullptr
+        ? std::string(kCapitalStackLegacyModelVersion)
+        : base_stack_template->model_version;
+    summary.principal_risk_uses_issued_principal_cash_shortfall_q =
+        base_stack_template != nullptr;
+    summary.uses_explicit_asset_liability_accounting =
+        base_stack_template != nullptr &&
+        std::any_of(portfolio.projects.begin(), portfolio.projects.end(),
+            [](const PortfolioProject& project) {
+                return project.principal_accounting_mode ==
+                    PrincipalAccountingMode::ExplicitContractualLedger;
+            });
+    summary.aggregate_project_outlay_limit_million =
         aggregate_commitment(portfolio);
+    summary.aggregate_contractual_asset_principal_limit_million =
+        portfolio_aggregate_reference_principal(portfolio);
+    summary.aggregate_commitment_and_stack_detachment_million =
+        base_stack_template == nullptr
+        ? aggregate_commitment(portfolio)
+        : base_stack_template->tranches.back().detachment_million;
+    summary.funded_reserve_and_stack_detachment_million =
+        summary.aggregate_commitment_and_stack_detachment_million;
     summary.evaluated_participation_fraction_grid = sorted_unique_grid(
         frontier.participation_fraction_grid,
         "frontier participation grid");
@@ -600,14 +828,23 @@ evaluate_robust_capital_mobilization_frontier(
     summary.structural_work_units = work.total;
     summary.declared_constraint_count =
         declared_constraint_count(frontier.constraints);
-    summary.model_limitation =
-        "Finite synthetic physical-measure grid only. It estimates no fair "
-        "value, market spread, rating, legal enforceability, reserve custody "
-        "risk, tax, regulatory capital, empirical calibration, or continuous "
-        "optimum. Different risk endpoints may have different adverse "
-        "probability witnesses and must not be combined as one scenario. "
-        "Modeled feasibility does not establish capital mobilization or any "
-        "actual third-party commitment.";
+    summary.model_limitation = base_stack_template == nullptr
+        ? "Finite synthetic physical-measure grid only. It estimates no fair "
+          "value, market spread, rating, legal enforceability, reserve custody "
+          "risk, tax, regulatory capital, empirical calibration, or continuous "
+          "optimum. Different risk endpoints may have different adverse "
+          "probability witnesses and must not be combined as one scenario. "
+          "Modeled feasibility does not establish capital mobilization or any "
+          "actual third-party commitment."
+        : "Finite synthetic physical-measure v0.2 grid only. A is a junior "
+          "issued-principal cash-shortfall layer, not causal attribution of "
+          "asset loss. Market principal risk is Q, Q ES95/99, and Pr[Q>0]. "
+          "The analysis estimates no fair value, market spread, rating, legal "
+          "enforceability, reserve custody risk, tax, regulatory capital, "
+          "empirical calibration, or continuous optimum. Different endpoints "
+          "can have different probability witnesses and cannot be assembled "
+          "as one scenario. Modeled feasibility establishes no placement, "
+          "demand, or third-party commitment.";
 
     const std::size_t first_loss_count =
         summary.evaluated_catalytic_first_loss_million_grid.size();
@@ -618,8 +855,15 @@ evaluate_robust_capital_mobilization_frontier(
          summary.evaluated_participation_fraction_grid) {
         for (const double first_loss_million :
              summary.evaluated_catalytic_first_loss_million_grid) {
+            const CapitalStackConfig stack_terms = base_stack_template == nullptr
+                ? make_legacy_two_claim_stack(frontier,
+                      participation_fraction, first_loss_million,
+                      summary
+                          .aggregate_commitment_and_stack_detachment_million)
+                : make_v02_candidate_stack(*base_stack_template,
+                      participation_fraction, first_loss_million);
             summary.candidates.push_back(evaluate_candidate(portfolio,
-                probability_polytope, participation, frontier,
+                probability_polytope, participation, frontier, stack_terms,
                 participation_fraction, first_loss_million,
                 summary.aggregate_commitment_and_stack_detachment_million));
             if (summary.candidates.back().all_declared_constraints_pass) {
@@ -675,6 +919,29 @@ evaluate_robust_capital_mobilization_frontier(
         }
     }
     return summary;
+}
+
+} // namespace
+
+RobustCapitalMobilizationFrontierSummary
+evaluate_robust_capital_mobilization_frontier(
+    const PortfolioConfig& portfolio,
+    const ProbabilityPolytopeConfig& probability_polytope,
+    const SuccessParticipationConfig& participation,
+    const RobustCapitalMobilizationFrontierConfig& frontier) {
+    return evaluate_frontier_impl(portfolio, probability_polytope,
+        participation, nullptr, frontier);
+}
+
+RobustCapitalMobilizationFrontierSummary
+evaluate_robust_capital_mobilization_frontier(
+    const PortfolioConfig& portfolio,
+    const ProbabilityPolytopeConfig& probability_polytope,
+    const SuccessParticipationConfig& participation,
+    const CapitalStackConfig& base_stack_template,
+    const RobustCapitalMobilizationFrontierConfig& frontier) {
+    return evaluate_frontier_impl(portfolio, probability_polytope,
+        participation, &base_stack_template, frontier);
 }
 
 } // namespace naturalehia::cellular_finance

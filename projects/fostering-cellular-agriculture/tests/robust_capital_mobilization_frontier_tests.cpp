@@ -236,8 +236,116 @@ struct RepeatedStateFixture {
     return terms;
 }
 
+[[nodiscard]] cf::PortfolioConfig explicit_claim_portfolio(
+    std::string scenario_id, double purchase_price, double principal_limit,
+    double principal_receipt, double writeoff) {
+    cf::PortfolioConfig portfolio;
+    portfolio.model_version = std::string(cf::kPortfolioModelVersion);
+    portfolio.scenario_label = "explicit frontier L O Q hand fixture";
+    portfolio.source_note =
+        "synthetic non-par asset and issued-liability ledger for unit tests";
+    portfolio.currency_label = "TEST";
+    portfolio.monetary_basis = "constant test units at acquisition";
+    portfolio.horizon_months = 1U;
+
+    cf::PortfolioProject project;
+    project.id = "cellular-agriculture-claim";
+    project.stage = cf::ProjectStage::FirstIndustrial;
+    project.commitment_million = purchase_price;
+    project.principal_accounting_mode =
+        cf::PrincipalAccountingMode::ExplicitContractualLedger;
+    project.principal_limit_million = principal_limit;
+    portfolio.projects = {project};
+
+    cf::ProjectJointPath path;
+    path.project_id = project.id;
+    path.resolution = cf::ProjectPathResolution::Resolved;
+    path.investor_outlays = {{0U,
+        cf::InvestorOutlayPurpose::ClaimPurchasePrice, purchase_price}};
+    path.principal_movements = {{0U,
+        cf::PrincipalMovementKind::FundedPrincipalAddition,
+        principal_limit}};
+    if (principal_receipt > 0.0) {
+        path.investor_receipts = {{1U, "contractual-principal-cash",
+            principal_receipt, principal_receipt}};
+    }
+    if (writeoff > 0.0) {
+        path.principal_movements.push_back({1U,
+            cf::PrincipalMovementKind::Writeoff, writeoff});
+    }
+
+    cf::JointScenario scenario;
+    scenario.id = std::move(scenario_id);
+    scenario.weight = 1.0;
+    if (principal_receipt > 0.0) {
+        scenario.cash_sources = {make_source("contractual-principal-cash",
+            cf::PortfolioCashSource::Commercial, 1U,
+            principal_receipt)};
+    }
+    scenario.project_paths = {std::move(path)};
+    portfolio.joint_scenarios = {std::move(scenario)};
+    return portfolio;
+}
+
+[[nodiscard]] cf::ProbabilityPolytopeConfig point_polytope(
+    std::string scenario_id) {
+    cf::ProbabilityPolytopeConfig polytope;
+    polytope.scenario_label = "point probability v0.2 frontier fixture";
+    polytope.source_note = "synthetic one-state Q selector test";
+    polytope.scenario_probabilities = {
+        {std::move(scenario_id), 1.0, 1.0, 1.0}};
+    return polytope;
+}
+
+[[nodiscard]] cf::CapitalStackConfig v02_base_stack(
+    double reserve_million, double junior_million = 1.0) {
+    cf::CapitalStackConfig stack;
+    stack.model_version = std::string(cf::kCapitalStackModelVersion);
+    stack.scenario_label = "v0.2 frontier base stack template";
+    stack.source_note = "synthetic fixed terms for Q frontier testing";
+    stack.asset_acquisition_and_primary_funding_limit_is_fully_funded_at_par_at_month_zero =
+        true;
+    stack.subscription_reserve_is_zero_yield_and_lossless = true;
+    stack.undrawn_commitment_cancels_and_returns_only_at_horizon = true;
+    stack.pool_costs_are_additional_pro_rata_calls = true;
+    stack.buyer_direct_costs_are_additional_pro_rata_calls = true;
+    stack.principal_cash_is_paid_most_senior_first = true;
+    stack.nonprincipal_cash_is_paid_to_caps_then_residual = true;
+    stack.principal_base_cash_above_issued_principal_is_nonprincipal = true;
+    stack.principal_limit_capacity_difference_is_reported_without_valuation_claim =
+        true;
+    stack.tranching_does_not_change_project_cash_or_gross_loss = true;
+    stack.premium_discount_or_fair_value_is_claimed = false;
+    stack.underlying_success_participation_fraction = 1.0;
+    stack.tranches = {
+        {"junior", 0.0, junior_million, 0.0, 0.0, true},
+        {"market", junior_million, reserve_million, 0.0, 0.0, false},
+    };
+    return stack;
+}
+
+[[nodiscard]] cf::RobustCapitalMobilizationFrontierConfig
+v02_frontier_terms() {
+    cf::RobustCapitalMobilizationFrontierConfig terms;
+    terms.model_version =
+        std::string(cf::kRobustCapitalMobilizationFrontierV02ModelVersion);
+    terms.scenario_label = "finite v0.2 q and junior-principal frontier";
+    terms.source_note = "synthetic L O Q selector regression terms";
+    terms.participation_fraction_grid = {1.0};
+    terms.catalytic_first_loss_million_grid = {1.0};
+    terms.catalytic_claim_id = "junior";
+    terms.market_claim_id = "market";
+    terms.market_priority_nonprincipal_cap_million = 0.0;
+    terms.catalytic_annual_physical_hurdle_rate = 0.0;
+    terms.market_annual_physical_hurdle_rate = 0.0;
+    terms.catalytic_target_npv_million = 0.0;
+    return terms;
+}
+
 [[nodiscard]] cf::RobustCapitalMobilizationFrontierConfig frontier_terms() {
     cf::RobustCapitalMobilizationFrontierConfig terms;
+    terms.model_version =
+        std::string(cf::kRobustCapitalMobilizationFrontierModelVersion);
     terms.scenario_label = "finite two-claim synthetic hand frontier";
     terms.source_note = "invented mandate and fixed claim terms";
     terms.participation_fraction_grid = {271.0 / 280.0, 25.0 / 28.0};
@@ -280,12 +388,21 @@ find_candidate(const cf::RobustCapitalMobilizationFrontierSummary& summary,
 }
 
 void test_hand_frontier_and_constraints() {
+    const cf::RobustCapitalMobilizationFrontierConfig legacy_terms =
+        frontier_terms();
     const cf::RobustCapitalMobilizationFrontierSummary summary =
         cf::evaluate_robust_capital_mobilization_frontier(
             four_state_portfolio(), event_polytope(), participation_terms(),
-            frontier_terms());
+            legacy_terms);
 
-    check(near(summary.aggregate_commitment_and_stack_detachment_million,
+    check(cf::kRobustCapitalMobilizationFrontierModelVersion == "0.1.0" &&
+            cf::kRobustCapitalMobilizationFrontierLegacyModelVersion ==
+                cf::kRobustCapitalMobilizationFrontierModelVersion &&
+            legacy_terms.model_version ==
+                cf::kRobustCapitalMobilizationFrontierModelVersion &&
+            summary.model_version ==
+                cf::kRobustCapitalMobilizationFrontierModelVersion &&
+            near(summary.aggregate_commitment_and_stack_detachment_million,
               20.0) &&
             summary.portfolio_cash_record_count == 28U &&
             summary.portfolio_auxiliary_record_count == 8U &&
@@ -300,7 +417,7 @@ void test_hand_frontier_and_constraints() {
                 25.0 / 28.0 &&
             summary.evaluated_catalytic_first_loss_million_grid.front() ==
                 90.0 / 11.0,
-        "frontier canonicalizes the complete declared finite grid");
+        "the original public model-version constant remains an accepted v0.1 four-input contract and the frontier canonicalizes its grid");
 
     const auto& boundary = find_candidate(summary, 25.0 / 28.0, 12.0);
     check(near(boundary.robust_aggregate_npv_million, 0.0) &&
@@ -480,6 +597,122 @@ void test_undeclared_constraints_do_not_silently_bind() {
         "absent mandates remain visibly absent and do not create defaults");
 }
 
+void test_v02_frontier_uses_issued_principal_cash_shortfall_q() {
+    const cf::SuccessParticipationConfig participation = participation_terms();
+    check(cf::kRobustCapitalMobilizationFrontierV02ModelVersion == "0.2.0" &&
+            v02_frontier_terms().model_version ==
+                cf::kRobustCapitalMobilizationFrontierV02ModelVersion,
+        "the five-input v0.2 fixture uses its explicit additive model-version constant");
+
+    // A resolved asset bought for 8 with contractual principal 10 returns 8.
+    // Asset loss L is 2, but the issued eight-unit liability has Q=0.
+    const cf::PortfolioConfig asset_loss = explicit_claim_portfolio(
+        "asset-loss-without-liability-shortfall", 8.0, 10.0, 8.0, 2.0);
+    const cf::ProbabilityPolytopeConfig asset_loss_polytope =
+        point_polytope("asset-loss-without-liability-shortfall");
+    const cf::CapitalStackConfig asset_loss_stack = v02_base_stack(8.0);
+    cf::RobustCapitalMobilizationFrontierConfig terms =
+        v02_frontier_terms();
+    terms.constraints.maximum_market_expected_loss_fraction = 0.0;
+    terms.constraints.maximum_market_principal_loss_es95_fraction = 0.0;
+    terms.constraints.maximum_market_principal_loss_es99_fraction = 0.0;
+    terms.constraints.maximum_market_principal_impairment_probability = 0.0;
+
+    const cf::RobustCapitalMobilizationFrontierSummary no_q =
+        cf::evaluate_robust_capital_mobilization_frontier(asset_loss,
+            asset_loss_polytope, participation, asset_loss_stack, terms);
+    const auto& no_q_candidate = no_q.candidates.front();
+    check(no_q.model_version == "0.2.0" &&
+            no_q.capital_stack_model_version == "0.2.0" &&
+            no_q.principal_risk_uses_issued_principal_cash_shortfall_q &&
+            no_q.uses_explicit_asset_liability_accounting &&
+            near(no_q.aggregate_project_outlay_limit_million, 8.0) &&
+            near(no_q.aggregate_contractual_asset_principal_limit_million,
+                10.0) &&
+            near(no_q.funded_reserve_and_stack_detachment_million, 8.0) &&
+            near(no_q_candidate.market_notional_million, 7.0) &&
+            no_q_candidate
+                .principal_risk_uses_issued_principal_cash_shortfall_q &&
+            near(no_q_candidate.worst_market_expected_loss_fraction, 0.0) &&
+            near(no_q_candidate.worst_market_principal_loss_es95_fraction,
+                0.0) &&
+            near(no_q_candidate
+                    .worst_market_principal_impairment_probability,
+                0.0) &&
+            no_q_candidate.all_declared_constraints_pass,
+        "v0.2 frontier keeps contractual asset loss L separate from zero market issued-principal shortfall Q");
+
+    // A fully performing ten-unit asset bought with twelve units has L=0 but
+    // total issued-liability Q=2. With A=1, the market claim bears Q=1.
+    const cf::PortfolioConfig liability_shortfall = explicit_claim_portfolio(
+        "liability-shortfall-without-asset-loss", 12.0, 10.0, 10.0, 0.0);
+    const cf::ProbabilityPolytopeConfig liability_shortfall_polytope =
+        point_polytope("liability-shortfall-without-asset-loss");
+    const cf::CapitalStackConfig liability_shortfall_stack =
+        v02_base_stack(12.0);
+    terms = v02_frontier_terms();
+    terms.constraints.maximum_market_expected_loss_fraction = 0.05;
+
+    const cf::RobustCapitalMobilizationFrontierSummary with_q =
+        cf::evaluate_robust_capital_mobilization_frontier(
+            liability_shortfall, liability_shortfall_polytope,
+            participation, liability_shortfall_stack, terms);
+    const auto& q_candidate = with_q.candidates.front();
+    const cf::CapitalStackProbabilityPolytopeSummary direct =
+        cf::evaluate_capital_stack_probability_polytope(liability_shortfall,
+            liability_shortfall_polytope, participation,
+            liability_shortfall_stack);
+    const auto& direct_market = direct.tranches[1];
+    check(near(with_q.aggregate_project_outlay_limit_million, 12.0) &&
+            near(with_q.aggregate_contractual_asset_principal_limit_million,
+                10.0) &&
+            near(with_q.funded_reserve_and_stack_detachment_million, 12.0) &&
+            near(q_candidate.market_notional_million, 11.0) &&
+            near(direct_market.expected_principal_cash_shortfall_million
+                    .maximum.value,
+                1.0) &&
+            near(direct_market.expected_realized_principal_loss_fraction
+                    .maximum.value,
+                0.0) &&
+            near(q_candidate.worst_market_expected_loss_fraction,
+                1.0 / 11.0) &&
+            near(q_candidate.worst_market_principal_loss_es95_fraction,
+                1.0 / 11.0) &&
+            near(q_candidate.worst_market_principal_loss_es99_fraction,
+                1.0 / 11.0) &&
+            near(q_candidate.worst_market_principal_impairment_probability,
+                1.0) &&
+            !q_candidate.constraint_passes.market_expected_loss_fraction
+                 .value_or(true) &&
+            !q_candidate.all_declared_constraints_pass &&
+            with_q.feasible_candidate_indices.empty(),
+        "v0.2 frontier binds the market Q family even when every legacy loss-layering placeholder is zero");
+
+    check_invalid(
+        [&] {
+            (void)cf::evaluate_robust_capital_mobilization_frontier(
+                asset_loss, asset_loss_polytope, participation, terms);
+        },
+        "v0.2 frontier cannot enter the legacy four-input evaluator");
+    cf::RobustCapitalMobilizationFrontierConfig legacy = frontier_terms();
+    check_invalid(
+        [&] {
+            (void)cf::evaluate_robust_capital_mobilization_frontier(
+                asset_loss, asset_loss_polytope, participation,
+                asset_loss_stack, legacy);
+        },
+        "v0.1 frontier cannot enter the v0.2 five-input evaluator");
+    cf::CapitalStackConfig mismatched = asset_loss_stack;
+    mismatched.tranches[1].priority_nonprincipal_cap_million = 0.5;
+    check_invalid(
+        [&] {
+            (void)cf::evaluate_robust_capital_mobilization_frontier(
+                asset_loss, asset_loss_polytope, participation, mismatched,
+                v02_frontier_terms());
+        },
+        "v0.2 frontier rejects a base stack whose fixed cap differs from the term record");
+}
+
 void test_invalid_frontier_inputs() {
     const cf::PortfolioConfig portfolio = four_state_portfolio();
     const cf::ProbabilityPolytopeConfig polytope = event_polytope();
@@ -615,6 +848,7 @@ void test_invalid_frontier_inputs() {
 int main() {
     test_hand_frontier_and_constraints();
     test_undeclared_constraints_do_not_silently_bind();
+    test_v02_frontier_uses_issued_principal_cash_shortfall_q();
     test_invalid_frontier_inputs();
 
     if (failures != 0) {
