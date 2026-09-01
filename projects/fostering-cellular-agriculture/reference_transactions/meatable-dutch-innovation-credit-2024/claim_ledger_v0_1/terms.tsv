@@ -1,0 +1,30 @@
+term_id	value_status	value	input_status	known_at_period	source_record_id	note
+public_announcement_date	known	2024-09-24	observed	UNKNOWN	MEATABLE-CLM-2024-09-24	Publication date only; decision execution funding settlement and price-observation dates are UNKNOWN
+reported_award_amount_million	known	7.6	observed	UNKNOWN	MEATABLE-CLM-2024-09-24	Issuer-reported award amount; not contractual face advanced principal buyer price borrower proceeds or cash received
+reported_programme_name	known	RVO Innovation Credit	observed	UNKNOWN	MEATABLE-CLM-2024-09-24	Programme label only; individualized decision and legal claim are absent
+reported_use_of_proceeds	known	improve productivity and reduce costs before commercialization	observed	UNKNOWN	MEATABLE-CLM-2024-09-24	No approved project plan milestone schedule budget or draw-to-expenditure ledger
+post_award_corporate_outcome_announcement_date	known	2025-12-19	observed	UNKNOWN	ANIC-RNS-2025-12-19-MEATABLE	RNS publication date only; not the resolution date or legal dissolution completion date
+post_award_corporate_outcome_state	known	resolution to dissolve and orderly statutory wind-down announced	observed	UNKNOWN	ANIC-RNS-2025-12-19-MEATABLE	Known post-award corporate backtest; it does not establish any RVO default acceleration remission or recovery
+post_award_operating_activity_state	known	termination of operating activities announced	observed	UNKNOWN	ANIC-RNS-2025-12-19-MEATABLE	Announcement does not provide a separate cessation effective date or a liquidation completion record
+post_award_agronomics_invested_million_gbp	known	7.9	observed	UNKNOWN	ANIC-RNS-2025-12-19-MEATABLE	Separate Agronomics equity investment context; not RVO principal price proceeds or recovery
+post_award_agronomics_written_off_carrying_value_million_gbp	known	11.9	observed	UNKNOWN	ANIC-RNS-2025-12-19-MEATABLE	Separate equity accounting outcome; must not proxy the value or loss severity of the RVO claim
+generic_2024_opening_start_date	known	2024-01-01	observed	UNKNOWN	NL-SC-2023-35780	Programme-level opening date; not Meatable's application decision or funding date
+generic_2024_opening_end_date_inclusive	known	2024-12-01	observed	UNKNOWN	NL-SC-2023-35780	Programme-level closing date; not Meatable's decision execution or settlement date
+generic_2024_base_rate_fraction_per_year	known	0.03	observed	UNKNOWN	NL-SC-2023-35780	Programme-level policy rate; not an individualized accrual or market hurdle
+generic_2024_technical_fixed_premium_fraction	known	0.15	observed	UNKNOWN	NL-SC-2023-35780	Meatable's formal project classification and incorporated premium are UNKNOWN
+generic_2024_clinical_fixed_premium_fraction	known	0.25	observed	UNKNOWN	NL-SC-2023-35780	No inference that this clinical premium applies to Meatable
+generic_project_and_milestone_control	known	standard July 2024 obligations described	observed	UNKNOWN	RVO-IK-COND-2024-07	Template-level mechanic only; no Meatable plan report milestone consent breach or advance is observed
+generic_repayment_framework	known	credit plus accrued interest and fixed premium referenced	observed	UNKNOWN	RVO-IK-COND-2024-07	No individualized balance accrual schedule maturity payment or remission outcome
+generic_pledge_framework	known	first-ranking project-asset and derived-IP pledge template	observed	UNKNOWN	RVO-IK-COND-2024-07	Blank template is not an executed pledge collateral list perfection priority valuation or recovery record
+generic_advance_control	known	next-period advance after report approval and possible pause for major changes described	observed	UNKNOWN	RVO-IK-AFTER-2026-01-05	Current generic guidance only; no Meatable advance pause restart report or milestone state is observed
+generic_remission_discretion	known	request possible and RVO may grant temporary or definitive partial relief depending on circumstances	observed	UNKNOWN	RVO-IK-AFTER-2026-01-05	Current generic guidance only; remission is not automatic and no Meatable request decision amount or cash outcome is observed
+exact_recipient_legal_entity	unknown	UNKNOWN	unknown	UNKNOWN	NO_PUBLIC_SOURCE	Meatable brand does not establish exact recipient obligor pledgor or surety
+individualized_award_decision	unknown	UNKNOWN	unknown	UNKNOWN	NO_PUBLIC_SOURCE	No decision annex project plan budget or incorporated conditions
+project_classification	unknown	UNKNOWN	unknown	UNKNOWN	NO_PUBLIC_SOURCE	Cannot assign technical or clinical generic premium to the claim
+advance_and_settlement_ledger	unknown	UNKNOWN	unknown	UNKNOWN	NO_PUBLIC_SOURCE	No claim-level cash funding event can be formed
+interest_and_premium_mechanics	unknown	UNKNOWN	unknown	UNKNOWN	NO_PUBLIC_SOURCE	No advance dates accrual basis day count due dates or realized cash
+principal_repayment_mechanics	unknown	UNKNOWN	unknown	UNKNOWN	NO_PUBLIC_SOURCE	No individualized repayment schedule prepayment default or maturity cash
+executed_security_and_priority	unknown	UNKNOWN	unknown	UNKNOWN	NO_PUBLIC_SOURCE	No executed pledge asset schedule perfection other liens surety or intercreditor terms
+remission_application_decision_outcome	unknown	UNKNOWN	unknown	UNKNOWN	NO_PUBLIC_SOURCE	Do not translate project failure into automatic forgiveness provider cash or recovery
+legal_dissolution_completion_date	unknown	UNKNOWN	unknown	UNKNOWN	NO_PUBLIC_SOURCE	RNS 2963M announces the resolution and intended wind-down but no separate legal completion date
+rvo_claim_outcome_after_corporate_resolution	unknown	UNKNOWN	unknown	UNKNOWN	NO_PUBLIC_SOURCE	No default acceleration balance proof of claim remission security release enforcement distribution recovery or settlement record

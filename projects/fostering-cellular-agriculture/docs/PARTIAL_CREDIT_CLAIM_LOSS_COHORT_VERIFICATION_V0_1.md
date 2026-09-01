@@ -2,16 +2,21 @@
 
 ## Status and boundary
 
-This record documents local software verification performed on 30 August 2026.
-It covers the implemented in-memory mechanical-evaluation kernel, its synthetic
-Claim Ledger fixtures, arithmetic reconstruction, fail-closed controls, and
-integration with the repository suite.
+This record documents the original local software verification performed on
+30 August 2026 and the five-file-loader increment verified on 1 September
+2026. It covers the in-memory mechanical-evaluation kernel, synthetic Claim
+Ledger fixtures, the closed five-file package parser, exact-byte hash binding,
+Evidence Gate population-frame binding, fail-closed controls, and CMake
+integration.
 
 It does **not** verify a controlled population register, real observed losses,
 term comparability, source truth, census completeness, an empirical frequency,
 a probability, correlation, calibration, price, rating, expected return, or
-financeability. The five-file cohort loader, controlled-register hash, Evidence
-Gate binding, and empirical admission policy are not implemented. The
+financeability. The five-file cohort loader, its four declared file hashes, and
+the compiled `FIN-CLAIM-POPULATION-FRAME` Evidence Gate binding are now
+implemented. No controlled real register was supplied, and no positive
+classification, method-validity, term-comparability, exclusion-timing, or
+empirical realized-cash admission profile is implemented. The
 authoritative selected-path evidence-provenance seam is implemented: resolved
 rows are reloaded in one immutable Claim Ledger package operation that preserves
 selected latest entry scope/status/source/date, requested cash-path status,
@@ -20,7 +25,7 @@ complete-resolved path and records that the provenance was verified during
 evaluation. It still leaves empirical, Portfolio, and calibrated-execution
 authority false.
 
-## Tested environment and result
+## Tested environments and results
 
 | Item | Tested value |
 |---|---|
@@ -32,7 +37,8 @@ authority false.
 | Diagnostics | `/W4 /WX /permissive-` |
 | Configurations | Debug and Release |
 
-The complete repository suite was compiled and run under both configurations:
+The original complete repository suite was compiled and run under both native
+configurations before the loader increment:
 
 ```text
 cmake --build build/dev --config Debug --parallel
@@ -55,8 +61,25 @@ Release: 4/4 passed; 9.82 seconds total
          Evidence Gate 3.94 s; population CLI 0.20 s
 ```
 
-GCC, Clang, sanitizers, remote CI, and cross-platform deterministic replay were
-not run in this local record. No cross-toolchain claim is made.
+The integrated loader increment was compiled with warnings as errors under the
+pinned Emscripten 6.0.5 Release toolchain and executed with Node 22.16.0 and
+raw host filesystem access. The complete strict WebAssembly suite result was:
+
+```text
+Result: 73/73 tests passed (91.57 seconds).
+
+Focused within that run:
+cellular_finance_partial_credit_claim_loss_cohort_tests          passed 4.38 s
+cellular_finance_partial_credit_claim_loss_cohort_config_tests   passed 0.38 s
+```
+
+The new loader executable contains 22 explicit checks: four positive
+structural, sealed-provenance, and unsealed-input checks; four top-level
+bound-file drift rejections; and fourteen parser, path, nested-hash, method,
+citation, population-gate, and retained-evidence adversaries.
+The complete suite also retained the browser published-WASM byte-parity check.
+Sanitizers, remote CI, and cross-toolchain deterministic replay were not run.
+No empirical or cross-toolchain equivalence claim is made.
 
 ## Hand reconstruction of the five-member frame
 
@@ -164,22 +187,41 @@ The focused result also confirms sorted observation output, propagation of
 synthetic/package blockers, and distinct known-positive versus
 possible-positive unpaid-claim counts.
 
+The added loader regression separately verifies:
+
+- caller-constructed packages cannot assert positive loader provenance, while
+  evaluation of a copied sealed package reloads the canonical binder instead
+  of trusting subsequently mutated public observations or configuration;
+- exact SHA-256 drift rejection for `observations.tsv`, `methods.cfg`,
+  `dossier.cfg`, and `evidence_manifest.tsv`;
+- exact manifest-hash admission and post-load drift rejection for every named
+  retained evidence copy, including a non-supporting `partial` / `question-only`
+  record as well as records used to satisfy the population-frame conjunction;
+- duplicate, unknown, missing, and non-LF `cohort.cfg` input rejection;
+- the exact 18-column observation header and closed disposition vocabulary;
+- confined nested `claim.cfg` paths and the row-declared Claim Ledger root hash;
+- fail-closed unsupported compiled method IDs and evidence/requirement citation
+  mismatches; and
+- a positive two-source population-frame conjunction plus a missing-independent-
+  review case that remains structurally inspectable but is not a valid candidate.
+
 ## Residual implementation boundary and next evidence step
 
-The current API accepts a caller-constructed in-memory frame. It does not parse
-or hash-bind `cohort.cfg`, `observations.tsv`, `methods.cfg`, `dossier.cfg`, and
-`evidence_manifest.tsv`; prove that all issued or at-risk claims were included;
-run the Evidence Gate; authenticate classifications; retain authoritative
-population/method/classification admission; or emit the full source and method
-lineage in its result. It does consume authoritative selected-entry
-status/source/date provenance for resolved rows and rejects a non-complete path
-attestation. The regression therefore validates mechanical bookkeeping, this
-provenance seam, and fail-closed boundaries only.
+The current API now accepts either a caller-constructed in-memory frame or the
+strict five-file v0.1 package. Positive loader provenance is carried only by a
+private load seal. Evaluating a sealed package reloads and rechecks the
+canonical binder; an unsealed caller-constructed package may produce mechanical
+diagnostics but can never report positive loader provenance. The loader retains
+the parsed methods, dossier, batch Evidence Gate assessment, observations,
+Claim Ledger packages, and separate structural flags. It does not prove that
+all issued or at-risk claims were included, authenticate classifications or
+method truth, establish term comparability or exclusion timing, serialize full
+provenance, or emit a Portfolio/probability object. Successful structural
+loading always retains `empirical_realized_cash_admissible=false`.
 
-The five-file loader and controlled population acquisition are intentionally
-deferred from the present checkpoint. If later authorized, they can consume the
-implemented Claim Ledger snapshot without reparsing cash into a second ledger.
-Only after population, method, classification, status, source, date, and
-retained-copy admission passes may a separate study estimate marginal loss
-ranges. Dependence must still be tested independently before those marginals can
-inform a pooled instrument, premium, or investor-return analysis.
+Controlled population acquisition and the additional compiled evidence
+profiles are intentionally deferred. Only after population, method,
+classification, status, source, date, and retained-copy admission passes may a
+separate study estimate marginal loss ranges. Dependence must still be tested
+independently before those marginals can inform a pooled instrument, premium,
+or investor-return analysis.

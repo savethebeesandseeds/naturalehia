@@ -50,7 +50,7 @@
     setText("cash-received-note", data.cashNote);
     setText("loss-retained", format(data.retainedLoss));
     setText("continuing-exposure", format(data.continuingExposure));
-    setText("impairment-probability", data.impairment);
+    setText("impairment-probability", data.resolvedLossProbability);
     setText("reading-title", data.title);
     setText("reading-copy", data.copy);
     setText("model-decision", data.decision);

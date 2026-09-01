@@ -14,6 +14,7 @@
 \usepackage{array}
 \usepackage{enumitem}
 \usepackage{caption}
+\usepackage{placeins}
 \usepackage{fancyhdr}
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta,positioning,calc,fit}
@@ -47,7 +48,7 @@
 \pagestyle{fancy}
 \fancyhf{}
 \fancyhead[L]{\footnotesize\color{Forest}\textsc{Fostering Cellular Agriculture}}
-\fancyhead[R]{\footnotesize\color{Rust}\textsc{Technical White Paper / Version 1.2}}
+\fancyhead[R]{\footnotesize\color{Rust}\textsc{Technical White Paper / Version 1.3}}
 \fancyfoot[L]{\footnotesize\color{Sage}Open research design / synthetic economics}
 \fancyfoot[R]{\footnotesize\color{Forest}\thepage}
 \renewcommand{\headrulewidth}{0.4pt}
@@ -104,8 +105,8 @@
   \vspace{10mm}
   \begin{tabularx}{\textwidth}{@{}P{0.27\textwidth}Y@{}}
     \textbf{Author} & Naturalehia, open financial-engineering research\\
-    \textbf{Version} & 1.2 / 1 September 2026\\
-    \textbf{Revision scope} & Capital Mobilization Frontier v0.2 and same-pool issue-price/support sensitivity\\
+    \textbf{Version} & 1.3 / 1 September 2026\\
+    \textbf{Revision scope} & Empirical-underwriting boundary, development-credit evidence, and adverse-outcome discipline\\
     \textbf{Model case} & Ten synthetic project claims / 60-month horizon\\
     \textbf{Correspondence} & \href{https://naturalehia.waajacu.com/projects/fostering-cellular-agriculture/}{naturalehia.waajacu.com/projects/fostering-cellular-agriculture}\\
     \textbf{License} & MIT for source, model code and original paper text\\
@@ -125,7 +126,7 @@
 \begin{abstract}
 Cellular agriculture requires patient capital across research, pilot, demonstration and first-industrial stages, yet early cash is sparse, technical failures are correlated and the legal source of investor repayment is often unclear. We define a candidate \emph{Multi-Project Milestone Participation}: a limited-recourse claim on dated project draws, explicitly assigned success cash, recoveries and continuing principal across a disclosed set of projects. Later funding is callable only after stated milestones. Dependence is represented by complete joint states and a bounded set of physical probability measures rather than by multiplying independent project defaults.
 
-The financial contribution is a source-separated, principal-conserving model that compares an unsupported callable core with two mutually exclusive variants: a fully funded first-loss/priority stack and a failure-contingent partial-credit guarantee. For the funded variant, acquisition and primary-funding cash, contractual asset principal, issued principal and direct costs remain separate ledgers. Contractual writeoff \(L\), continuing asset principal \(O\), and horizon issued-principal cash shortfall \(Q\) are reported as distinct observables; pooled cash is not used to invent causal impairment or recovery attribution. In a ten-claim synthetic experiment with 100 of reference principal, the core has central expected NPV of \(0.661828\) at an 8\% hurdle but adverse expected NPV of \(-18.717674\). Pooling reduces central principal-loss ES95 by 10.05\%, while ES99 diversification benefit is zero. Neither the funded stack nor the 30\% guarantee restores robust investor adequacy under the declared terms. An additive version-0.2 frontier tests all 25 declared \(q\)-by-\(A\) terms on the same pool and finds no feasible point under the supplied synthetic mandates. The result is therefore a finite-grid rejection, not a financing claim or proof about untested terms. We state the contractual, empirical, institutional and legal evidence required to turn the design into a real asset.
+The financial contribution is a source-separated, principal-conserving model that compares an unsupported callable core with two mutually exclusive variants: a fully funded first-loss/priority stack and a failure-contingent partial-credit guarantee. For the funded variant, acquisition and primary-funding cash, contractual asset principal, issued principal and direct costs remain separate ledgers. Contractual writeoff \(L\), continuing asset principal \(O\), and horizon issued-principal cash shortfall \(Q\) are reported as distinct observables; pooled cash is not used to invent causal impairment or recovery attribution. In a ten-claim synthetic experiment with 100 of reference principal, the core has central expected NPV of \(0.661828\) at an assumed 8\% investor discount rate but adverse expected NPV of \(-18.717674\). Pooling reduces central principal-loss ES95 by 10.05\%, while ES99 diversification benefit is zero. Neither the funded stack nor the 30\% guarantee restores robust investor adequacy under the declared terms. An additive version-0.2 frontier tests all 25 declared \(q\)-by-\(A\) terms on the same pool and finds no feasible point under the supplied synthetic mandates. The result is therefore a finite-grid rejection, not a financing claim or proof about untested terms. A separate empirical-underwriting boundary shows why exact synthetic calculations cannot establish expected loss, price or investor attractiveness without a frozen claim population, censoring discipline, realized cash evidence and independent market observations.
 \end{abstract}
 
 \textbf{Keywords:} cellular agriculture; financial engineering; milestone finance; project participation; portfolio dependence; partial-credit guarantee; blended finance; expected shortfall.\\
@@ -143,13 +144,14 @@ The financing problem is not solved by naming a fund, adding projects, or promis
 
 Biomedical research-backed obligation proposals established an important intellectual precedent by combining uncertain development programs, staged asset value and structured claims \citep{fernandez2012rbo,fagnan2013cancer,fagnan2014orphan}. The present design borrows the discipline of pooling, cash waterfalls and explicit guarantees, but it does not assume that cellular-agriculture projects possess comparable licensing markets, development probabilities, or debt capacity. It begins one level lower: every project must first connect to a common financial interface, and every unit of investor return must trace to an enforceable source.
 
-This paper makes four contributions:
+This paper makes five contributions:
 
 \begin{enumerate}
   \item It defines the economic asset before the legal wrapper: a limited-recourse participation in dated, source-budgeted project cash, recovery and continuing exposure.
   \item It gives one core construction and two alternative risk-allocation variants without claiming that tranching or guarantees create underlying project value, and supplies an explicit asset-to-liability bridge for non-par claims.
   \item It evaluates the constructions under explicit joint physical states and probability ambiguity, preserving adverse witnesses rather than reducing the result to one expected return.
   \item It turns non-investability into a useful output by stating measurable rejection conditions and the evidence needed for a live issuance.
+  \item It separates verified mechanics from empirical underwriting and defines the controlled cohort and transaction evidence needed before synthetic risk can become an investable estimate.
 \end{enumerate}
 
 \begin{paperbox}{Key finding: the current terms are defined but not shown financeable}
@@ -191,6 +193,16 @@ Portfolio size alone is not diversification. Work on financing low-probability `
 The biomedical megafund guarantee literature shows why mean expected claims are an incomplete measure of the guarantor's commitment: adverse cash calls can be large even when mean cost appears modest \citep{fagnan2013cancer}. The Global Health Investment Fund provides a realized analogue of a mission-oriented pool using milestone and royalty instruments with partial downside protection from philanthropic/public guarantors. Its reported mechanism absorbed the first 20\% of losses and shared subsequent losses, leaving private investors exposed \citep{worldbank2017ghif}. This supports the legitimacy of transparent partial loss sharing; it does not validate cellular-agriculture probabilities, recoveries or investor demand.
 
 Blended-finance discipline requires a development rationale, additionality, minimum concessionality, commercial sustainability and transparency about the support used to mobilize private capital \citep{ifcblended}. Accordingly, any first-loss or guarantee value in this paper is shown separately from project economics.
+
+\subsection{A documented public-credit precedent in cellular agriculture}
+
+Meatable announced in September 2024 that it had been awarded a EUR 7.6 million Innovation Credit from the Netherlands Enterprise Agency to improve cultivated-meat productivity and reduce costs before commercialization \citep{meatable2024credit}. This is issuer-reported evidence of a named public development-credit award in cellular agriculture; it is not evidence of the exact legal recipient, individualized decision, cash receipt, draw schedule, probability of technical success, repayment cash, loss, or private-market value.
+
+The official 2024 programme opening set a 3\% annual base rate and a 15\% fixed premium for technical-development projects \citep{nl2024innovationcredit}. Generic programme documents describe project reporting and cash-flow forecasts, include a template for a first-ranking pledge over identified project assets, and state that the credit, accrued interest and fixed premium are repayable unless relief is granted \citep{rvo2024obligations}. Current programme guidance, which postdates the announced award, describes relief after technical failure or loss of market prospects as a case-specific request that the agency may accept in whole or in part, not an automatic payoff formula or an award-specific term \citep{rvo2026following}.
+
+The precedent matters because it shows a candidate public-credit architecture for development risk rather than treating early research as ordinary bank debt. It also exposes the data a private pool would still need: the individualized award decision, borrower, approved budget, advances, milestone tests, exact repayment schedule, pledged assets, other financing, amendments, remission decision and actual settlement. The public record therefore supports mechanism research while remaining ineligible as a price, expected-return observation or calibrated loss history.
+
+The adverse company outcome is now public too. On 19 December 2025 Agronomics reported that Meatable's board and shareholders had resolved to dissolve Meatable B.V. and related group companies, terminate operating activities and conduct an orderly wind-down after the company was unable to obtain continued funding; Agronomics also reported writing its own Meatable investment from a carrying value of GBP 11.9 million to zero \citep{agronomics2025meatabledissolution}. This is evidence of a company wind-down decision and an equity-investor write-off, not evidence that the Innovation Credit defaulted, was accelerated or remitted, or produced any creditor recovery. The legal dissolution date, RVO claim status, outstanding public-credit principal, security enforcement and liquidation proceeds remain unidentified.
 
 \subsection{Where this proposal differs}
 
@@ -513,7 +525,7 @@ Non-principal success cash & 34.130000 & 46.525500 & 55.633000 \\
 Total investor receipts & 92.119200 & 121.648900 & 143.700550 \\
 Continuing principal exposure & 1.150000 & 8.520000 & 18.740000 \\
 Resolved principal loss & 2.152500 & 9.980600 & 21.525350 \\
-NPV at 8\% hurdle & -18.717674 & 0.661828 & 15.440326 \\
+NPV at assumed 8\% rate & -18.717674 & 0.661828 & 15.440326 \\
 Principal-loss ES95 & 19.074000 & 70.803000 & 90.000000 \\
 Principal-loss ES99 & 23.150000 & 90.000000 & 90.000000 \\
 Peak cumulative net outlay & 88.147600 & 94.533000 & 99.487400 \\
@@ -539,7 +551,7 @@ Central expected NPV of \result{+0.661828} is thin relative to model uncertainty
 \begin{tikzpicture}
 \begin{axis}[
   xbar,
-  width=0.73\textwidth,
+  width=0.70\textwidth,
   height=72mm,
   xmin=-31,xmax=6,
   axis x line*=bottom,
@@ -550,7 +562,7 @@ Central expected NPV of \result{+0.661828} is thin relative to model uncertainty
   ytick=data,
   yticklabel style={font=\small,align=right},
   xtick={-30,-20,-10,0,5},
-  xlabel={Expected NPV at common 8\% comparison hurdle (\demounit{})},
+  xlabel={Expected NPV at assumed common 8\% discount rate (\demounit{})},
   xmajorgrids=true,
   grid style={draw=Mist},
   legend style={at={(0.5,1.08)},anchor=south,legend columns=2,draw=none,font=\small},
@@ -572,7 +584,7 @@ Central expected NPV of \result{+0.661828} is thin relative to model uncertainty
 \legend{Adverse envelope witness,Central measure}
 \end{axis}
 \end{tikzpicture}
-\caption{Expected NPV comparison. The funded stack aggregate uses a common 8\% comparison; its individual classes have separate stated hurdles. Guarantee values are before investor premium.}
+\caption{Expected NPV comparison. The funded stack aggregate uses an assumed common 8\% discount rate; its individual classes have separate assumed rates. Guarantee values are before investor premium.}
 \label{fig:npv}
 \end{figure}
 
@@ -595,7 +607,7 @@ Funded stack, aggregate at 8\% & -8.321750 & -27.985093 & Principal-cash priorit
 
 \subsection{Funded first-loss and priority variant}
 
-Investors subscribe 100 into the reserve at month zero and contribute 1 as a separate pool-cost call; project uses are funded from the reserve and are not counted again as investor contributions. Expected prefunding drag at the pool's 8\% hurdle is 8.983578 centrally. At their own stated hurdles, the 0--20 first-loss class has central NPV \(-0.854614\) at 15\%; the 20--100 priority class has central NPV \(-13.926874\) at 8\%. Priority has negative NPV in every declared state. Aggregate stack NPV at the common 8\% hurdle is \(-27.985093/-8.321750/6.715820\) across adverse, central and favorable expected cases.
+Investors subscribe 100 into the reserve at month zero and contribute 1 as a separate pool-cost call; project uses are funded from the reserve and are not counted again as investor contributions. Expected prefunding drag at the pool's assumed 8\% discount rate is 8.983578 centrally. At their own assumed rates, the 0--20 first-loss class has central NPV \(-0.854614\) at 15\%; the 20--100 priority class has central NPV \(-13.926874\) at 8\%. Priority has negative NPV in every declared state. Aggregate stack NPV at the assumed common 8\% rate is \(-27.985093/-8.321750/6.715820\) across adverse, central and favorable expected cases.
 
 The result is not an argument against subordination. It shows that subordination must be funded and priced. Asset \(L_s\) and \(O_s\) remain unchanged, while tranche principal-cash shortfalls sum to \(Q_s\). The model does not attribute asset loss or outstanding principal causally to liability layers; rearranging the order of distributions cannot repair insufficient aggregate value.
 
@@ -623,7 +635,7 @@ These channels can be compared because the standard holds accounting constant. I
 
 \subsection{Capital Mobilization Frontier v0.2: same-pool rejection and the conditional next channel}
 
-Version 0.2 asks a narrower investor question than the construction comparison above: with the ten project paths, event-constrained physical probability set, claim identifiers, lifetime market priority cap \(B=24\), junior hurdle of 15\%, market hurdle of 8\% and zero junior target NPV held fixed, does any declared pair of success-cash participation \(q\) and funded junior issued principal \(A\) satisfy every supplied mandate? The tested grids are
+Version 0.2 asks a narrower investor question than the construction comparison above: with the ten project paths, event-constrained physical probability set, claim identifiers, lifetime market priority cap \(B=24\), assumed junior discount rate of 15\%, assumed investor discount rate of 8\% and zero junior target NPV held fixed, does any declared pair of success-cash participation \(q\) and funded junior issued principal \(A\) satisfy every supplied mandate? The tested grids are
 
 \[
 q\in\{0.5,0.625,0.75,0.875,1\},\qquad
@@ -676,7 +688,7 @@ The priority-cap record uses a \emph{separate, relaxed issue-price sensitivity m
 \scriptsize
 \begin{tabularx}{\textwidth}{@{}R R R R Y@{}}
 \toprule
-\textbf{Hurdle \(h\)} & \textbf{Robust ceiling \(P^*\)} & \textbf{Minimum support \(G_{\min}\)} & \textbf{Shortfall to \(G=20\)} & \textbf{Overlap with issuer floor 60} \\
+\textbf{Assumed rate \(h\)} & \textbf{Robust ceiling \(P^*\)} & \textbf{Minimum support \(G_{\min}\)} & \textbf{Shortfall to \(G=20\)} & \textbf{Overlap with issuer floor 60} \\
 \midrule
 0\% & 74.575200 & 5.424800 & 0 & [60, 74.575200] \\
 5\% & 60.955502 & 19.044498 & 0 & [60, 60.955502] \\
@@ -688,7 +700,7 @@ The priority-cap record uses a \emph{separate, relaxed issue-price sensitivity m
 \end{tabularx}
 \end{table}
 
-Here \(G_{\min}=\max(0,M+F-P^*)\) is the modeled no-rights support needed just to create overlap, and ``shortfall'' is \(\max(0,G_{\min}-20)\). These are conditional source-and-price identities, not market observations. The reference gross buyer price \(P_{\mathrm{ref}}=80\) exceeds every investor ceiling in the table. That reference, all six hurdles and the support capacity are synthetic; settled support is zero; no support funding, escrow, authority, budget or settlement is evidenced; and no hurdle is empirically calibrated. Accordingly, the module finds arithmetic overlap only at 0\% and 5\%, finds none at the paper's 8\% market hurdle or higher, and finds no funded/escrowed-support-covered window at any hurdle. The separate relaxed screen does not reverse the strict frontier rejection. The module does not estimate fair value, discover a discount curve, show investor demand, prove legal enforceability, authorize execution, establish financing additionality, or establish capital mobilization. A live next step requires independent buyer-price and hurdle evidence, verified issuer uses and costs, and a legally authorized, funded and settlement-ready support source.
+Here \(G_{\min}=\max(0,M+F-P^*)\) is the modeled no-rights support needed just to create overlap, and ``shortfall'' is \(\max(0,G_{\min}-20)\). These are conditional source-and-price identities, not market observations. The reference gross buyer price \(P_{\mathrm{ref}}=80\) exceeds every investor ceiling in the table. That reference, all six assumed rates and the support capacity are synthetic; settled support is zero; no support funding, escrow, authority, budget or settlement is evidenced; and no rate is empirically calibrated. Accordingly, the module finds arithmetic overlap only at 0\% and 5\%, finds none at the paper's assumed 8\% investor discount rate or higher, and finds no funded/escrowed-support-covered window at any assumed rate. The separate relaxed screen does not reverse the strict frontier rejection. The module does not estimate fair value, discover a discount curve, show investor demand, prove legal enforceability, authorize execution, establish financing additionality, or establish capital mobilization. A live next step requires independent buyer-price and hurdle evidence, verified issuer uses and costs, and a legally authorized, funded and settlement-ready support source.
 
 \subsection{Exposure is multi-dimensional}
 
@@ -707,6 +719,45 @@ No single rating-like number is appropriate at the present stage. Investors shou
 \end{itemize}
 
 Expected return without these exposures is not an institutional description of the asset. Likewise, a low expected loss does not imply a tolerable tail, liquid price or small capital requirement.
+
+\section{From verified mechanics to empirical underwriting}
+
+\subsection{Exact calculation is conditional, not calibrated}
+
+The current engine is exact about the question it is given. For each declared joint state it conserves dated cash and principal, and for each admitted probability set it finds the binding adverse witnesses. That precision is conditional on the state space, cash paths and probability restrictions. It does not make those inputs true. An expected loss computed from invented state weights is a synthetic sensitivity; a tail bound computed over analyst-declared probability limits is model ambiguity, not a sampling-confidence statement.
+
+This distinction is the main investor-safety boundary. A tranche can be mechanically senior and still be impossible to underwrite if the population, censoring, recovery and dependence evidence are unknown. More projects, more simulations or a finer attachment grid cannot repair that problem. The empirical unit must first be a complete, economically de-duplicated claim history with known inclusion rules, comparable terms and a terminal or explicitly censored outcome.
+
+\subsection{The controlled cohort bridge}
+
+The project therefore defines a five-file Partial-Credit Claim-Loss Cohort Binder over verified Claim Ledger packages. Its population frame must enumerate resolved, unresolved, immature, disputed, denied, zero-loss and excluded members; exclusions remain visible and must have been frozen without reference to outcome. Every non-excluded row binds one verified claim root and one economically distinct risk unit. Open outcomes remain unknown rather than becoming zero, and descriptive amount ranges retain the full denominator. The repository now implements the closed five-file parser, exact hash binding, confined Claim Ledger reload and compiled population-frame Evidence Gate; this is structural admission only. Empirical realized-cash authority remains false because classification, method validity, term comparability, exclusion timing and source-status/date truth are not yet authenticated.
+
+Even a future evidence-admitted binder has deliberately narrow authority. It may establish observed shortfall, provider claim, provider cash, unpaid claim and final writeoff experience for that controlled cohort. It does not by itself estimate a transferable probability of default, loss-given-default, common-factor dependence, fair premium, rating, portfolio tail or investor return. Those require a separate transfer model, effective-sample-size disclosure, uncertainty method, challenger specification and out-of-sample or later-vintage validation.
+
+\subsection{What the controlled transaction dossiers prove}
+
+\begin{table}[htbp]
+\centering
+\caption{Controlled public-financing dossiers assembled for mechanism research, not calibration}
+\label{tab:transaction-evidence}
+\small
+\begin{tabularx}{\textwidth}{@{}P{0.19\textwidth}P{0.31\textwidth}Y@{}}
+\toprule
+\textbf{Record} & \textbf{Publicly supported mechanism} & \textbf{Why it cannot identify price or loss} \\
+\midrule
+Liberation Labs, 2024--2025 \citep{fca2026liberationdossier} & Private secured notes with promised interest and a conversion feature for a fermentation facility. & Issuance clustering, all-in buyer cash, conversion, security, priority, recovery and expected-cash reconstruction remain incomplete. \\
+Solar Foods Factory 01, 2022--2025 \citep{fca2026solarfoodsdossier} & Amortizing bank facility for a gas-fermentation protein facility, a different operating-risk class from cultivated-meat tissue production, with capitalized commission, floating-rate terms, named export-credit guarantors and audited aggregate repayments. & The complete lender price, claim-level settlement, guarantee cash, default recovery and comparable adjustment bridge remain unavailable. \\
+Meatable Innovation Credit, 2024 \citep{fca2026meatabledossier,agronomics2025meatabledissolution} & Issuer-reported public-credit award directed to cultivated-meat productivity and cost reduction; a later investor RNS reports a resolution to dissolve and wind down the operating group after continued funding was unavailable. & The adverse company and equity-investor outcome does not identify RVO claim default, outstanding principal, acceleration, remission, priority, recovery or settlement; generic programme terms are not award-specific cash. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+\FloatBarrier
+
+All three records improve the financial vocabulary of the standard. None enters the hurdle-evidence engine or calibrates the ten-claim pool. The current empirical result remains: no transaction-consistent discount-rate set and no transferable project-loss distribution have been identified.
+
+\subsection{Acceptance rule for an institutional calibration study}
+
+A future calibrated study must freeze one homogeneous claim family and observation horizon before viewing outcomes; retain every eligible member; publish missingness, censoring and concentration; bind cash and classification to dated source evidence; and separate estimation from validation. Its central and admissible physical measures must be reproducible from the retained cohort. Market price or hurdle evidence must come from independent settled cash or executable quotes rather than from the target model. A holdout, later vintage or predeclared challenger must show where transition, loss, recovery and dependence estimates fail. Until those conditions hold, the correct output is ``not identified,'' not a polished point estimate.
 
 \section{Conditions for a live issue}
 
@@ -731,7 +782,7 @@ Before solicitation, synthetic inputs must be retired by evidence with explicit 
   \item legal, tax, accounting, prudential and insolvency opinions appropriate to the participants.
 \end{enumerate}
 
-Two retained public transaction packages in the repository are useful for question formation but fail the current evidence protocol and do not calibrate this model. No live project is admitted by this paper.
+Three controlled public transaction dossiers in the repository are useful for mechanism research and question formation but fail the current evidence protocol and do not calibrate this model. ``Controlled dossier'' does not mean that every cited web source was successfully byte-retained; each source manifest reports retention status explicitly. No live project is admitted by this paper.
 
 \subsection{Issuance decision rule}
 
@@ -781,8 +832,9 @@ For the paper's reported snapshot:
   \item monetary convention: synthetic \demounit{}, constant analysis-close basis;
   \item discounting: annual-effective, monthly exponents;
   \item reconciliation tolerance: \(10^{-9}\) for modeled floating identities;
-  \item verification status: the complete warnings-as-errors C++20 Emscripten 6.0.5 Release build and Node-driven suite pass 72 of 72 declared tests, including the v0.2 asset-to-liability bridge, direct Claim Ledger integration, frontier core/parser/CLI regressions, issue-price browser target and published-WASM byte-parity check;
-  \item portable execution: the release evidence reported for version 1.2 is produced by the pinned Emscripten container and Node, including every command-line report wrapper;
+  \item verification status: the complete warnings-as-errors C++20 Emscripten 6.0.5 Release build and Node-driven suite pass 73 of 73 declared tests, including the strict five-file cohort loader, population-frame Evidence Gate, v0.2 asset-to-liability bridge, direct Claim Ledger integration, frontier core/parser/CLI regressions, issue-price browser target and published-WASM byte-parity check;
+  \item immutable release identity: tag \texttt{fca-whitepaper-v1.3.0}; the tagged \href{https://github.com/savethebeesandseeds/naturalehia/blob/fca-whitepaper-v1.3.0/projects/fostering-cellular-agriculture/whitepaper/release-manifest-v1.3.tsv}{release manifest} records the paper-relevant source, fixture and released-PDF hashes;
+  \item portable execution: the release evidence reported for version 1.3 is produced by the pinned Emscripten container and Node, including every command-line report wrapper;
   \item paper toolchain: \texttt{latexmk} inside the Debian-based \texttt{documents-latex:bookworm} container.
 \end{itemize}
 
@@ -798,7 +850,7 @@ The governing charter requires underwriting before advocacy, full visibility of 
 
 The proposed Multi-Project Milestone Participation is a financial standard before it is a product. It defines a real candidate asset as a limited-recourse claim on dated, source-budgeted project cash and recoveries; represents unresolved exposure separately from loss; encodes shared shocks directly; and lets funded subordination allocate actual cash and horizon shortfall \(Q_s\), or guarantee support transfer defined asset loss, without confusing either operation with value creation.
 
-The synthetic experiment gives the appropriate first conclusion. Pooling provides some ES95 benefit, but common risk dominates ES99. The central core NPV is slightly positive, yet the adverse permitted NPV is materially negative. Fully funded priority creates drag, and the guarantee adds useful external cash but still cannot satisfy both investor and provider constraints. The additive v0.2 frontier rejects every one of the 25 declared same-pool \((q,A)\) candidates. Its downstream issue-price/support sensitivity shows arithmetic overlap only under invented 0\% and 5\% hurdle cases with uncommitted support, not at the declared 8\% market hurdle, and no overlap is funded or escrowed. None of the current constructions is shown financeable.
+The synthetic experiment gives the appropriate first conclusion. Pooling provides some ES95 benefit, but common risk dominates ES99. The central core NPV is slightly positive, yet the adverse permitted NPV is materially negative. Fully funded priority creates drag, and the guarantee adds useful external cash but still cannot satisfy both investor and provider constraints. The additive v0.2 frontier rejects every one of the 25 declared same-pool \((q,A)\) candidates. Its downstream issue-price/support sensitivity shows arithmetic overlap only under invented 0\% and 5\% discount-rate cases with uncommitted support, not at the assumed 8\% investor discount rate, and no overlap is funded or escrowed. None of the current constructions is shown financeable.
 
 The next serious step is empirical, not cosmetic: acquire enforceable project cash rights, milestone and recovery data, joint-risk evidence, investor price/hurdle observations and provider capacity terms in the common interface. With those facts, the same machinery can test whether a revised instrument is valuable, what risks it distributes across projects and institutions, and how much explicit catalytic support is genuinely required. That is the path from moral intention to finance capable of helping cellular agriculture reach industry.
 
@@ -807,8 +859,8 @@ The next serious step is empirical, not cosmetic: acquire enforceable project ca
 
 \textbf{Funding.} No external funding is represented for this paper.\\
 \textbf{Author economics.} Naturalehia retains no protocol fee, carried interest, instrument royalty or share of financed-company receipts from adoption of the published standard.\\
-\textbf{Conflicts.} No issuer, investor, guarantor or project is endorsed or admitted.\\
-\textbf{Data and code.} Source, configurations, documentation and tests are available in the \href{https://github.com/savethebeesandseeds/naturalehia/tree/main/projects/fostering-cellular-agriculture}{project repository}. The numerical case is synthetic.\\
+\textbf{Conflicts.} No ownership, employment, advisory, consulting or other financial relationship with a named issuer, investor, guarantor or project has been disclosed to or relied upon by this research; no named party is endorsed or admitted. This statement does not substitute for signed author and adviser disclosures before any live transaction or third-party publication.\\
+\textbf{Data and code.} Source, configurations, documentation and tests for this paper are fixed by release tag \href{https://github.com/savethebeesandseeds/naturalehia/tree/fca-whitepaper-v1.3.0/projects/fostering-cellular-agriculture}{\texttt{fca-whitepaper-v1.3.0}}. The numerical case is synthetic.\\
 \textbf{Responsibility.} The paper is research, not professional advice or an offer. Independent qualified review is required before any transaction.
 
 \bibliographystyle{plainnat}

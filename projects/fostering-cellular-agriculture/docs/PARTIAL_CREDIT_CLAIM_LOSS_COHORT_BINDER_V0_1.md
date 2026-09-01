@@ -1,15 +1,20 @@
 # Partial-Credit Claim-Loss Cohort Binder v0.1
 
-Status: candidate specification plus implemented programmatic mechanical-evaluation kernel  
-Purpose: target empirical loss identification; current implementation is mechanical only  
+Status: implemented five-file candidate loader plus mechanical-evaluation kernel
+
+Purpose: target empirical loss identification; current authority remains mechanical only
+
 Execution authority: none (`candidate_only=true`, `calibrated_execution_authorized=false`)
 
 The current C++ kernel re-verifies supplied Claim Ledger roots, preserves every
 row in the caller-declared denominator, extracts and reconciles synthetic
 resolved-path mechanics, and forms coarse mechanical outer envelopes for open
-cases. It does not prove that the declared rows are a complete population. The
-five-file loader, controlled-register hash, and cohort-level Evidence Gate
-binding are not implemented. Claim Ledger's one-scenario selected-full-path
+cases. The five-file loader now confines and hash-binds the declared files,
+parses their closed v0.1 schemas, batch-runs Evidence Gate's compiled
+`FIN-CLAIM-POPULATION-FRAME` profile, and reuses the Claim Ledger loader for
+every included row. It does not prove that the declared rows are a complete
+population or that classifications, methods, or realized cash are true. Claim
+Ledger's one-scenario selected-full-path
 evidence snapshot is implemented and consumed for resolved rows: it retains the
 selected latest entries and their common/scenario scope, input status, source,
 source date, retained-copy state, requested cash-path status, provider terms,
@@ -20,15 +25,16 @@ Accordingly, the kernel always reports
 Portfolio export. This is an explicit implementation boundary, not a temporary
 assumption that caller metadata is trustworthy.
 
-Concretely, the implemented function accepts a caller-constructed in-memory
-cohort object. It checks supplied row counts and identities, reloads each
-supplied Claim Ledger root, and either rejects structural contradictions or
-returns mechanical values with explicit blockers. It does not parse or
-hash-bind the five binder files, run an Evidence Gate, establish census
-completeness or term comparability, or apply the empirical status/date/source
-policy needed for realized-loss admission. The canonical cohort result records
-that the selected-path provenance was verified during evaluation, but does not
-yet serialize the full snapshot or method/evidence lineage.
+Concretely, callers may construct an in-memory cohort or load the exact
+five-file package through
+`load_partial_credit_claim_loss_cohort_package(root)`. The loader rejects
+structural contradictions, returns the parsed method and evidence records,
+and exposes separate five-file-integrity, population-frame-gate, and candidate
+validity flags. It deliberately has no positive empirical status/date/source
+admission policy: `empirical_realized_cash_admissible` remains false even when
+the structural candidate and population-frame conjunction pass. The result
+records selected-path verification but does not serialize the full provenance
+snapshot or method/evidence lineage.
 
 ## 1. Purpose and boundary
 
@@ -48,10 +54,16 @@ The Claim Ledger remains the cash authority. This binder MUST NOT create a secon
 
 ## 2. Target loader/evaluator admission contract
 
-Sections 2 through 5 specify the intended five-file boundary. They are not a
-claim that the current in-memory mechanical evaluator performs these steps.
-
-A package is admitted only if every rule below passes. A failure blocks evaluated cohort outputs and is reported as a blocker.
+Sections 2 through 5 specify the intended empirical-admission boundary. They
+are not a claim that caller-constructed in-memory input performs these steps.
+The current file loader distinguishes structural validity from empirical
+admission: schema, confinement, hash, identity, and mechanical contradictions
+fail closed; a population or citation gate failure may return a structurally
+inspectable package with `candidate_package_valid=false` and explicit blockers.
+Mechanical diagnostics may still be evaluated in that state, but they are not
+empirical cohort outputs and cannot authorize calibration, pricing, or
+Portfolio use. Admission under the completed empirical contract requires every
+rule below to pass.
 
 1. **Candidate status.** `candidate_only` MUST equal `true`. `calibrated_execution_authorized` is derived as `false` and MUST NOT be supplied by the caller.
 2. **Frozen population frame.** The package binds an as-of date, eligibility window, population definition, sampling unit, economic-cluster rule, protection-term stratum, outcome horizon, loss sequence, resolution rule, censoring rule, denominator rule, currency, and monetary basis.
@@ -188,7 +200,7 @@ regulator plus a separate independent report. It is assessed by the same batch
 engine but is excluded from the four reference-project gates and grants no
 project, calibration, pricing, or investment authority.
 
-A future cohort-bound dossier MUST cover population-register authority,
+A cohort-bound dossier intended for empirical use MUST cover population-register authority,
 completeness, term
 comparability, classification authority, exclusion-rule timing, and each method
 definition. `observations.tsv` cites the exact evidence records and requirements
@@ -197,7 +209,7 @@ used for population membership and classification.
 The implemented population-frame requirement covers only the declared register
 source conjunction. It does not establish row classification, method validity,
 term comparability, exclusion timing, or truth. Those remain separately bound
-requirements for any future controlled loader. A generic evidence pass cannot
+requirements for any future empirical-admission profile. A generic evidence pass cannot
 be relabeled as proof of census completeness.
 
 Individual Claim Ledger packages retain their own source manifests. Binder evidence supplements rather than replaces them.
@@ -334,22 +346,35 @@ The loader MUST:
 6. verify row/root/cluster/provider/currency/scenario identities; and
 7. select exactly one verified full/backtest realized scenario for each resolved row.
 
-Only the second boundary's programmatic kernel is currently implemented in
+Both boundaries are implemented in
 [`partial_credit_claim_loss_cohort.hpp`](../include/naturalehia/cellular_finance/partial_credit_claim_loss_cohort.hpp)
 and
-[`partial_credit_claim_loss_cohort.cpp`](../src/partial_credit_claim_loss_cohort.cpp).
-It accepts already loaded packages but reloads their roots, ignores mutable
-caller summaries, blocks duplicate roots and claims, requires one unique
+[`partial_credit_claim_loss_cohort.cpp`](../src/partial_credit_claim_loss_cohort.cpp),
+with the file loader declared in
+[`partial_credit_claim_loss_cohort_config.hpp`](../include/naturalehia/cellular_finance/partial_credit_claim_loss_cohort_config.hpp)
+and implemented in
+[`partial_credit_claim_loss_cohort_config.cpp`](../src/partial_credit_claim_loss_cohort_config.cpp).
+The evaluator accepts loaded packages but reloads the sealed five-file binder
+and every Claim Ledger root, ignores mutable caller summaries and parsed-field
+changes, blocks duplicate roots and claims, requires one unique
 economic cluster for every declared frame row including exclusions, and keeps
 all empirical admission flags false. It checks declared frame-count
-reconciliation but does not establish census completeness. Implementing the
-loader no longer requires a second cash parser: resolved rows already reload
+reconciliation but does not establish census completeness. The loader uses
+bounded immutable snapshots, verifies all four declared file hashes, confines
+nested Claim Ledger roots, snapshots and rechecks every manifest-named retained
+evidence copy, retains methods and Evidence Gate assessments, and then invokes
+the same evaluator as a structural postcondition. Positive loader provenance is
+held in a private seal; caller-constructed input receives no such provenance,
+and evaluation of a sealed package independently reloads its canonical binder.
+It does not
+create a second cash parser: resolved rows reload
 through Claim Ledger's authoritative one-scenario snapshot of selected latest
 full-path entries, statuses, sources, dates, provider terms, and covenants.
 Reparsing Claim Ledger TSV cash inside this binder remains prohibited because
-it would create a second cash authority. The deferred work is the five-file
-binding and the population, method, classification, and empirical as-of policy,
-not a replacement cash engine.
+it would create a second cash authority. The deferred work is a compiled
+method, classification, term-comparability, exclusion-timing, and empirical
+as-of admission profile—not five-file binding and not a replacement cash
+engine.
 
 The target evaluator MUST extract, from verified Claim Ledger results,
 contractual face, opening principal, funded principal created, capitalized
@@ -418,12 +443,16 @@ The current regression proves:
 - result rows are sorted by observation ID; and
 - no calibration, portfolio, price, or expected-return object is produced.
 
-The future five-file loader regression must additionally prove exact-byte
-binding and path confinement, Evidence Gate admission, population-register and
-method lineage, empirical source-status/date rejection, denominator metadata,
-concentration outputs, and any resolved severity or delay statistic it elects
-to publish. No byte-for-byte cohort serializer or empirical admission test is
-implemented yet.
+The implemented five-file regression proves all four binder-file hash bindings,
+closed configuration and observation schemas, LF-only parsing, nested Claim
+Ledger hash/path confinement, supported method identifiers, evidence citation
+matching, and a positive and negative population-frame conjunction. It also
+proves that caller-constructed or mutated objects cannot forge positive loader
+provenance, retained-copy drift fails closed, and a structurally valid package
+retains false empirical, calibration, and Portfolio authority. Symlink-race
+simulation, a byte-for-byte cohort
+serializer, a positive empirical source-status/date policy, concentration
+outputs, and resolved severity or delay statistics are not implemented.
 
 The completed target regression suite MUST reject or block, as applicable:
 
@@ -437,10 +466,10 @@ The completed target regression suite MUST reject or block, as applicable:
 - mismatched claim root, realized scenario, provider claim, currency, or monetary basis; and
 - non-closing principal or provider-claim paths.
 
-Passing that completed target suite would validate bookkeeping, mechanical
-validation, and identification logic only. It would not validate a real-world
-loss model. The current regression does not test five-file loader path
-confinement, Evidence Gate admission, or empirical source-status/date rejection.
+Passing the current suite validates parsing, binding, bookkeeping, mechanical
+validation, and fail-closed authority only. It does not validate a real-world
+loss model, census completeness, row classifications, or empirical
+source-status/date admission.
 
 ## 8. Honest next evidence step
 

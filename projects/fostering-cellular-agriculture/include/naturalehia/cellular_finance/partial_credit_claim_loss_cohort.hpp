@@ -3,8 +3,11 @@
 #pragma once
 
 #include <naturalehia/cellular_finance/claim_ledger_package.hpp>
+#include <naturalehia/cellular_finance/evidence_gate.hpp>
 
 #include <cstddef>
+#include <filesystem>
+#include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -20,6 +23,48 @@ inline constexpr std::size_t
     kMaximumPartialCreditCohortEvidenceIdsPerList{256U};
 inline constexpr std::size_t
     kMaximumPartialCreditCohortRetainedEvidenceIds{1'000'000U};
+inline constexpr std::string_view
+    kPartialCreditClaimLossCohortMechanicalImplementationId{
+        "partial-credit-claim-loss-cohort-v0.1-mechanical-kernel"};
+
+struct PartialCreditClaimLossCohortEvaluation;
+namespace detail {
+struct PartialCreditClaimLossCohortLoadAccess;
+}
+
+struct PartialCreditClaimLossCohortBoundFile {
+    std::filesystem::path relative_path{};
+    std::string sha256{};
+};
+
+enum class PartialCreditClaimLossMethodPurpose : unsigned char {
+    Population,
+    SamplingUnit,
+    Cluster,
+    TermStratum,
+    Horizon,
+    Loss,
+    Resolution,
+    Censoring,
+    Denominator,
+    MonetaryBasis,
+    AmountBound,
+    Metric,
+};
+
+struct PartialCreditClaimLossMethod {
+    std::string id{};
+    PartialCreditClaimLossMethodPurpose purpose{
+        PartialCreditClaimLossMethodPurpose::Population};
+    std::string version{};
+    std::string implementation_id{};
+    std::string effective_date{};
+    std::string definition{};
+    std::vector<std::string> inputs{};
+    std::string output{};
+    std::vector<std::string> evidence_record_ids{};
+    std::vector<std::string> evidence_requirement_ids{};
+};
 
 enum class PartialCreditClaimLossDisposition : unsigned char {
     Resolved,
@@ -40,12 +85,13 @@ struct PartialCreditClaimLossExclusionRule {
     std::string frozen_date{};
     bool outcome_blind_asserted{};
     std::string statement{};
+    std::vector<std::string> evidence_record_ids{};
 };
 
 // Definition fields are stable method IDs, not free-form substitutes for a
 // bound methods file. The programmatic kernel validates their identities but
-// grants no empirical authority; the future package loader must bind and
-// evidence the corresponding deterministic definitions.
+// grants no empirical authority; the five-file package loader binds and
+// evidences the corresponding records while preserving that hard boundary.
 struct PartialCreditClaimLossCohortConfig {
     std::string version{kPartialCreditClaimLossCohortVersion};
     std::string cohort_id{};
@@ -64,8 +110,13 @@ struct PartialCreditClaimLossCohortConfig {
     std::string denominator_definition{};
     std::string currency_label{};
     std::string monetary_basis{};
+    std::string monetary_basis_definition{};
     std::size_t population_frame_count{};
     bool candidate_only{true};
+    PartialCreditClaimLossCohortBoundFile observations_file{};
+    PartialCreditClaimLossCohortBoundFile methods_file{};
+    PartialCreditClaimLossCohortBoundFile dossier_file{};
+    PartialCreditClaimLossCohortBoundFile evidence_manifest_file{};
     std::vector<PartialCreditClaimLossExclusionRule> exclusion_rules{};
 };
 
@@ -85,6 +136,7 @@ struct PartialCreditClaimLossObservation {
     std::string classification_date{"NONE"};
     std::string resolution_date{"NONE"};
     std::string exclusion_rule_id{"NONE"};
+    std::filesystem::path claim_cfg_path{};
     std::optional<ClaimLedgerPackage> claim_package{};
     std::string expected_claim_config_sha256{"NONE"};
     std::string realized_scenario_id{"NONE"};
@@ -143,9 +195,50 @@ struct PartialCreditClaimLossObservationResult {
     std::vector<std::string> blockers{};
 };
 
-struct PartialCreditClaimLossCohortPackage {
+class PartialCreditClaimLossCohortPackage {
+public:
+    std::filesystem::path directory{};
+    std::string cohort_config_sha256{};
     PartialCreditClaimLossCohortConfig config{};
+    std::vector<PartialCreditClaimLossMethod> methods{};
+    EvidenceDossier evidence_dossier{};
+    EvidenceGateUseBatchAssessment evidence_gate_assessment{};
+    std::vector<std::string> admission_blockers{};
     std::vector<PartialCreditClaimLossObservation> observations{};
+
+    [[nodiscard]] bool five_file_integrity_verified() const noexcept {
+        return load_seal_ != nullptr;
+    }
+
+    [[nodiscard]] bool population_frame_evidence_passed() const noexcept {
+        return load_seal_ != nullptr && load_seal_->population_frame_passed;
+    }
+
+    [[nodiscard]] bool candidate_package_valid() const noexcept {
+        return load_seal_ != nullptr && load_seal_->candidate_valid;
+    }
+
+    [[nodiscard]] bool empirical_realized_cash_admissible() const noexcept {
+        return false;
+    }
+
+private:
+    struct LoadSeal {
+        std::filesystem::path canonical_directory{};
+        std::string cohort_config_sha256{};
+        bool population_frame_passed{};
+        bool candidate_valid{};
+    };
+
+    std::shared_ptr<const LoadSeal> load_seal_{};
+
+    friend PartialCreditClaimLossCohortPackage
+    load_partial_credit_claim_loss_cohort_package(
+        const std::filesystem::path& root);
+    friend PartialCreditClaimLossCohortEvaluation
+    evaluate_partial_credit_claim_loss_cohort(
+        const PartialCreditClaimLossCohortPackage& package);
+    friend struct detail::PartialCreditClaimLossCohortLoadAccess;
 };
 
 struct PartialCreditClaimLossCohortEvaluation {
@@ -153,6 +246,9 @@ struct PartialCreditClaimLossCohortEvaluation {
     bool calibrated_execution_authorized{};
     bool portfolio_export_authorized{};
     bool empirical_realized_cash_admissible{};
+    bool five_file_integrity_verified{};
+    bool population_frame_evidence_passed{};
+    bool candidate_package_valid{};
     bool synthetic_package_present{};
     bool claim_ledger_package_blockers_present{};
     bool frame_cluster_ids_unique{};
@@ -215,6 +311,8 @@ struct PartialCreditClaimLossCohortEvaluation {
     PartialCreditClaimLossDisposition value) noexcept;
 [[nodiscard]] std::string_view to_string(
     PartialCreditClaimTriggerStatus value) noexcept;
+[[nodiscard]] std::string_view to_string(
+    PartialCreditClaimLossMethodPurpose value) noexcept;
 
 void validate_partial_credit_claim_loss_cohort_config(
     const PartialCreditClaimLossCohortConfig& config);

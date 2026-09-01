@@ -2,6 +2,8 @@
 
 #include <naturalehia/cellular_finance/partial_credit_claim_loss_cohort.hpp>
 
+#include "partial_credit_claim_loss_cohort_internal.hpp"
+
 #include <naturalehia/cellular_finance/joint_cohort.hpp>
 
 #include <algorithm>
@@ -1028,6 +1030,37 @@ std::string_view to_string(
     return "unknown";
 }
 
+std::string_view to_string(
+    PartialCreditClaimLossMethodPurpose value) noexcept {
+    switch (value) {
+    case PartialCreditClaimLossMethodPurpose::Population:
+        return "population";
+    case PartialCreditClaimLossMethodPurpose::SamplingUnit:
+        return "sampling-unit";
+    case PartialCreditClaimLossMethodPurpose::Cluster:
+        return "cluster";
+    case PartialCreditClaimLossMethodPurpose::TermStratum:
+        return "term-stratum";
+    case PartialCreditClaimLossMethodPurpose::Horizon:
+        return "horizon";
+    case PartialCreditClaimLossMethodPurpose::Loss:
+        return "loss";
+    case PartialCreditClaimLossMethodPurpose::Resolution:
+        return "resolution";
+    case PartialCreditClaimLossMethodPurpose::Censoring:
+        return "censoring";
+    case PartialCreditClaimLossMethodPurpose::Denominator:
+        return "denominator";
+    case PartialCreditClaimLossMethodPurpose::MonetaryBasis:
+        return "monetary-basis";
+    case PartialCreditClaimLossMethodPurpose::AmountBound:
+        return "amount-bound";
+    case PartialCreditClaimLossMethodPurpose::Metric:
+        return "metric";
+    }
+    return "unknown";
+}
+
 void validate_partial_credit_claim_loss_cohort_config(
     const PartialCreditClaimLossCohortConfig& config) {
     if (config.version != kPartialCreditClaimLossCohortVersion) {
@@ -1058,6 +1091,10 @@ void validate_partial_credit_claim_loss_cohort_config(
     }
     require_safe_identifier(config.currency_label, "cohort currency_label");
     require_safe_text(config.monetary_basis, "cohort monetary_basis");
+    if (!config.monetary_basis_definition.empty()) {
+        require_safe_identifier(config.monetary_basis_definition,
+            "cohort monetary_basis_definition");
+    }
     if (!config.candidate_only) {
         throw std::invalid_argument(
             "partial-credit cohort v0.1 must remain candidate_only");
@@ -1079,6 +1116,14 @@ void validate_partial_credit_claim_loss_cohort_config(
         require_safe_identifier(rule.id, "exclusion rule id");
         require_date(rule.frozen_date, "exclusion rule frozen_date");
         require_safe_text(rule.statement, "exclusion rule statement");
+        if (!rule.outcome_blind_asserted) {
+            throw std::invalid_argument(
+                "partial-credit cohort exclusion rules must be outcome-blind");
+        }
+        if (!rule.evidence_record_ids.empty()) {
+            require_sorted_unique_ids(rule.evidence_record_ids,
+                "exclusion rule evidence IDs", false);
+        }
         if (!rule_ids.emplace(rule.id).second) {
             throw std::invalid_argument(
                 "partial-credit cohort exclusion rule IDs must be unique");
@@ -1086,8 +1131,10 @@ void validate_partial_credit_claim_loss_cohort_config(
     }
 }
 
-PartialCreditClaimLossCohortEvaluation
-evaluate_partial_credit_claim_loss_cohort(
+namespace {
+
+[[nodiscard]] PartialCreditClaimLossCohortEvaluation
+evaluate_partial_credit_claim_loss_cohort_core(
     const PartialCreditClaimLossCohortPackage& package) {
     validate_partial_credit_claim_loss_cohort_config(package.config);
     if (package.observations.size() !=
@@ -1155,9 +1202,15 @@ evaluate_partial_credit_claim_loss_cohort(
     result.calibrated_execution_authorized = false;
     result.portfolio_export_authorized = false;
     result.empirical_realized_cash_admissible = false;
+    result.five_file_integrity_verified =
+        package.five_file_integrity_verified();
+    result.population_frame_evidence_passed =
+        package.population_frame_evidence_passed();
+    result.candidate_package_valid = package.candidate_package_valid();
     result.frame_cluster_ids_unique = true;
     result.frame_count = ordered.size();
     result.observations.reserve(ordered.size());
+    result.blockers = package.admission_blockers;
     std::unordered_set<std::string> included_package_ids;
     std::unordered_set<std::string> included_claim_ids;
     std::unordered_set<std::string> included_package_roots;
@@ -1469,13 +1522,44 @@ evaluate_partial_credit_claim_loss_cohort(
             result.total_provider_claim_payable_after_horizon_million) &&
         amount_available(result.total_final_principal_writeoff_million);
 
-    result.blockers.push_back(
-        "field-level controlled outcome evidence and the bound population/method package are not yet implemented");
+    if (!package.five_file_integrity_verified()) {
+        result.blockers.push_back(
+            "field-level controlled outcome evidence and the bound population/method package are not yet implemented");
+    }
     result.blockers.push_back(
         "open amount endpoints are metric-specific outer envelopes and do not form one jointly feasible cash, unpaid-claim and writeoff state");
     result.blockers.push_back(
         "calibrated execution, Portfolio export, pricing and expected-return use are prohibited");
     return result;
+}
+
+} // namespace
+
+PartialCreditClaimLossCohortEvaluation
+evaluate_partial_credit_claim_loss_cohort(
+    const PartialCreditClaimLossCohortPackage& package) {
+    if (package.load_seal_ == nullptr) {
+        return evaluate_partial_credit_claim_loss_cohort_core(package);
+    }
+
+    // A sealed package is a locator for an independently reloaded binder, not
+    // authority to trust caller-mutable parsed fields or booleans. Copying a
+    // valid package and then changing its public data therefore cannot carry
+    // positive loader provenance into an evaluation.
+    PartialCreditClaimLossCohortPackage reloaded =
+        detail::PartialCreditClaimLossCohortLoadAccess::
+            reload_for_evaluation(
+                package.load_seal_->canonical_directory,
+                package.load_seal_->cohort_config_sha256);
+    if (reloaded.load_seal_ == nullptr ||
+        reloaded.load_seal_->canonical_directory !=
+            package.load_seal_->canonical_directory ||
+        reloaded.load_seal_->cohort_config_sha256 !=
+            package.load_seal_->cohort_config_sha256) {
+        throw std::logic_error(
+            "partial-credit cohort sealed binder changed after loading");
+    }
+    return evaluate_partial_credit_claim_loss_cohort_core(reloaded);
 }
 
 } // namespace naturalehia::cellular_finance

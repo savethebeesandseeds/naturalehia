@@ -1,0 +1,11 @@
+* text=auto eol=lf
+
+*.pdf -text
+*.png -text
+*.jpg -text
+*.jpeg -text
+*.webp -text
+*.wasm -text
+
+# Retained public-source bytes are immutable evidence, not style-normalized source.
+reference_transactions/**/retained_sources/** -whitespace

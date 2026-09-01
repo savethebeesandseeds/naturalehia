@@ -40,11 +40,12 @@ the underlying project claims.
 The consolidated C++ comparison is `naturalehia-instrument-family`; its seven
 reproducible inputs and invocation are documented with the
 [ten-claim synthetic fixture](scenarios/ten-claim-instrument-v1-synthetic/README.md).
-The complete current warnings-as-errors C++20 suite passes 72 of 72 tests in
+The complete current warnings-as-errors C++20 suite passes 73 of 73 tests in
 the pinned Emscripten 6.0.5 Release build when every executable and CLI wrapper
 runs through Node. The record includes the retained version-1 construction,
 Capital Stack v0.2 bridge and direct Claim Ledger integration, the v0.2
-capital-mobilization frontier, and the issue-price browser target.
+capital-mobilization frontier, strict controlled-cohort loader, and the
+issue-price browser target.
 
 > **Current status:** this repository implements an open financial standard that
 > keeps cash sources, contractual loss, dependence, and evidence quality
@@ -149,9 +150,11 @@ avoidable animal use.
   source and source date, common-versus-scenario scope, cash-path status,
   provider terms, and applicable covenants; an explicitly complete-resolved
   status is required. It emits no probability, Portfolio, price, empirical, or
-  calibration authority. Evidence Gate now has a separate claim-population
-  schema/profile, but the controlled-register hash, five-file cohort loader,
-  classification/method admission, and empirical as-of policy remain deferred.
+  calibration authority. A strict five-file loader now binds the cohort,
+  methods, dossier and evidence manifest by exact SHA-256; confines and reloads
+  every Claim Ledger package; and runs Evidence Gate's claim-population
+  profile. Census truth, classification/method admission, term comparability,
+  exclusion timing, and a positive empirical as-of policy remain deferred.
 - A deterministic C++20 multi-project participation-pool kernel. It requires
   complete weighted joint scenarios, traces receipts to named cash sources,
   measures project and pool loss/NPV/liquidity tails, calculates pairwise loss
@@ -823,8 +826,8 @@ each relevant jurisdiction before solicitation or execution.
 | [Claim-Ledger Portfolio Adapter v0.2](docs/CLAIM_LEDGER_PORTFOLIO_ADAPTER_V0_2.md) | Verified package admission, decision-cut conversion, external source budgets, independent cash/principal reconciliation, and output lineage |
 | [Claim-Ledger Joint-Portfolio Assembler v0.1](docs/CLAIM_LEDGER_JOINT_PORTFOLIO_ASSEMBLER_V0_1.md) | Verified multi-claim assembly, explicit dependence, common-calendar and unique-right gates, marginal conservation, and expanded package/cash lineage |
 | [Claim-Ledger Joint-Portfolio Assembler v0.1 Verification](docs/CLAIM_LEDGER_JOINT_PORTFOLIO_VERIFICATION_V0_1.md) | Debug/Release record, hand-reconciled dependence example, rare-state and calendar controls, deep conservation checks, resource guards, review corrections, and residual evidence boundary |
-| [Partial-Credit Claim-Loss Cohort Binder v0.1](docs/PARTIAL_CREDIT_CLAIM_LOSS_COHORT_BINDER_V0_1.md) | Target five-file evidence-census standard plus an in-memory mechanical evaluator that consumes Claim Ledger's authoritative selected-path provenance for resolved rows while preserving a hard no-empirical/no-calibration boundary |
-| [Partial-Credit Claim-Loss Cohort Binder v0.1 Verification](docs/PARTIAL_CREDIT_CLAIM_LOSS_COHORT_VERIFICATION_V0_1.md) | Debug/Release record, selected-path provenance seam, hand-reconstructed declared frame, face-versus-principal oracle, open-case ranges, adversarial controls, and deferred census boundary |
+| [Partial-Credit Claim-Loss Cohort Binder v0.1](docs/PARTIAL_CREDIT_CLAIM_LOSS_COHORT_BINDER_V0_1.md) | Strict five-file evidence-census package loader plus a mechanical evaluator that consumes Claim Ledger's authoritative selected-path provenance while preserving a hard no-empirical/no-calibration boundary |
+| [Partial-Credit Claim-Loss Cohort Binder v0.1 Verification](docs/PARTIAL_CREDIT_CLAIM_LOSS_COHORT_VERIFICATION_V0_1.md) | Exact file binding, population-frame Evidence Gate, selected-path provenance, hand-reconstructed frame, face-versus-principal oracle, open-case ranges, adversarial controls, and residual empirical-admission boundary |
 | [Financial Instrument Family v0.1](docs/INSTRUMENT_FAMILY_V0_1.md) | Stage-specific claims, draw and payoff rules, real return sources, loss allocation, metrics, and falsification tests |
 | [Participation Pool Engine v0.1](docs/PARTICIPATION_POOL_ENGINE_V0_1.md) | Implemented explicit-joint-scenario kernel, cash-source invariants, loss and NPV outputs, diversification tests, layers, and current boundary |
 | [Portfolio Scenario Format v0.1](docs/PORTFOLIO_SCENARIO_FORMAT_V0_1.md) | Implemented strict reloadable input schema, source-budget semantics, and hand-calculated two-project fixture |
@@ -859,6 +862,7 @@ each relevant jurisdiction before solicitation or execution.
 | [Real-Transaction Acquisition Ladder v0.1](reference_transactions/README.md) | First three controlled-data targets: a private facility converter, an amortizing guaranteed facility, and a failure-contingent public credit |
 | [Liberation Labs Public Transaction Dossier](reference_transactions/liberation-labs-facility-financing-2024-2025/PUBLIC_TRANSACTION_DOSSIER.md) | First retained real-note package, April–October cluster ambiguity, exact missing-rights decision, source hashes, and refusal to treat promised 10% interest as an expected-cash hurdle |
 | [Solar Foods Factory 01 Public Transaction Dossier](reference_transactions/solar-foods-factory-01-facility-2022-2025/PUBLIC_TRANSACTION_DOSSIER.md) | Retained amortizing-facility reconstruction, audited principal-cash reconciliation, named guarantors and unresolved guarantee/fee cash, and refusal to treat floating margins as expected return |
+| [Meatable Dutch Innovation Credit Public Transaction Dossier](reference_transactions/meatable-dutch-innovation-credit-2024/PUBLIC_TRANSACTION_DOSSIER.md) | Public-incomplete award package separating the issuer-reported EUR 7.6 million amount from generic programme rates, templates and discretionary remission; no award amount is treated as cash or a market hurdle |
 | [Financial-Engineering Precedents v0.1](docs/FINANCIAL_ENGINEERING_PRECEDENTS_V0_1.md) | Evidence/inference map from biomedical RBOs, global health, blended finance, guarantees, dynamic leverage, and current cellular-agriculture financing |
 | [Portfolio Calibration and Probability-Uncertainty Standard v0.1](docs/PORTFOLIO_CALIBRATION_STANDARD_V0_1.md) | Evidence requirements for state, marginal, payoff, recovery, timing, dependence, physical probabilities, sparse data, and validation |
 | [Joint-Cohort Probability Envelope v0.1](docs/JOINT_COHORT_PROBABILITY_ENVELOPE_V0_1.md) | Candidate-only raw cohort ledger, conservative nonasymptotic simultaneous bounds, declared-reference checks, fixed-path investor-risk projection, and the direct-joint-state scaling boundary |

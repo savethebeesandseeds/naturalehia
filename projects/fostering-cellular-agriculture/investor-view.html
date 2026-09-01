@@ -45,13 +45,13 @@
           <figure class="investor-intro-art"><img src="./assets/homepage-assets/hero-bioreactor-collage.png" width="1536" height="1024" alt="Bioreactor vessels and cellular-agriculture process equipment arranged as an analytical collage" decoding="async"></figure>
           <aside class="investor-status" aria-label="Model boundary">
             <span>Current boundary</span>
-            <strong>Mechanically tested.<br>Not calibrated or financeable.</strong>
+            <strong>Mechanically tested.<br>Not calibrated or shown financeable.</strong>
             <p>Every amount, probability, recovery, hurdle and support term shown here is synthetic.</p>
             <dl>
               <div><dt>Claims</dt><dd>10</dd></div>
               <div><dt>Reference principal</dt><dd>DEMO 100</dd></div>
               <div><dt>Joint states</dt><dd>9</dd></div>
-              <div><dt>Physical hurdle</dt><dd>8%</dd></div>
+              <div><dt>Assumed discount rate</dt><dd>8% · synthetic</dd></div>
             </dl>
           </aside>
         </div>
@@ -75,7 +75,7 @@
 
         <div class="investor-result-grid" aria-live="polite">
           <article class="npv-card">
-            <div class="metric-label"><span>Expected investor NPV</span><small id="npv-hurdle">At stated 8% hurdle</small></div>
+            <div class="metric-label"><span>Expected investor NPV</span><small id="npv-hurdle">At assumed 8% discount rate</small></div>
             <div class="npv-primary"><strong id="npv-central">0.662</strong><span>DEMO million<br>central mix</span></div>
             <div class="npv-axis" id="npv-axis" role="img" aria-label="Expected NPV ranges from negative 18.718 to positive 15.440, with a central value of positive 0.662">
               <span class="npv-zero" aria-hidden="true"></span>
@@ -96,9 +96,9 @@
           <aside class="investor-reading" id="investor-reading">
             <span class="reading-status">Current reading</span>
             <h3 id="reading-title">A positive center does not make a robust asset.</h3>
-            <p id="reading-copy">The central mix clears the stated hurdle by only 0.662, while a permitted adverse probability mix produces an 18.718 shortfall. The unsupported claim is measurable, but not yet shown investable.</p>
+            <p id="reading-copy">At the assumed 8% investor discount rate, central NPV is only 0.662, while a permitted adverse probability mix produces an 18.718 shortfall. The unsupported claim is measurable, but not yet shown investable.</p>
             <dl>
-              <div><dt>Probability of impairment</dt><dd id="impairment-probability">37%</dd></div>
+              <div><dt>Resolved principal-loss probability</dt><dd id="impairment-probability">37%</dd></div>
               <div><dt>Platform / sponsor take</dt><dd>0</dd></div>
               <div><dt>Model decision</dt><dd id="model-decision">Reject current terms</dd></div>
             </dl>
@@ -108,7 +108,7 @@
         <div class="runtime-notice">
           <span class="runtime-light" aria-hidden="true"></span>
           <p><strong>Validated analytical preview.</strong> Construction values retain the frozen C++ synthetic fixture; the financeability boundary is also computed in-browser by the published C++ WebAssembly module. Neither is market calibration.</p>
-          <span>Emscripten Release 72/72 · Published WASM byte parity · Reconciliations 0</span>
+          <span>Emscripten Release 73/73 · Published WASM byte parity · Reconciliations 0</span>
         </div>
         <noscript><p class="noscript-notice">The central instrument snapshot remains readable, but claim, factor and scenario exploration requires JavaScript. The complete result is available in the <a href="./docs/TEN_CLAIM_INSTRUMENT_ANALYSIS_V1.md">ten-claim analysis</a>.</p></noscript>
       </div>
@@ -299,9 +299,27 @@
           <article class="evidence-synthetic"><span>Synthetic</span><h3>Economics used to test the machinery</h3><ul><li>Cash, recovery and draw amounts</li><li>Probability ranges and dependence</li><li>Investor and provider hurdles</li><li>Success participation rights</li><li>Protection terms and capacity</li></ul></article>
           <article class="evidence-unknown"><span>Unknown</span><h3>Facts required before live use</h3><ul><li>Enforceable project cash rights</li><li>Authenticated milestone evidence</li><li>Empirical loss and recovery data</li><li>Investor demand and market hurdle</li><li>Provider authority and capacity</li></ul></article>
         </div>
+        <div class="evidence-ledger" aria-labelledby="evidence-ledger-heading">
+          <header>
+            <div><p>Public mechanism ledger</p><h3 id="evidence-ledger-heading">Three precedents. Zero calibration-eligible observations.</h3></div>
+            <p>Each record sharpens the contract and diligence questions. None yet supplies the complete matched cash, loss and independent price evidence required to estimate investor return.</p>
+            <a href="./whitepaper/fostering-cellular-agriculture-white-paper.pdf">Read the empirical boundary <span aria-hidden="true">→</span></a>
+          </header>
+          <div class="evidence-ledger-scroll">
+            <table>
+              <thead><tr><th scope="col">Record</th><th scope="col">Publicly reported mechanism</th><th scope="col">Model authority</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">Liberation Labs <span>2024–25</span></th><td data-label="Publicly reported mechanism">Private secured notes with promised interest and conversion <a class="evidence-ledger-source" href="./reference_transactions/liberation-labs-facility-financing-2024-2025/PUBLIC_TRANSACTION_DOSSIER.md">Controlled dossier</a></td><td data-label="Model authority"><span class="evidence-ledger-status">Mechanism only / no model input</span></td></tr>
+                <tr><th scope="row">Solar Foods Factory 01 <span>2022–25</span></th><td data-label="Publicly reported mechanism">Gas-fermentation protein facility—an operating-risk class distinct from cultivated meat—with an amortizing facility and named export-credit guarantors <a class="evidence-ledger-source" href="./reference_transactions/solar-foods-factory-01-facility-2022-2025/PUBLIC_TRANSACTION_DOSSIER.md">Controlled dossier</a></td><td data-label="Model authority"><span class="evidence-ledger-status">Mechanism only / no model input</span></td></tr>
+                <tr><th scope="row">Meatable Innovation Credit <span>2024 award / 2025 wind-down resolution announced</span></th><td data-label="Publicly reported mechanism">Issuer-reported award; later investor RNS reports a resolution to dissolve and wind down after continued funding was unavailable. Public-credit default, remission and recovery remain unknown <a class="evidence-ledger-source" href="./reference_transactions/meatable-dutch-innovation-credit-2024/PUBLIC_TRANSACTION_DOSSIER.md">Controlled dossier</a></td><td data-label="Model authority"><span class="evidence-ledger-status">Mechanism only / no model input</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="evidence-ledger-result"><span>Admission result</span><strong>3 controlled dossiers assembled · 0 calibration-eligible · market hurdle not identified</strong></p>
+        </div>
         <div class="investability-test">
           <p>Current economic conclusion</p>
-          <strong>Defined, measurable and rejectable.<br>Not yet shown attractive or financeable.</strong>
+          <strong>Synthetic mechanics verified; market price not identified.<br>Not yet shown attractive or financeable.</strong>
           <a href="./docs/MULTI_PROJECT_MILESTONE_PARTICIPATION_TERM_SHEET_V1.md">Read the candidate term sheet <span aria-hidden="true">→</span></a>
         </div>
       </div>

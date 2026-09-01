@@ -7,9 +7,21 @@ for the project's technical financial white paper.
 - `references.bib` is the source bibliography.
 - `fostering-cellular-agriculture-white-paper.pdf` is the public artifact.
 
-Version 1.2 adds the Capital Mobilization Frontier v0.2 same-pool rejection and
-the conditional issue-price/support window while preserving the legacy v0.1
-frontier record and all execution non-claims.
+Version 1.3 adds the empirical-underwriting boundary, a controlled-cohort
+evidence standard, and the retained Meatable / Netherlands Enterprise Agency
+development-credit precedent. It also records the later resolution to dissolve
+and wind down Meatable and the Agronomics equity write-off without treating
+either as evidence of RVO credit default, recovery, remission, or loss. The
+three controlled transaction dossiers remain ineligible for pricing or loss
+calibration; the paper preserves the v0.2 frontier rejection, the legacy v0.1
+record, and all execution non-claims.
+
+The immutable publication identity is the Git tag
+`fca-whitepaper-v1.3.0`. `release-manifest-v1.3.tsv` binds the released paper,
+bibliography, scenario inputs, published WebAssembly runtime, and browser
+fixture by lowercase SHA-256. Create the manifest only after the verified PDF
+has been copied into this directory; the manifest intentionally does not hash
+itself.
 
 The paper must be built with `latexmk` inside the project's
 `documents-latex:bookworm` container. From the repository root, the equivalent

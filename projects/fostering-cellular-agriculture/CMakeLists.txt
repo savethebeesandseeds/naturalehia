@@ -85,6 +85,7 @@ add_library(
         src/portfolio_ambiguity_config.cpp
         src/portfolio_config.cpp
         src/partial_credit_claim_loss_cohort.cpp
+        src/partial_credit_claim_loss_cohort_config.cpp
         src/probability_polytope.cpp
         src/probability_polytope_config.cpp
         src/probability_polytope_tail_attribution.cpp
@@ -788,6 +789,37 @@ if(BUILD_TESTING)
             ${CMAKE_CURRENT_SOURCE_DIR}/scenarios/claim-ledger-v0.1-synthetic-peer/claim.cfg
             ${CMAKE_CURRENT_SOURCE_DIR}/scenarios/claim-ledger-v0.1-synthetic-rare/claim.cfg
             ${CMAKE_CURRENT_SOURCE_DIR}/scenarios/claim-ledger-v0.1-synthetic-shifted/claim.cfg
+    )
+
+    add_executable(
+        cellular_finance_partial_credit_claim_loss_cohort_config_tests
+        tests/partial_credit_claim_loss_cohort_config_tests.cpp
+    )
+    target_link_libraries(
+        cellular_finance_partial_credit_claim_loss_cohort_config_tests
+        PRIVATE Naturalehia::CellularFinance
+    )
+    target_compile_features(
+        cellular_finance_partial_credit_claim_loss_cohort_config_tests
+        PRIVATE cxx_std_20
+    )
+    set_target_properties(
+        cellular_finance_partial_credit_claim_loss_cohort_config_tests
+        PROPERTIES CXX_EXTENSIONS OFF
+    )
+    cellular_finance_set_compile_policy(
+        cellular_finance_partial_credit_claim_loss_cohort_config_tests
+    )
+    if(EMSCRIPTEN)
+        target_link_options(
+            cellular_finance_partial_credit_claim_loss_cohort_config_tests
+            PRIVATE "SHELL:-sSTACK_SIZE=1048576"
+        )
+    endif()
+    add_test(
+        NAME cellular_finance_partial_credit_claim_loss_cohort_config_tests
+        COMMAND cellular_finance_partial_credit_claim_loss_cohort_config_tests
+            ${CMAKE_CURRENT_SOURCE_DIR}/scenarios/claim-ledger-v0.1-synthetic/claim.cfg
     )
 
     add_executable(
