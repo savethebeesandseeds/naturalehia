@@ -75,6 +75,8 @@ add_library(
         src/claim_ledger_portfolio_adapter.cpp
         src/config.cpp
         src/evidence_gate.cpp
+        src/funding_bridge.cpp
+        src/funding_bridge_config.cpp
         src/joint_cohort.cpp
         src/joint_cohort_capital_stack.cpp
         src/joint_cohort_config.cpp
@@ -618,6 +620,54 @@ endif()
 
 include(CTest)
 if(BUILD_TESTING)
+    add_executable(
+        cellular_finance_funding_bridge_tests
+        tests/funding_bridge_tests.cpp
+    )
+    target_link_libraries(
+        cellular_finance_funding_bridge_tests
+        PRIVATE Naturalehia::CellularFinance
+    )
+    target_compile_features(
+        cellular_finance_funding_bridge_tests
+        PRIVATE cxx_std_20
+    )
+    set_target_properties(
+        cellular_finance_funding_bridge_tests
+        PROPERTIES CXX_EXTENSIONS OFF
+    )
+    cellular_finance_set_compile_policy(
+        cellular_finance_funding_bridge_tests
+    )
+    add_test(
+        NAME cellular_finance_funding_bridge_tests
+        COMMAND cellular_finance_funding_bridge_tests
+    )
+
+    add_executable(
+        cellular_finance_funding_bridge_config_tests
+        tests/funding_bridge_config_tests.cpp
+    )
+    target_link_libraries(
+        cellular_finance_funding_bridge_config_tests
+        PRIVATE Naturalehia::CellularFinance
+    )
+    target_compile_features(
+        cellular_finance_funding_bridge_config_tests
+        PRIVATE cxx_std_20
+    )
+    set_target_properties(
+        cellular_finance_funding_bridge_config_tests
+        PROPERTIES CXX_EXTENSIONS OFF
+    )
+    cellular_finance_set_compile_policy(
+        cellular_finance_funding_bridge_config_tests
+    )
+    add_test(
+        NAME cellular_finance_funding_bridge_config_tests
+        COMMAND cellular_finance_funding_bridge_config_tests
+    )
+
     add_executable(
         cellular_finance_model_tests
         tests/model_tests.cpp

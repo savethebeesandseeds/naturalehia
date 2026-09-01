@@ -40,7 +40,7 @@ the underlying project claims.
 The consolidated C++ comparison is `naturalehia-instrument-family`; its seven
 reproducible inputs and invocation are documented with the
 [ten-claim synthetic fixture](scenarios/ten-claim-instrument-v1-synthetic/README.md).
-The complete current warnings-as-errors C++20 suite passes 73 of 73 tests in
+The complete current warnings-as-errors C++20 suite passes 75 of 75 tests in
 the pinned Emscripten 6.0.5 Release build when every executable and CLI wrapper
 runs through Node. The record includes the retained version-1 construction,
 Capital Stack v0.2 bridge and direct Claim Ledger integration, the v0.2
@@ -849,6 +849,7 @@ each relevant jurisdiction before solicitation or execution.
 | [Fully Funded Capital Stack v0.1 Verification](docs/CAPITAL_STACK_VERIFICATION_V0_1.md) | Debug/Release record, hand table, staged-reserve and continuing-exposure tests, strict parser/CLI controls, and residual boundary |
 | [Capital Stack Asset-to-Liability Bridge v0.2](docs/CAPITAL_STACK_ASSET_LIABILITY_BRIDGE_V0_2.md) | Per-project-maximum reserve funding, exact asset `L/O` and liability `Q` separation, `layer(Q)` tranche shortfalls, simultaneous-source pro-rata memos, and the direct Claim Ledger acceptance contract |
 | [Capital Stack Asset-to-Liability Bridge v0.2 Verification](docs/CAPITAL_STACK_ASSET_LIABILITY_BRIDGE_VERIFICATION_V0_2.md) | Exact 8/10 and 12/10 `L/O/Q` hand tables, staggered-use and simultaneous-surplus checks, high-scale minimum-tranche boundary, event-polytope coverage, and focused WebAssembly results |
+| [Callable-Capital and Warehouse Funding Integrity Bridge v0.1](docs/CALLABLE_CAPITAL_WAREHOUSE_FUNDING_BRIDGE_V0_1.md) | Executable synthetic test of delayed permanent capital and temporary warehouse debt, with disjoint cash buckets, funded-protection custody, provider-performance states, source-specific failures, maturity EAD, and concentration/NPV boundaries |
 | [Robust Capital-Mobilization Frontier v0.1](docs/ROBUST_CAPITAL_MOBILIZATION_FRONTIER_V0_1.md) | Implemented finite `q`-by-`A` market-claim feasibility frontier, two funded claims, twelve optional mandates, endpoint witnesses, Pareto reporting, and institutional boundaries |
 | [Robust Capital-Mobilization Frontier v0.1 Verification](docs/ROBUST_CAPITAL_MOBILIZATION_FRONTIER_VERIFICATION_V0_1.md) | Hand reconciliation, strict Debug/Release record, parser and CLI controls, independent 228-candidate oracle, exposure correction, resource guard, and residual limitations |
 | [Robust Capital-Mobilization Frontier v0.2](docs/ROBUST_CAPITAL_MOBILIZATION_FRONTIER_V0_2.md) | Additive Capital Stack v0.2 five-input frontier, strict `Q` risk family, separate outlay/asset-principal/reserve ledgers, 25-candidate same-pool rejection, and conditional issue-price/support handoff |
