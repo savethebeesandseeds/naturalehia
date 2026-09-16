@@ -16,14 +16,30 @@ readonly CONTAINER_HOME="/home/developer"
 readonly CONTAINER_GPU_ROOT="/opt/naturalehia-gpu"
 readonly CONTAINER_PATH="/usr/local/cuda-13.1/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
-readonly TOOLCHAIN_PACKAGE_SET="autoconf automake bash bison build-essential ca-certificates ccache clang clang-format clang-tidy clangd cmake cppcheck curl doxygen flex gdb gfortran git graphviz jq lcov less libbenchmark-dev libboost-filesystem-dev libboost-program-options-dev libboost-system-dev libcurl4-openssl-dev libeigen3-dev libfmt-dev libgrpc++-dev libgtest-dev liblapacke-dev liblz4-dev libnuma-dev libomp-dev libopenblas-dev libopencv-dev libprotobuf-dev libspdlog-dev libsqlite3-dev libssl-dev libtbb-dev libyaml-cpp-dev libzstd-dev lld meson nasm ninja-build nlohmann-json3-dev passwd pkg-config protobuf-compiler protobuf-compiler-grpc python3-dev python3-pip python3-venv shellcheck unzip valgrind wget xz-utils zip zlib1g-dev"
+readonly TOOLCHAIN_PACKAGE_SET="bash ca-certificates ccache clang-format cmake curl g++ git make ninja-build passwd shellcheck unzip"
 
 readonly CUDA_REPOSITORY="https://developer.download.nvidia.com/compute/cuda/repos/debian13/x86_64"
 readonly CUDA_KEYRING_FILE="cuda-keyring_1.1-1_all.deb"
 readonly CUDA_KEYRING_SHA256="d0d4ef986a44400f9db33c600ef33a985175e7cc63d805a10e1839c7a1e78f5f"
 readonly CUDA_KEYRING_BYTES="4182"
-readonly CUDA_TOOLKIT_PACKAGE="cuda-toolkit-13-1"
-readonly CUDA_TOOLKIT_PACKAGE_VERSION="13.1.2-1"
+# This is the complete set of CUDA capabilities used by the documented GPU
+# build and smoke test: nvcc and the CUDA runtime development files, NVRTC's
+# exported LibTorch link interface, CUPTI required by libtorch_cpu.so, and the
+# runtime libraries named by the canonical smoke executable's LibTorch ELF
+# dependency chain. Keep every
+# requested package version explicit; APT still resolves their signed
+# transitive closure from the CUDA repository.
+readonly CUDA_PACKAGE_SET="cuda-nvcc-13-1=13.1.115-1 \
+cuda-cudart-dev-13-1=13.1.80-1 \
+cuda-cudart-13-1=13.1.80-1 \
+cuda-nvrtc-dev-13-1=13.1.115-1 \
+cuda-nvrtc-13-1=13.1.115-1 \
+cuda-cupti-13-1=13.1.115-1 \
+libcublas-13-1=13.2.2.2-1 \
+libcufft-13-1=12.1.0.78-1 \
+libcufile-13-1=1.16.1.26-1 \
+libcurand-13-1=10.4.1.81-1 \
+libcusparse-13-1=12.7.3.1-1"
 readonly CUDA_ROOT="/usr/local/cuda-13.1"
 
 readonly LIBTORCH_VERSION="2.13.0"
@@ -60,4 +76,4 @@ readonly NVIDIA_RUNTIME_ID="cudnn-${CUDNN_VERSION}-${CUDNN_WHEEL_SHA256:0:12}_cu
 readonly NVIDIA_RUNTIME_VERSION_ROOT="${CONTAINER_GPU_ROOT}/nvidia-${NVIDIA_RUNTIME_ID}"
 readonly GPU_STACK_ID="cuda-13.1.2_libtorch-${LIBTORCH_VERSION}-${LIBTORCH_CUDA_TAG}-${LIBTORCH_SHA256:0:12}_${NVIDIA_RUNTIME_ID}"
 readonly DOWNLOAD_CACHE="${CONTAINER_GPU_ROOT}/.downloads"
-readonly BOOTSTRAP_VERSION="7"
+readonly BOOTSTRAP_VERSION="9"

@@ -26,6 +26,10 @@ readonly GPU_VOLUME="naturalehia-gpu"
 readonly MANAGED_LABEL="io.naturalehia.devcontainer"
 readonly CONFIG_LABEL="io.naturalehia.config"
 readonly WORKSPACE_LABEL="io.naturalehia.workspace"
+readonly IMAGE_LABEL="io.naturalehia.image"
+readonly GPU_STACK_LABEL="io.naturalehia.gpu-stack"
+readonly RUNTIME_FINGERPRINT_SCHEMA="1"
+readonly PROVISIONING_FINGERPRINT_SCHEMA="1"
 readonly RECREATE_BACKUP_NAME="${CONTAINER_NAME}-recreate-backup"
 readonly LOOPBACK_ADDRESS="127.0.0.1"
 readonly HTTP_CONTAINER_PORT="8080"
@@ -44,6 +48,7 @@ INGEST_PORT="${NATURALEHIA_INGEST_PORT:-50051}"
 CREATED_CONTAINER_ID=""
 RECREATE_ORIGINAL_ID=""
 RECREATE_CANDIDATE_ID=""
+ACTIVE_CONTAINER_ID=""
 
 log() {
     printf '[naturalehia] %s\n' "$*"
@@ -74,8 +79,8 @@ Environment overrides:
   NATURALEHIA_DEV_UID       Development user UID (detected on Linux; otherwise 1000)
   NATURALEHIA_DEV_GID       Development user GID (detected on Linux; otherwise 1000)
 
-The environment includes a pinned CUDA 13.1 development toolkit and GPU-enabled
-LibTorch 2.13. Host NVIDIA drivers remain outside the container.
+The environment includes a pinned, minimal CUDA 13.1 compiler/runtime set
+and GPU-enabled LibTorch 2.13. Host NVIDIA drivers remain outside the container.
 
 Project tasks are separate from lifecycle management. For example:
   bash projects/the-elder-brother-of-fauna/container.sh exec make test
@@ -243,7 +248,9 @@ assert_named_container_id() {
 }
 
 container_running() {
-    [[ "$(docker container inspect --format '{{.State.Running}}' "${CONTAINER_NAME}")" == "true" ]]
+    local container_reference="${1:-${CONTAINER_NAME}}"
+    [[ "$(docker container inspect --format '{{.State.Running}}' \
+        "${container_reference}")" == "true" ]]
 }
 
 managed_container() {
@@ -260,32 +267,53 @@ ensure_image() {
     IMAGE_ID="$(docker image inspect --format '{{.Id}}' "${IMAGE}")"
 }
 
-calculate_fingerprint() {
-    CONFIG_FINGERPRINT="$({
-        printf 'schema=%s\n' "${BOOTSTRAP_VERSION}"
-        printf 'image=%s\n' "${IMAGE_ID}"
-        printf 'name=%s\n' "${CONTAINER_NAME}"
-        printf 'hostname=%s\n' "${CONTAINER_HOSTNAME}"
-        printf 'user=%s:%s\n' "${DEV_UID}" "${DEV_GID}"
-        printf 'workspace=%s:%s:rprivate\n' "${HOST_WORKSPACE}" "${CONTAINER_WORKSPACE}"
-        printf 'build-volume=%s:%s\n' "${BUILD_VOLUME}" "${CONTAINER_BUILD_ROOT}"
-        printf 'home-volume=%s:%s\n' "${HOME_VOLUME}" "${CONTAINER_HOME}"
-        printf 'gpu-volume=%s:%s\n' "${GPU_VOLUME}" "${CONTAINER_GPU_ROOT}"
+calculate_fingerprints() {
+    local setup_sha256
+    setup_sha256="$(sha256sum -- "${HOST_SCRIPT_DIRECTORY}/setup.sh" | awk '{print $1}')"
+    [[ "${setup_sha256}" =~ ^[0-9a-f]{64}$ ]] ||
+        die "could not fingerprint setup.sh"
+
+    RUNTIME_FINGERPRINT="$({
+        printf 'schema=%s\n' "${RUNTIME_FINGERPRINT_SCHEMA}"
+        printf 'image=%s:%s\n' "${IMAGE_ID}" "${IMAGE}"
+        printf 'identity=%s:%s:%s:%s\n' "${CONTAINER_NAME}" \
+            "${CONTAINER_HOSTNAME}" "${DEV_UID}" "${DEV_GID}"
+        printf 'process=entrypoint:empty,cmd:sleep-infinity,workdir:%s\n' \
+            "${CONTAINER_WORKSPACE}"
+        printf 'workspace=%s:%s:rprivate\n' "${HOST_WORKSPACE}" \
+            "${CONTAINER_WORKSPACE}"
+        printf 'build-volume=%s:%s:local\n' "${BUILD_VOLUME}" \
+            "${CONTAINER_BUILD_ROOT}"
+        printf 'home-volume=%s:%s:local\n' "${HOME_VOLUME}" "${CONTAINER_HOME}"
+        printf 'gpu-volume=%s:%s:local\n' "${GPU_VOLUME}" "${CONTAINER_GPU_ROOT}"
         printf 'ports=%s:%s:%s/tcp,%s:%s:%s/tcp\n' \
             "${LOOPBACK_ADDRESS}" "${HTTP_PORT}" "${HTTP_CONTAINER_PORT}" \
             "${LOOPBACK_ADDRESS}" "${INGEST_PORT}" "${INGEST_CONTAINER_PORT}"
-        printf 'runtime=init,restart:no,no-new-privileges,pids:%s,shm:%s\n' \
-            "${PIDS_LIMIT}" "${SHM_SIZE}"
-        printf 'gpu=all:compute,utility\n'
-        printf 'environment=HOME:%s,USER:developer,LOGNAME:developer,CCACHE_DIR:%s/.cache/ccache,CUDA_HOME:%s,LIBTORCH_ROOT:%s,PATH:%s,LANG:C.UTF-8\n' \
-            "${CONTAINER_HOME}" "${CONTAINER_HOME}" "${CUDA_ROOT}" \
-            "${LIBTORCH_ROOT}" "${CONTAINER_PATH}"
-        printf 'logging=local,max-size:%s,max-file:%s\n' "${LOG_MAX_SIZE}" "${LOG_MAX_FILES}"
+        printf 'runtime=init,restart:no,network:bridge,no-new-privileges,pids:%s,shm:%s\n' \
+            "${PIDS_LIMIT}" "${SHM_BYTES}"
+        printf 'gpu=request:all,capability:gpu,driver-env:compute-utility\n'
+        printf 'environment=HOME:%s,USER:developer,LOGNAME:developer,CCACHE_DIR:%s/.cache/ccache,CUDA_CACHE_PATH:%s/.cache/nv,CUDA_HOME:%s,CUDAToolkit_ROOT:%s,CUDACXX:%s/bin/nvcc,LIBTORCH_ROOT:%s,GPU_STACK_ID:%s,RUNTIME_STACK_ID:%s,CMAKE_PREFIX_PATH:%s,PATH:%s,LANG:C.UTF-8,NVIDIA_VISIBLE_DEVICES:all,NVIDIA_DRIVER_CAPABILITIES:compute-utility\n' \
+            "${CONTAINER_HOME}" "${CONTAINER_HOME}" "${CONTAINER_HOME}" \
+            "${CUDA_ROOT}" "${CUDA_ROOT}" "${CUDA_ROOT}" "${LIBTORCH_ROOT}" \
+            "${GPU_STACK_ID}" "${NVIDIA_RUNTIME_ID}" "${LIBTORCH_ROOT}" \
+            "${CONTAINER_PATH}"
+        printf 'labels=managed,config,workspace:%s,image:%s,gpu-stack:%s\n' \
+            "${HOST_WORKSPACE}" "${IMAGE}" "${GPU_STACK_ID}"
+        printf 'logging=local,max-size:%s,max-file:%s\n' \
+            "${LOG_MAX_SIZE}" "${LOG_MAX_FILES}"
+        printf 'negative=privileged:false,readonly-rootfs:false,auto-remove:false,extra-devices:0,extra-caps:0,extra-mount-sources:0\n'
+    } | sha256sum | awk '{print $1}')"
+
+    PROVISIONING_FINGERPRINT="$({
+        printf 'schema=%s\n' "${PROVISIONING_FINGERPRINT_SCHEMA}"
+        printf 'bootstrap=%s\n' "${BOOTSTRAP_VERSION}"
+        printf 'setup=%s\n' "${setup_sha256}"
         printf 'packages=%s\n' "${TOOLCHAIN_PACKAGE_SET}"
         printf 'cuda-repository=%s\n' "${CUDA_REPOSITORY}"
         printf 'cuda-keyring=%s:%s:%s\n' "${CUDA_KEYRING_FILE}" \
             "${CUDA_KEYRING_SHA256}" "${CUDA_KEYRING_BYTES}"
-        printf 'cuda-toolkit=%s:%s\n' "${CUDA_TOOLKIT_PACKAGE}" "${CUDA_TOOLKIT_PACKAGE_VERSION}"
+        printf 'cuda-packages=%s\n' "${CUDA_PACKAGE_SET}"
+        printf 'cuda-root=%s,path=%s\n' "${CUDA_ROOT}" "${CONTAINER_PATH}"
         printf 'libtorch=%s:%s:%s:%s\n' "${LIBTORCH_VERSION}" "${LIBTORCH_URL}" \
             "${LIBTORCH_SHA256}" "${LIBTORCH_ARCHIVE_BYTES}"
         printf 'cudnn=%s:%s:%s:%s\n' "${CUDNN_VERSION}" "${CUDNN_WHEEL_URL}" \
@@ -299,38 +327,161 @@ calculate_fingerprint() {
             "${NVSHMEM_WHEEL_URL}" "${NVSHMEM_WHEEL_SHA256}" \
             "${NVSHMEM_WHEEL_BYTES}"
     } | sha256sum | awk '{print $1}')"
+    [[ "${RUNTIME_FINGERPRINT}" =~ ^[0-9a-f]{64}$ && \
+        "${PROVISIONING_FINGERPRINT}" =~ ^[0-9a-f]{64}$ ]] ||
+        die "could not calculate container fingerprints"
+}
+
+inspect_matches() {
+    local container_reference="$1"
+    local format="$2"
+    local expected="$3"
+    local actual
+    actual="$(docker container inspect --format "${format}" \
+        "${container_reference}")" || return 1
+    [[ "${actual}" == "${expected}" ]]
 }
 
 verify_existing_configuration() {
-    managed_container ||
-        die "a container named '${CONTAINER_NAME}' exists but is not managed by container.sh"
-    recreate_container_has_expected_mounts "${CONTAINER_NAME}" ||
-        die "managed container has unexpected ownership or data mounts"
-
+    local captured_id
     local existing_fingerprint
-    existing_fingerprint="$(docker container inspect \
-        --format "{{ index .Config.Labels \"${CONFIG_LABEL}\" }}" "${CONTAINER_NAME}")"
-    [[ "${existing_fingerprint}" == "${CONFIG_FINGERPRINT}" ]] ||
-        die "container settings changed; run 'bash projects/the-elder-brother-of-fauna/container.sh recreate' to apply them"
+    local expected_environment
+    local actual_environment
+    local volume_name
+    captured_id="$(container_id "${CONTAINER_NAME}")" ||
+        die "could not capture the managed container immutable ID"
+    valid_container_id "${captured_id}" ||
+        die "managed container has an invalid immutable ID"
 
-    [[ "$(docker container inspect --format '{{.Image}}' "${CONTAINER_NAME}")" == "${IMAGE_ID}" ]] ||
-        die "managed container image differs from the requested image; run 'bash projects/the-elder-brother-of-fauna/container.sh recreate'"
-    [[ "$(docker container inspect --format '{{.Config.User}}' "${CONTAINER_NAME}")" == "${DEV_UID}:${DEV_GID}" ]] ||
-        die "managed container user was modified; run 'bash projects/the-elder-brother-of-fauna/container.sh recreate'"
-    [[ "$(docker container inspect --format '{{.Config.WorkingDir}}' "${CONTAINER_NAME}")" == "${CONTAINER_WORKSPACE}" ]] ||
-        die "managed container work directory was modified; run 'bash projects/the-elder-brother-of-fauna/container.sh recreate'"
-    [[ "$(docker container inspect --format '{{.HostConfig.RestartPolicy.Name}}' "${CONTAINER_NAME}")" == "no" ]] ||
-        die "managed container restart policy was modified; run 'bash projects/the-elder-brother-of-fauna/container.sh recreate'"
-    [[ "$(docker container inspect --format '{{.HostConfig.PidsLimit}}' "${CONTAINER_NAME}")" == "${PIDS_LIMIT}" ]] ||
-        die "managed container PID limit was modified; run 'bash projects/the-elder-brother-of-fauna/container.sh recreate'"
-    [[ "$(docker container inspect --format '{{.HostConfig.ShmSize}}' "${CONTAINER_NAME}")" == "${SHM_BYTES}" ]] ||
-        die "managed container shared-memory limit was modified; run 'bash projects/the-elder-brother-of-fauna/container.sh recreate'"
-    [[ "$(docker container inspect --format '{{.HostConfig.Init}}' "${CONTAINER_NAME}")" == "true" ]] ||
-        die "managed container init setting was modified; run 'bash projects/the-elder-brother-of-fauna/container.sh recreate'"
-    [[ "$(docker container inspect --format '{{json .HostConfig.SecurityOpt}}' "${CONTAINER_NAME}")" == '["no-new-privileges=true"]' ]] ||
-        die "managed container security options were modified; run 'bash projects/the-elder-brother-of-fauna/container.sh recreate'"
-    [[ "$(docker container inspect --format '{{.HostConfig.LogConfig.Type}}' "${CONTAINER_NAME}")" == "local" ]] ||
-        die "managed container log driver was modified; run 'bash projects/the-elder-brother-of-fauna/container.sh recreate'"
+    managed_container "${captured_id}" ||
+        die "a container named '${CONTAINER_NAME}' exists but is not managed by container.sh"
+    recreate_container_has_expected_mounts "${captured_id}" ||
+        die "managed container has unexpected ownership or data mounts"
+    for volume_name in "${BUILD_VOLUME}" "${HOME_VOLUME}" "${GPU_VOLUME}"; do
+        inspect_managed_local_volume "${volume_name}" ||
+            die "retained volume '${volume_name}' has unexpected ownership or driver"
+    done
+
+    if ! {
+        inspect_matches "${captured_id}" '{{.Name}}' "/${CONTAINER_NAME}" &&
+        inspect_matches "${captured_id}" '{{.Image}}' "${IMAGE_ID}" &&
+        inspect_matches "${captured_id}" '{{.Config.Image}}' "${IMAGE}" &&
+        inspect_matches "${captured_id}" '{{.Config.Hostname}}' "${CONTAINER_HOSTNAME}" &&
+        inspect_matches "${captured_id}" '{{.Config.Domainname}}' '' &&
+        inspect_matches "${captured_id}" '{{.Config.User}}' "${DEV_UID}:${DEV_GID}" &&
+        inspect_matches "${captured_id}" '{{json .Config.Entrypoint}}' '[]' &&
+        inspect_matches "${captured_id}" '{{json .Config.Cmd}}' '["sleep","infinity"]' &&
+        inspect_matches "${captured_id}" '{{.Config.WorkingDir}}' "${CONTAINER_WORKSPACE}" &&
+        inspect_matches "${captured_id}" '{{.Config.AttachStdin}}' 'false' &&
+        inspect_matches "${captured_id}" '{{.Config.OpenStdin}}' 'false' &&
+        inspect_matches "${captured_id}" '{{.Config.StdinOnce}}' 'false' &&
+        inspect_matches "${captured_id}" '{{.Config.Tty}}' 'false'
+    }; then
+        die "managed container process or identity configuration was modified; use recreate"
+    fi
+
+    expected_environment="$(printf '%s\n' \
+        "HOME=${CONTAINER_HOME}" \
+        'USER=developer' \
+        'LOGNAME=developer' \
+        "CCACHE_DIR=${CONTAINER_HOME}/.cache/ccache" \
+        "CUDA_CACHE_PATH=${CONTAINER_HOME}/.cache/nv" \
+        "CUDA_HOME=${CUDA_ROOT}" \
+        "CUDAToolkit_ROOT=${CUDA_ROOT}" \
+        "CUDACXX=${CUDA_ROOT}/bin/nvcc" \
+        "LIBTORCH_ROOT=${LIBTORCH_ROOT}" \
+        "NATURALEHIA_GPU_STACK_ID=${GPU_STACK_ID}" \
+        "NATURALEHIA_RUNTIME_STACK_ID=${NVIDIA_RUNTIME_ID}" \
+        "CMAKE_PREFIX_PATH=${LIBTORCH_ROOT}" \
+        "PATH=${CONTAINER_PATH}" \
+        'LANG=C.UTF-8' \
+        'NVIDIA_VISIBLE_DEVICES=all' \
+        'NVIDIA_DRIVER_CAPABILITIES=compute,utility' | LC_ALL=C sort)"
+    actual_environment="$(docker container inspect --format \
+        '{{range .Config.Env}}{{println .}}{{end}}' "${captured_id}" | \
+        sed '/^$/d' | LC_ALL=C sort)" ||
+        die "could not inspect the managed container environment"
+    [[ "${actual_environment}" == "${expected_environment}" ]] ||
+        die "managed container environment was modified; use recreate"
+
+    if ! {
+        inspect_matches "${captured_id}" '{{json .Config.ExposedPorts}}' \
+        "{\"${INGEST_CONTAINER_PORT}/tcp\":{},\"${HTTP_CONTAINER_PORT}/tcp\":{}}" &&
+        inspect_matches "${captured_id}" '{{len .HostConfig.PortBindings}}' '2' &&
+        inspect_matches "${captured_id}" "{{len (index .HostConfig.PortBindings \"${HTTP_CONTAINER_PORT}/tcp\")}}" '1' &&
+        inspect_matches "${captured_id}" "{{(index (index .HostConfig.PortBindings \"${HTTP_CONTAINER_PORT}/tcp\") 0).HostIp}}" "${LOOPBACK_ADDRESS}" &&
+        inspect_matches "${captured_id}" "{{(index (index .HostConfig.PortBindings \"${HTTP_CONTAINER_PORT}/tcp\") 0).HostPort}}" "${HTTP_PORT}" &&
+        inspect_matches "${captured_id}" "{{len (index .HostConfig.PortBindings \"${INGEST_CONTAINER_PORT}/tcp\")}}" '1' &&
+        inspect_matches "${captured_id}" "{{(index (index .HostConfig.PortBindings \"${INGEST_CONTAINER_PORT}/tcp\") 0).HostIp}}" "${LOOPBACK_ADDRESS}" &&
+        inspect_matches "${captured_id}" "{{(index (index .HostConfig.PortBindings \"${INGEST_CONTAINER_PORT}/tcp\") 0).HostPort}}" "${INGEST_PORT}" &&
+        inspect_matches "${captured_id}" '{{.HostConfig.PublishAllPorts}}' 'false'
+    }; then
+        die "managed container port configuration was modified; use recreate"
+    fi
+
+    if ! {
+        inspect_matches "${captured_id}" '{{len .HostConfig.DeviceRequests}}' '1' &&
+        inspect_matches "${captured_id}" '{{(index .HostConfig.DeviceRequests 0).Driver}}' '' &&
+        inspect_matches "${captured_id}" '{{(index .HostConfig.DeviceRequests 0).Count}}' '-1' &&
+        inspect_matches "${captured_id}" '{{len (index .HostConfig.DeviceRequests 0).DeviceIDs}}' '0' &&
+        inspect_matches "${captured_id}" '{{len (index .HostConfig.DeviceRequests 0).Capabilities}}' '1' &&
+        inspect_matches "${captured_id}" '{{len (index (index .HostConfig.DeviceRequests 0).Capabilities 0)}}' '1' &&
+        inspect_matches "${captured_id}" '{{index (index (index .HostConfig.DeviceRequests 0).Capabilities 0) 0}}' 'gpu' &&
+        inspect_matches "${captured_id}" '{{len (index .HostConfig.DeviceRequests 0).Options}}' '0'
+    }; then
+        die "managed container GPU request or capabilities were modified; use recreate"
+    fi
+
+    if ! {
+        inspect_matches "${captured_id}" '{{.HostConfig.RestartPolicy.Name}}' 'no' &&
+        inspect_matches "${captured_id}" '{{.HostConfig.RestartPolicy.MaximumRetryCount}}' '0' &&
+        inspect_matches "${captured_id}" '{{.HostConfig.PidsLimit}}' "${PIDS_LIMIT}" &&
+        inspect_matches "${captured_id}" '{{.HostConfig.ShmSize}}' "${SHM_BYTES}" &&
+        inspect_matches "${captured_id}" '{{.HostConfig.Init}}' 'true' &&
+        inspect_matches "${captured_id}" '{{json .HostConfig.SecurityOpt}}' '["no-new-privileges=true"]' &&
+        inspect_matches "${captured_id}" '{{.HostConfig.Privileged}}' 'false' &&
+        inspect_matches "${captured_id}" '{{.HostConfig.ReadonlyRootfs}}' 'false' &&
+        inspect_matches "${captured_id}" '{{.HostConfig.AutoRemove}}' 'false' &&
+        inspect_matches "${captured_id}" '{{len .HostConfig.Devices}}' '0' &&
+        inspect_matches "${captured_id}" '{{len .HostConfig.CapAdd}}' '0' &&
+        inspect_matches "${captured_id}" '{{len .HostConfig.CapDrop}}' '0' &&
+        inspect_matches "${captured_id}" '{{len .HostConfig.VolumesFrom}}' '0' &&
+        inspect_matches "${captured_id}" '{{len .HostConfig.Tmpfs}}' '0' &&
+        inspect_matches "${captured_id}" '{{.HostConfig.NetworkMode}}' 'bridge'
+    }; then
+        die "managed container isolation configuration was modified; use recreate"
+    fi
+
+    if ! {
+        inspect_matches "${captured_id}" '{{.HostConfig.LogConfig.Type}}' 'local' &&
+        inspect_matches "${captured_id}" '{{len .HostConfig.LogConfig.Config}}' '2' &&
+        inspect_matches "${captured_id}" '{{index .HostConfig.LogConfig.Config "max-size"}}' "${LOG_MAX_SIZE}" &&
+        inspect_matches "${captured_id}" '{{index .HostConfig.LogConfig.Config "max-file"}}' "${LOG_MAX_FILES}"
+    }; then
+        die "managed container logging configuration was modified; use recreate"
+    fi
+
+    if ! {
+        inspect_matches "${captured_id}" '{{len .Config.Labels}}' '5' &&
+        inspect_matches "${captured_id}" "{{index .Config.Labels \"${MANAGED_LABEL}\"}}" 'true' &&
+        inspect_matches "${captured_id}" "{{index .Config.Labels \"${WORKSPACE_LABEL}\"}}" "${HOST_WORKSPACE}" &&
+        inspect_matches "${captured_id}" "{{index .Config.Labels \"${IMAGE_LABEL}\"}}" "${IMAGE}" &&
+        inspect_matches "${captured_id}" "{{index .Config.Labels \"${GPU_STACK_LABEL}\"}}" "${GPU_STACK_ID}"
+    }; then
+        die "managed container ownership labels were modified; use recreate"
+    fi
+
+    existing_fingerprint="$(docker container inspect --format \
+        "{{index .Config.Labels \"${CONFIG_LABEL}\"}}" "${captured_id}")" ||
+        die "could not inspect the managed container configuration label"
+    if [[ "${existing_fingerprint}" != "${RUNTIME_FINGERPRINT}" ]]; then
+        [[ "${existing_fingerprint}" =~ ^[0-9a-f]{64}$ ]] ||
+            die "managed container has an invalid legacy configuration label; use recreate"
+        log "accepted legacy configuration label after exact immutable runtime verification"
+    fi
+
+    assert_named_container_id "${CONTAINER_NAME}" "${captured_id}"
+    ACTIVE_CONTAINER_ID="${captured_id}"
 }
 
 debian_preflight() {
@@ -350,6 +501,19 @@ gpu_preflight() {
         --env NVIDIA_VISIBLE_DEVICES=all \
         --env NVIDIA_DRIVER_CAPABILITIES=compute,utility \
         "${IMAGE}" nvidia-smi -L >/dev/null
+}
+
+inspect_managed_local_volume() {
+    local volume_name="$1"
+    [[ "$(docker volume inspect --format '{{.Driver}}' \
+        "${volume_name}" 2>/dev/null)" == "local" ]] &&
+        [[ "$(docker volume inspect --format '{{.Scope}}' \
+            "${volume_name}" 2>/dev/null)" == "local" ]] &&
+        [[ "$(docker volume inspect --format '{{len .Labels}}' \
+            "${volume_name}" 2>/dev/null)" == "1" ]] &&
+        [[ "$(docker volume inspect --format \
+            "{{index .Labels \"${MANAGED_LABEL}\"}}" \
+            "${volume_name}" 2>/dev/null)" == "true" ]]
 }
 
 ensure_managed_volume() {
@@ -457,17 +621,20 @@ recreate_container_has_expected_mounts() {
         elif [[ "${mount_type}" == "volume" && \
             "${mount_name}" == "${BUILD_VOLUME}" && \
             "${mount_destination}" == "${CONTAINER_BUILD_ROOT}" && \
-            "${mount_read_write}" == "true" ]]; then
+            "${mount_read_write}" == "true" && \
+            -z "${mount_propagation}" ]]; then
             ((build_count += 1))
         elif [[ "${mount_type}" == "volume" && \
             "${mount_name}" == "${HOME_VOLUME}" && \
             "${mount_destination}" == "${CONTAINER_HOME}" && \
-            "${mount_read_write}" == "true" ]]; then
+            "${mount_read_write}" == "true" && \
+            -z "${mount_propagation}" ]]; then
             ((home_count += 1))
         elif [[ "${mount_type}" == "volume" && \
             "${mount_name}" == "${GPU_VOLUME}" && \
             "${mount_destination}" == "${CONTAINER_GPU_ROOT}" && \
-            "${mount_read_write}" == "true" ]]; then
+            "${mount_read_write}" == "true" && \
+            -z "${mount_propagation}" ]]; then
             ((gpu_count += 1))
         else
             return 1
@@ -592,10 +759,10 @@ create_container() {
         --mount "type=volume,source=${HOME_VOLUME},target=${CONTAINER_HOME}" \
         --mount "type=volume,source=${GPU_VOLUME},target=${CONTAINER_GPU_ROOT}" \
         --label "${MANAGED_LABEL}=true" \
-        --label "${CONFIG_LABEL}=${CONFIG_FINGERPRINT}" \
+        --label "${CONFIG_LABEL}=${RUNTIME_FINGERPRINT}" \
         --label "${WORKSPACE_LABEL}=${HOST_WORKSPACE}" \
-        --label "io.naturalehia.image=${IMAGE}" \
-        --label "io.naturalehia.gpu-stack=${GPU_STACK_ID}" \
+        --label "${IMAGE_LABEL}=${IMAGE}" \
+        --label "${GPU_STACK_LABEL}=${GPU_STACK_ID}" \
         --log-driver local \
         --log-opt "max-size=${LOG_MAX_SIZE}" \
         --log-opt "max-file=${LOG_MAX_FILES}" \
@@ -606,6 +773,7 @@ create_container() {
     valid_container_id "${CREATED_CONTAINER_ID}" ||
         die "Docker returned an invalid immutable ID for '${CONTAINER_NAME}'"
     assert_named_container_id "${CONTAINER_NAME}" "${CREATED_CONTAINER_ID}"
+    ACTIVE_CONTAINER_ID="${CREATED_CONTAINER_ID}"
 }
 
 start_container() {
@@ -615,23 +783,33 @@ start_container() {
     else
         assert_volume_attachment_exclusivity normal
         verify_existing_configuration
-        if ! container_running; then
+        if ! container_running "${ACTIVE_CONTAINER_ID}"; then
             log "starting '${CONTAINER_NAME}'"
-            docker start "${CONTAINER_NAME}" >/dev/null
+            docker start "${ACTIVE_CONTAINER_ID}" >/dev/null
+            assert_named_container_id "${CONTAINER_NAME}" "${ACTIVE_CONTAINER_ID}"
         fi
     fi
 }
 
 provision_container() {
+    valid_container_id "${ACTIVE_CONTAINER_ID}" ||
+        die "cannot provision without a verified immutable container ID"
+    assert_named_container_id "${CONTAINER_NAME}" "${ACTIVE_CONTAINER_ID}"
     log "running the in-container provisioner"
     docker exec --user 0:0 \
         --env "DEV_UID=${DEV_UID}" \
         --env "DEV_GID=${DEV_GID}" \
+        --env "PATH=${CONTAINER_PATH}" \
+        --env "PROVISIONING_FINGERPRINT=${PROVISIONING_FINGERPRINT}" \
         --workdir "${CONTAINER_PROJECT_DIR}" \
-        "${CONTAINER_NAME}" bash ./setup.sh
+        "${ACTIVE_CONTAINER_ID}" /bin/bash ./setup.sh
+    assert_named_container_id "${CONTAINER_NAME}" "${ACTIVE_CONTAINER_ID}"
 }
 
 verify_container() {
+    valid_container_id "${ACTIVE_CONTAINER_ID}" ||
+        die "cannot verify without a verified immutable container ID"
+    assert_named_container_id "${CONTAINER_NAME}" "${ACTIVE_CONTAINER_ID}"
     log "verifying Linux toolchain, repository mount, shell, and GPU"
     docker exec --user "${DEV_UID}:${DEV_GID}" \
         --env "HOME=${CONTAINER_HOME}" \
@@ -644,6 +822,8 @@ verify_container() {
         --env "NVIDIA_RUNTIME_ROOT=${NVIDIA_RUNTIME_ROOT}" \
         --env "NVIDIA_RUNTIME_VERSION_ROOT=${NVIDIA_RUNTIME_VERSION_ROOT}" \
         --env "BOOTSTRAP_VERSION=${BOOTSTRAP_VERSION}" \
+        --env "PROVISIONING_FINGERPRINT=${PROVISIONING_FINGERPRINT}" \
+        --env "CUDA_PACKAGE_SET=${CUDA_PACKAGE_SET}" \
         --env "CUDNN_ROOT=${NVIDIA_RUNTIME_ROOT}/cudnn" \
         --env "CUSPARSELT_ROOT=${NVIDIA_RUNTIME_ROOT}/cusparselt" \
         --env "NCCL_ROOT=${NVIDIA_RUNTIME_ROOT}/nccl" \
@@ -651,7 +831,7 @@ verify_container() {
         --env "CMAKE_PREFIX_PATH=${LIBTORCH_ROOT}" \
         --env "PATH=${CONTAINER_PATH}" \
         --workdir "${CONTAINER_PROJECT_DIR}" \
-        "${CONTAINER_NAME}" bash -Eeuo pipefail -c '
+        "${ACTIVE_CONTAINER_ID}" /bin/bash -Eeuo pipefail -c '
             test -r CMakeLists.txt
             test -w "${PWD}"
             test -w "${HOME}"
@@ -664,14 +844,19 @@ verify_container() {
             test "$(uname -m)" = x86_64
             command -v cmake >/dev/null
             command -v g++ >/dev/null
-            command -v clang++ >/dev/null
             command -v ninja >/dev/null
             command -v ccache >/dev/null
             command -v nvidia-smi >/dev/null
             command -v nvcc >/dev/null
-            command -v cuda-gdb >/dev/null
-            command -v compute-sanitizer >/dev/null
             nvcc --version | grep -F "release 13.1" >/dev/null
+            ldconfig -p | grep -F "libcupti.so.13" >/dev/null
+            IFS=" " read -r -a cuda_packages <<<"${CUDA_PACKAGE_SET}"
+            for package_spec in "${cuda_packages[@]}"; do
+                package_name="${package_spec%%=*}"
+                expected_version="${package_spec#*=}"
+                test "$(dpkg-query -W -f="\${Version}" "${package_name}")" = \
+                    "${expected_version}"
+            done
             dpkg-query -W -f="\${binary:Package}=\${Version}\n" | sort | \
                 cmp -s - /var/lib/naturalehia-fauna/package-manifest
             test -r "${LIBTORCH_ROOT}/share/cmake/Torch/TorchConfig.cmake"
@@ -689,22 +874,29 @@ verify_container() {
             test -r "${NVIDIA_RUNTIME_ROOT}/nvshmem/lib/libnvshmem_host.so.3"
             test -r "${NVIDIA_RUNTIME_ROOT}/nvshmem/include/nvshmem.h"
             test "$(cat /var/lib/naturalehia-fauna/bootstrap-version)" = "${BOOTSTRAP_VERSION}"
+            test "$(cat /var/lib/naturalehia-fauna/provisioning-fingerprint)" = \
+                "${PROVISIONING_FINGERPRINT}"
             command -v make >/dev/null
             shellcheck container.sh setup.sh toolchain-locks.sh
             nvidia-smi -L
         '
+    assert_named_container_id "${CONTAINER_NAME}" "${ACTIVE_CONTAINER_ID}"
 }
 
 ensure_ready() {
     ensure_docker
     ensure_image
-    calculate_fingerprint
+    calculate_fingerprints
     start_container
     provision_container
     verify_container
 }
 
 container_exec() {
+    valid_container_id "${ACTIVE_CONTAINER_ID}" ||
+        die "cannot execute without a verified immutable container ID"
+    assert_named_container_id "${CONTAINER_NAME}" "${ACTIVE_CONTAINER_ID}"
+    local command_status=0
     docker exec --user "${DEV_UID}:${DEV_GID}" \
         --env "HOME=${CONTAINER_HOME}" \
         --env "USER=developer" \
@@ -723,10 +915,13 @@ container_exec() {
         --env "CMAKE_PREFIX_PATH=${LIBTORCH_ROOT}" \
         --env "PATH=${CONTAINER_PATH}" \
         --env "NATURALEHIA_FAUNA_CONTAINER=1" \
-        --env "NATURALEHIA_FAUNA_CONFIG_FINGERPRINT=${CONFIG_FINGERPRINT}" \
-        --env "NATURALEHIA_FAUNA_BUILD_ROOT=${CONTAINER_PROJECT_BUILD_ROOT}/${CONFIG_FINGERPRINT}" \
+        --env "NATURALEHIA_FAUNA_CONFIG_FINGERPRINT=${RUNTIME_FINGERPRINT}" \
+        --env "NATURALEHIA_FAUNA_PROVISIONING_FINGERPRINT=${PROVISIONING_FINGERPRINT}" \
+        --env "NATURALEHIA_FAUNA_BUILD_ROOT=${CONTAINER_PROJECT_BUILD_ROOT}/${RUNTIME_FINGERPRINT}/${PROVISIONING_FINGERPRINT}" \
         --workdir "${CONTAINER_PROJECT_DIR}" \
-        "${CONTAINER_NAME}" "$@"
+        "${ACTIVE_CONTAINER_ID}" "$@" || command_status=$?
+    assert_named_container_id "${CONTAINER_NAME}" "${ACTIVE_CONTAINER_ID}"
+    return "${command_status}"
 }
 
 show_status() {
@@ -1241,10 +1436,13 @@ main() {
                 --env "CMAKE_PREFIX_PATH=${LIBTORCH_ROOT}" \
                 --env "PATH=${CONTAINER_PATH}" \
                 --env "NATURALEHIA_FAUNA_CONTAINER=1" \
-                --env "NATURALEHIA_FAUNA_CONFIG_FINGERPRINT=${CONFIG_FINGERPRINT}" \
-                --env "NATURALEHIA_FAUNA_BUILD_ROOT=${CONTAINER_PROJECT_BUILD_ROOT}/${CONFIG_FINGERPRINT}" \
+                --env "NATURALEHIA_FAUNA_CONFIG_FINGERPRINT=${RUNTIME_FINGERPRINT}" \
+                --env "NATURALEHIA_FAUNA_PROVISIONING_FINGERPRINT=${PROVISIONING_FINGERPRINT}" \
+                --env "NATURALEHIA_FAUNA_BUILD_ROOT=${CONTAINER_PROJECT_BUILD_ROOT}/${RUNTIME_FINGERPRINT}/${PROVISIONING_FINGERPRINT}" \
                 --workdir "${CONTAINER_PROJECT_DIR}" \
-                "${CONTAINER_NAME}" bash --login
+                "${ACTIVE_CONTAINER_ID}" /bin/bash --login
+            assert_named_container_id "${CONTAINER_NAME}" \
+                "${ACTIVE_CONTAINER_ID}"
             ;;
         exec)
             ensure_ready
@@ -1266,7 +1464,7 @@ main() {
         recreate)
             ensure_docker
             ensure_image
-            calculate_fingerprint
+            calculate_fingerprints
             prepare_container_resources recreate
             if docker container inspect "${RECREATE_BACKUP_NAME}" >/dev/null 2>&1; then
                 container_exists ||

@@ -166,6 +166,16 @@ strictly in-container, idempotent dependency installation and configuration.
 The `Makefile` owns builds, tests, quality checks, sanitizer runs, package
 verification, and program execution. GNU Make is provided inside the
 container, so Windows hosts do not need a native `make` installation.
+Changes to `setup.sh` converge in place on the next `container.sh up` and select
+a build directory keyed by the new provisioning result; they do not require
+container replacement. `container.sh recreate` is reserved for changes to the
+immutable Docker runtime definition.
+
+The project-only bind deliberately excludes the parent repository's `.git`
+metadata, so version-control operations remain on the host. The canonical
+container does not support ad hoc cloning or dependency downloads; any future
+network-fetched dependency must be added explicitly and documented in
+[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 
 `make gpu-test` checks device and driver visibility with `nvidia-smi`; it does not
 yet execute a GPU compute kernel. A GPU compiler and compute backend will be

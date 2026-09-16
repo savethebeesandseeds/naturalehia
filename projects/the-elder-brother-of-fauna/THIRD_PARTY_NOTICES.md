@@ -5,12 +5,32 @@ MIT License described in [`LICENSE`](LICENSE). Its development environment
 downloads and installs third-party software that is **not** redistributed
 under that MIT License.
 
-## NVIDIA CUDA Toolkit
+## NVIDIA CUDA 13.1 components
 
-- Version: CUDA Toolkit 13.1 Update 1 (`cuda-toolkit-13-1`)
+- Release family: CUDA 13.1 Update 1
 - Source: NVIDIA's signed Debian 13 package repository
 - Repository: <https://developer.download.nvidia.com/compute/cuda/repos/debian13/x86_64/>
 - License: <https://docs.nvidia.com/cuda/eula/>
+
+The environment requests only the components used by its documented CUDA and
+LibTorch build and smoke-test workflow. These top-level package
+versions are locked in `toolchain-locks.sh`:
+
+- `cuda-nvcc-13-1=13.1.115-1`
+- `cuda-cudart-dev-13-1=13.1.80-1`
+- `cuda-cudart-13-1=13.1.80-1`
+- `cuda-nvrtc-dev-13-1=13.1.115-1`
+- `cuda-nvrtc-13-1=13.1.115-1`
+- `cuda-cupti-13-1=13.1.115-1`
+- `libcublas-13-1=13.2.2.2-1`
+- `libcufft-13-1=12.1.0.78-1`
+- `libcufile-13-1=1.16.1.26-1`
+- `libcurand-13-1=10.4.1.81-1`
+- `libcusparse-13-1=12.7.3.1-1`
+
+The `cuda-toolkit-13-1` umbrella package is not installed. Its Java, GTK,
+Nsight, visual-profiler, documentation, and unrelated SDK dependencies are not
+part of the requested package closure.
 
 The NVIDIA display/compute driver is supplied by the host and is not installed
 inside the project's `naturalehia-the-elder-brother-of-fauna` development
@@ -57,9 +77,9 @@ Their upstream metadata and license files are retained below
 
 ## Debian packages
 
-Additional compiler, analysis, numerical, networking, computer-vision, and test
-packages come from the configured Debian repositories. Their individual
-copyright and license files are installed under `/usr/share/doc/<package>/` in
-the container. Those packages follow current signed Debian 13 updates rather
-than a dated snapshot; the exact installed package manifest is recorded inside
-each provisioned container.
+The C++ compiler, build tools, formatter, ShellCheck, and provisioning utilities
+used by the documented project workflow come from the configured Debian
+repositories. Their individual copyright and license files are installed under
+`/usr/share/doc/<package>/` in the container. Those packages follow current
+signed Debian 13 updates rather than a dated snapshot; the exact installed
+package manifest is recorded inside each provisioned container.

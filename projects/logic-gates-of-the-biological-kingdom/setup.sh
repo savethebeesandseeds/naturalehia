@@ -4,24 +4,23 @@
 set -Eeuo pipefail
 IFS=$'\n\t'
 
-readonly PROVISION_REVISION="2"
+readonly PROVISION_REVISION="3"
 readonly PROVISION_ROOT="/var/lib/naturalehia-logic-gates-of-the-biological-kingdom"
 readonly PROVISION_MARKER="${PROVISION_ROOT}/provisioned-${PROVISION_REVISION}"
 readonly PACKAGE_MANIFEST="/work/toolchain-packages.tsv"
+readonly PROVISIONING_FINGERPRINT_FILE="/work/provisioning-fingerprint.sha256"
 
+# Direct requirements of setup.sh and the documented Make/CMake workflows.
+# APT resolves their runtime libraries; recommendations remain disabled.
 readonly -a TOOLCHAIN_PACKAGES=(
     bash
-    build-essential
-    ca-certificates
-    ccache
     clang
     cmake
-    git
-    less
+    g++
     libclang-rt-19-dev
+    make
     ninja-build
     passwd
-    pkg-config
     shellcheck
     uncrustify
 )
@@ -48,6 +47,7 @@ require_environment() {
     : "${NATURALEHIA_PROTEIN_LOGIC_DEV_GID:?container.sh must set NATURALEHIA_PROTEIN_LOGIC_DEV_GID}"
     : "${NATURALEHIA_PROTEIN_LOGIC_DEV_HOME:?container.sh must set NATURALEHIA_PROTEIN_LOGIC_DEV_HOME}"
     : "${NATURALEHIA_PROTEIN_LOGIC_STATE_ROOT:?container.sh must set NATURALEHIA_PROTEIN_LOGIC_STATE_ROOT}"
+    : "${NATURALEHIA_PROTEIN_LOGIC_PROVISIONING_FINGERPRINT:?container.sh must set NATURALEHIA_PROTEIN_LOGIC_PROVISIONING_FINGERPRINT}"
 
     require_unsigned_integer "developer UID" "$NATURALEHIA_PROTEIN_LOGIC_DEV_UID"
     require_unsigned_integer "developer GID" "$NATURALEHIA_PROTEIN_LOGIC_DEV_GID"
@@ -55,6 +55,8 @@ require_environment() {
         fail "developer home must be below /home"
     [[ "$NATURALEHIA_PROTEIN_LOGIC_STATE_ROOT" == /work/* ]] ||
         fail "state root must be below /work"
+    [[ "$NATURALEHIA_PROTEIN_LOGIC_PROVISIONING_FINGERPRINT" =~ ^[0-9a-f]{64}$ ]] ||
+        fail "provisioning fingerprint must be a lowercase SHA-256 digest"
 
     [[ -r /etc/os-release ]] || fail "the container has no readable OS metadata"
     # shellcheck disable=SC1091
@@ -121,21 +123,29 @@ configure_developer() {
         fail "UID $dev_uid exists with a different primary GID"
 
     install -d -m 0755 -o "$dev_uid" -g "$dev_gid" \
-        "$dev_home" "$state_root" "$state_root/ccache"
+        "$dev_home" "$state_root"
     chown -R "$dev_uid:$dev_gid" /work "$dev_home"
 }
 
 record_environment() {
-    local manifest_staging
+    local fingerprint_staging manifest_staging
 
     manifest_staging="$(mktemp /work/.toolchain-packages.tsv.XXXXXX)"
-    trap 'rm -f -- "$manifest_staging"' RETURN
+    fingerprint_staging="$(mktemp /work/.provisioning-fingerprint.sha256.XXXXXX)"
+    trap 'rm -f -- "$manifest_staging" "$fingerprint_staging"' RETURN
     # dpkg-query expands this format; the provisioning shell must not.
     # shellcheck disable=SC2016
     dpkg-query -W -f='${Package}\t${Version}\n' | sort >"$manifest_staging"
     chown 0:0 "$manifest_staging"
     chmod 0444 "$manifest_staging"
     mv -fT -- "$manifest_staging" "$PACKAGE_MANIFEST"
+
+    printf '%s\n' "$NATURALEHIA_PROTEIN_LOGIC_PROVISIONING_FINGERPRINT" \
+        >"$fingerprint_staging"
+    chown 0:0 "$fingerprint_staging"
+    chmod 0444 "$fingerprint_staging"
+    # Commit this last so it identifies a fully recorded provisioning result.
+    mv -fT -- "$fingerprint_staging" "$PROVISIONING_FINGERPRINT_FILE"
     trap - RETURN
 
     install -d -m 0755 "$PROVISION_ROOT"

@@ -132,9 +132,10 @@ deliberately separate: `container.sh` owns host-side lifecycle,
 and the [`Makefile`](Makefile) owns build, test, GPU-smoke, and run tasks.
 
 The persistent container is named
-`naturalehia-the-elder-brother-of-fauna`. It provisions GCC, Clang, CMake,
-Ninja, ccache, debugging and formatting tools, numerical and computer-vision
-libraries, CUDA 13.1 Update 1, GPU-enabled LibTorch 2.13, cuDNN 9.20.0.48,
+`naturalehia-the-elder-brother-of-fauna`. It provisions the GCC C++ compiler,
+CMake, Ninja, ccache, `clang-format`, ShellCheck, and the small set of utilities
+used by provisioning. The GPU stack is
+CUDA 13.1 Update 1, GPU-enabled LibTorch 2.13, cuDNN 9.20.0.48,
 cuSPARSELt 0.8.1, NCCL 2.29.7, and NVSHMEM 3.4.5. Every APT installation uses
 `--no-install-recommends`, and all local development builds run inside Linux.
 
@@ -192,17 +193,32 @@ until the replacement passes structural checks and the CUDA/LibTorch GPU
 smokes. It preserves all managed volumes and refuses unmanaged containers or
 volumes rather than modifying them.
 
-The base image digest, CUDA top-level package, LibTorch archive, and NVIDIA
-runtime wheels are locked. Debian development packages and CUDA's dependency
-closure intentionally follow the current signed Debian 13 and NVIDIA
-repositories so fresh environments receive current security fixes; therefore a
-fresh setup is not claimed to be bit-for-bit reproducible. The exact installed
-package set is recorded and used to isolate that container's build tree.
+The launcher fingerprints immutable Docker runtime structure separately from
+mutable provisioning inputs. Dependency or provisioner changes therefore rerun
+the install-only `setup.sh` in the same exactly verified managed container and
+select a new build namespace; they do not require replacement. A legacy
+combined configuration label is accepted only after the launcher captures the
+container's immutable ID and exactly verifies its image, process, environment,
+mounts and volume ownership, loopback ports, GPU request, isolation, and
+logging configuration. Only a runtime-structure change requires `recreate`.
 
-The CUDA toolkit supplies `nvcc`, CUDA-GDB, Compute Sanitizer, headers,
-profiling interfaces, and development libraries. LibTorch is installed at the
-versioned path reported by `$LIBTORCH_ROOT`; `$CMAKE_PREFIX_PATH` is configured
-for `find_package(Torch)`. Vendor headers and libraries are exposed through
+The base image digest, every requested CUDA package version, the LibTorch
+archive, and the NVIDIA runtime wheels are locked. Debian development packages
+and the signed transitive CUDA dependency closure intentionally follow the
+current Debian 13 and NVIDIA repositories so fresh environments receive current
+security fixes; therefore a fresh setup is not claimed to be bit-for-bit
+reproducible. The exact installed package set is recorded and used to isolate
+that container's build tree.
+
+The explicit CUDA package set supplies `nvcc`, CUDA runtime headers, NVRTC's
+development link required by LibTorch's exported CMake configuration, CUPTI
+required by `libtorch_cpu.so`, and the CUDA runtime libraries named by the
+canonical smoke executable's LibTorch ELF dependency chain. It deliberately
+omits the umbrella toolkit's debugger,
+sanitizer, documentation, Java/GTK stack, Nsight applications, visual
+profilers, and unrelated SDK libraries. LibTorch is installed at the versioned
+path reported by `$LIBTORCH_ROOT`; `$CMAKE_PREFIX_PATH` is configured for
+`find_package(Torch)`. Vendor headers and libraries are exposed through
 `$CUDNN_ROOT`, `$CUSPARSELT_ROOT`, `$NCCL_ROOT`, and `$NVSHMEM_ROOT`.
 `bash container.sh exec make gpu-test` detects the visible GPUs' compute capabilities,
 compiles a native CUDA kernel and a LibTorch C++ program for them, and executes

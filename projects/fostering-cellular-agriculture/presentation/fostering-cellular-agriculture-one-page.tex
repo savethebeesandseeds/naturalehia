@@ -1,0 +1,103 @@
+\input{ieee-preamble}
+\hypersetup{
+  pdftitle={Fostering Cellular Agriculture},
+  pdfauthor={Santiago Restrepo Ruiz},
+  pdfsubject={One-page synthesis of Working Paper v2.1: Financing Cellular-Agriculture Scale-Up under Correlated Technical Risk},
+  pdfkeywords={cellular agriculture, financial engineering, milestone participation,
+    portfolio risk, loss allocation, pricing, funding liquidity}
+}
+
+\title{Fostering Cellular Agriculture}
+\author{\IEEEauthorblockN{Santiago Restrepo Ruiz}
+\IEEEauthorblockA{Published by Waajacu Open Source Foundation\\
+\href{mailto:Santiago.Restrepo.Ruiz@gmail.com}{Santiago.Restrepo.Ruiz@gmail.com}\quad
+\url{https://waajacu.com/}\\[3pt]
+\textit{One-page synthesis of Working Paper v2.1, 1 September 2026}}}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Fostering Cellular Agriculture proposes an open financial standard for
+research-to-industry funding. Its Multi-Project Milestone Participation connects
+staged capital to enforceable project cash rights and recoveries. A common
+claim interface, explicit portfolio dependence, contractual waterfalls and
+funding controls support term design against investor return, loss and
+liquidity constraints.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Cellular agriculture, financial engineering, milestone finance.
+\end{IEEEkeywords}
+
+\balance
+\section{Claim Design and Milestone Funding}
+Cellular-agriculture scale-up links uncertain process economics to staged
+investment~\cite{humbird2021scale}. Research-backed obligations provide a
+precedent for pooling development assets~\cite{fernandez2012rbo}; this
+structure begins with each project's assignable cash rights.
+
+Each project specifies dated capital needs, verified milestones, success cash,
+recovery priority, principal and shared risk factors. Commercial, licensing,
+royalty, capacity, offtake or exit receipts trace to contractual rights and
+non-overlapping cash-source budgets.
+
+Investors hold a limited-recourse participation in a fixed pool. Milestones
+release callable funding; failure can stop later draws. Receipts and recoveries
+pass through pro rata after pool cost, without a coupon independent of project
+cash. Acquisition cost, asset principal and issued principal remain distinct;
+unresolved principal remains exposure, not cash or realized loss.
+
+\section{Portfolio Risk and Loss Allocation}
+Joint cash-flow scenarios encode shared biology, scale-up, supplier, regulatory
+and buyer risks. Dependence is explicit~\cite{hull2019longshots}; bounded
+physical state probabilities expose uncertainty. Expected shortfall measures
+loss and net present value (NPV) downside tails. Diversification compares pooled and standalone losses
+under the same probability measure.
+
+A funded variant divides claims into first-loss and priority layers.
+Principal cash and unused reserve repay senior claims first; non-principal
+cash follows a capped priority waterfall, then the residual claim. Layers
+allocate the issued-principal cash shortfall, separately from asset writeoffs
+and continuing exposure. Returned reserve is capital, not profit.
+
+Alternatively, a capped partial-credit guarantee covers a share of the
+untranched core's resolved asset loss, excluding continuing exposure.
+Collateral and joint project/provider credit stress determine delivered cash.
+Tranching redistributes pool cash; guarantees introduce external transfers.
+
+\section{Pricing and Term Selection}
+For net investor cash \(CF_s(t)\) in state \(s\), month \(t\), supplied annual
+hurdle \(h\) and probability set \(\mathcal P\), robust return requires
+\begin{equation*}
+\min_{p\in\mathcal P}\sum_s p_s\sum_t
+\frac{CF_s(t)}{(1+h)^{t/12}}\;\geq\;0.
+\end{equation*}
+Success-participation and first-loss terms are screened jointly against return,
+principal-shortfall tails, impairment probability, weighted-average life and
+junior-concession limits. Each adverse endpoint retains its probability witness.
+
+For a fixed claim, compare the investor's price ceiling with the issuer's
+funding floor, including costs and support. Discounts cannot repair fixed
+principal-risk breaches. Compare guarantee premium capacity with provider
+claims, expenses, liquidity/capital costs and required return; any gap requires
+external support. These are conditional value tests, not market quotes.
+
+\section{Funding Integrity and Execution}
+Full prefunding trades capital-call risk for idle-cash carry. A proposed
+callable-capital or warehouse alternative specifies borrowing-base eligibility,
+collateral, maturity, repayment priority and provider capacity. Decisions use
+only observed information. Settled funding covers uses before later project
+receipts; undrawn commitments are not cash. Funding gaps invalidate subsequent
+assumed project cash paths.
+
+Implementation reconciles cash, principal and waterfalls in every state.
+Underwriting requires authenticated contracts, milestone and recovery histories,
+joint-risk evidence, observed investor prices or hurdles, and executable funding
+terms. The output identifies what investors own, how they are paid, who bears
+each risk, and whether the complete structure satisfies its constraints.
+
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+\end{document}

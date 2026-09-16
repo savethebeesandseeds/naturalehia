@@ -30,8 +30,13 @@ readonly -a CUDA_APT_OPTIONS=(
 }
 : "${DEV_UID:?container.sh must provide DEV_UID}"
 : "${DEV_GID:?container.sh must provide DEV_GID}"
+: "${PROVISIONING_FINGERPRINT:?container.sh must provide PROVISIONING_FINGERPRINT}"
 [[ "${DEV_UID}" =~ ^[1-9][0-9]*$ && "${DEV_GID}" =~ ^[1-9][0-9]*$ ]] || {
     printf 'DEV_UID and DEV_GID must be canonical positive integers\n' >&2
+    exit 1
+}
+[[ "${PROVISIONING_FINGERPRINT}" =~ ^[0-9a-f]{64}$ ]] || {
+    printf 'PROVISIONING_FINGERPRINT must be a lowercase SHA-256 value\n' >&2
     exit 1
 }
 [[ "${DEV_UID}" != "0" && "${DEV_GID}" != "0" ]] || {
@@ -178,14 +183,38 @@ if [[ "${installed_keyring}" != "1.1-1" ]]; then
         "${keyring_path}"
 fi
 
-installed_cuda="$(dpkg-query --show --showformat='${Version}' \
-    "${CUDA_TOOLKIT_PACKAGE}" 2>/dev/null || true)"
-if [[ "${installed_cuda}" != "${CUDA_TOOLKIT_PACKAGE_VERSION}" ]]; then
+IFS=' ' read -r -a cuda_packages <<<"${CUDA_PACKAGE_SET}"
+cuda_packages_need_install=false
+for package_spec in "${cuda_packages[@]}"; do
+    package_name="${package_spec%%=*}"
+    expected_version="${package_spec#*=}"
+    [[ -n "${package_name}" && "${expected_version}" != "${package_spec}" ]] || {
+        printf 'invalid pinned CUDA package specification: %s\n' \
+            "${package_spec}" >&2
+        exit 1
+    }
+    installed_version="$(dpkg-query --show --showformat='${Version}' \
+        "${package_name}" 2>/dev/null || true)"
+    if [[ "${installed_version}" != "${expected_version}" ]]; then
+        cuda_packages_need_install=true
+    fi
+done
+if [[ "${cuda_packages_need_install}" == "true" ]]; then
     apt-get "${CUDA_APT_OPTIONS[@]}" update
     apt-get "${CUDA_APT_OPTIONS[@]}" install -y --no-install-recommends \
-        --allow-downgrades \
-        "${CUDA_TOOLKIT_PACKAGE}=${CUDA_TOOLKIT_PACKAGE_VERSION}"
+        --allow-downgrades "${cuda_packages[@]}"
 fi
+for package_spec in "${cuda_packages[@]}"; do
+    package_name="${package_spec%%=*}"
+    expected_version="${package_spec#*=}"
+    [[ "$(dpkg-query --show --showformat='${Version}' "${package_name}")" == \
+        "${expected_version}" ]]
+done
+# CUDA's configuration packages register the versioned library directory, but
+# cuda-cupti does not refresh the loader cache when it is installed afterward.
+# Refresh it explicitly so LibTorch's transitive libcupti dependency resolves.
+ldconfig
+ldconfig -p | grep -F 'libcupti.so.13' >/dev/null
 [[ "$(readlink -f /usr/local/cuda)" == "${CUDA_ROOT}" ]]
 if dpkg-query --show --showformat='${binary:Package}\n' 2>/dev/null |
     grep -E '^(cuda-drivers|nvidia-driver)(:|$)' >/dev/null; then
@@ -441,6 +470,10 @@ dpkg-query -W -f='${binary:Package}=${Version}\n' | sort \
 chmod 0444 /var/lib/naturalehia-fauna/package-manifest
 printf '%s\n' "${BOOTSTRAP_VERSION}" \
     >/var/lib/naturalehia-fauna/bootstrap-version
+printf '%s\n' "${PROVISIONING_FINGERPRINT}" \
+    >/var/lib/naturalehia-fauna/provisioning-fingerprint
+chmod 0444 /var/lib/naturalehia-fauna/bootstrap-version \
+    /var/lib/naturalehia-fauna/provisioning-fingerprint
 
 git_config="${CONTAINER_HOME}/.gitconfig"
 if ! git config --file "${git_config}" --get-all safe.directory 2>/dev/null |

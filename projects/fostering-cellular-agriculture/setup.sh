@@ -7,8 +7,11 @@ IFS=$'\n\t'
 readonly PROJECT_SLUG="fostering-cellular-agriculture"
 readonly DEFAULT_PROJECT_DIR="/workspace/${PROJECT_SLUG}"
 readonly DEFAULT_DEV_HOME="/home/developer"
-readonly PROVISION_REVISION="2"
+readonly PROVISION_REVISION="3"
 
+# Keep these explicit even where Ubuntu's TeX metapackages overlap. Each entry
+# is a project requirement: account provisioning, shell linting, the documented
+# latexmk release workflow, or a package family imported by the whitepaper.
 readonly -a REQUIRED_APT_PACKAGES=(
     latexmk
     passwd
@@ -18,6 +21,34 @@ readonly -a REQUIRED_APT_PACKAGES=(
     texlive-latex-extra
     texlive-latex-recommended
     texlive-pictures
+)
+
+readonly -a REQUIRED_TEX_FILES=(
+    amsmath.sty
+    amssymb.sty
+    array.sty
+    article.cls
+    booktabs.sty
+    caption.sty
+    cleveref.sty
+    enumitem.sty
+    fancyhdr.sty
+    fontenc.sty
+    geometry.sty
+    graphicx.sty
+    hyperref.sty
+    inputenc.sty
+    longtable.sty
+    mathpazo.sty
+    mathtools.sty
+    microtype.sty
+    natbib.sty
+    pgfplots.sty
+    placeins.sty
+    plainnat.bst
+    tabularx.sty
+    tikz.sty
+    xcolor.sty
 )
 
 fail() {
@@ -131,11 +162,11 @@ emcc_version="$(emcc --version)"
 mv -f "${state_tmp}" "${STATE_DIR}/toolchain.tsv"
 chmod 0644 "${STATE_DIR}/toolchain.tsv"
 
-for required_command in cmake emcc emcmake latexmk make node pdflatex shellcheck; do
+for required_command in bibtex cmake ctest emcc emcmake latexmk make node pdflatex shellcheck; do
     command -v "${required_command}" >/dev/null ||
         fail "required command is unavailable after provisioning: ${required_command}"
 done
-for required_tex_file in cleveref.sty mathpazo.sty pgfplots.sty; do
+for required_tex_file in "${REQUIRED_TEX_FILES[@]}"; do
     kpsewhich "${required_tex_file}" >/dev/null ||
         fail "required TeX file is unavailable after provisioning: ${required_tex_file}"
 done

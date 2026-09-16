@@ -21,14 +21,18 @@ readonly CONTAINER_PORT="38417"
 readonly CONTAINER_PROJECT_DIR="/workspace/${PROJECT_SLUG}"
 readonly CONTAINER_STATE_ROOT="/work/protein-logic"
 readonly CONTAINER_HOME="/home/developer"
+readonly CONTAINER_ENTRYPOINT="/bin/bash"
+readonly CONTAINER_COMMAND='trap "exit 0" TERM INT; while :; do sleep 3600 & wait $!; done'
+readonly PROVISIONING_FINGERPRINT_FILE="/work/provisioning-fingerprint.sha256"
 # These established, labeled volumes intentionally retain their historical names.
 readonly BUILD_VOLUME="naturalehia-protein-logic-build-v1"
 readonly HOME_VOLUME="naturalehia-protein-logic-home-v1"
 readonly MANAGED_LABEL="org.naturalehia.protein-logic.managed"
-readonly CONFIG_LABEL="org.naturalehia.protein-logic.config"
+readonly RUNTIME_CONFIG_LABEL="org.naturalehia.protein-logic.runtime-config"
 readonly VOLUME_ROLE_LABEL="org.naturalehia.protein-logic.volume-role"
 readonly WORKSPACE_LABEL="org.naturalehia.protein-logic.workspace"
-readonly CONTAINER_SCHEMA="2"
+# Increment this only when the immutable Docker create/inspect contract changes.
+readonly CONTAINER_SCHEMA="3"
 
 script_directory="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 HOST_PROJECT_DIR=""
@@ -343,35 +347,140 @@ ensure_image() {
     IMAGE_ID="$(docker_cli image inspect --format '{{.Id}}' "$IMAGE")"
 }
 
-configuration_fingerprint() {
-    local setup_sha256
-    setup_sha256="$(sha256sum "$script_directory/setup.sh" | cut -d ' ' -f 1)"
-    printf '%s\n' \
-        "schema=$CONTAINER_SCHEMA" \
-        "image=$IMAGE_ID" \
-        "name=$CONTAINER_NAME" \
-        "hostname=$CONTAINER_HOSTNAME" \
-        "workspace=$HOST_PROJECT_DIR:$CONTAINER_PROJECT_DIR" \
-        "user=$DEV_UID:$DEV_GID" \
-        "volumes=$BUILD_VOLUME:/work,$HOME_VOLUME:$CONTAINER_HOME" \
-        "port=127.0.0.1:$HOST_PORT:$CONTAINER_PORT/tcp" \
-        "gpu=$GPU_MODE" \
-        "runtime=init,restart:no,no-new-privileges,pids:2048,shm:2g" \
-        "setup=$setup_sha256" |
-        sha256sum | cut -d ' ' -f 1
+expected_container_environment() {
+    local environment_entry environment_name image_environment
+    local -A expected_environment=()
+
+    image_environment="$(docker_cli image inspect \
+        --format '{{range .Config.Env}}{{println .}}{{end}}' "$IMAGE")" ||
+        fail "could not inspect the requested image environment"
+    while IFS= read -r environment_entry; do
+        [[ -n "$environment_entry" ]] || continue
+        [[ "$environment_entry" == *=* ]] ||
+            fail "requested image contains an invalid environment entry"
+        environment_name="${environment_entry%%=*}"
+        expected_environment["$environment_name"]="$environment_entry"
+    done <<<"$image_environment"
+
+    expected_environment[HOME]="HOME=$CONTAINER_HOME"
+    if [[ "$GPU_MODE" == "all" ]]; then
+        expected_environment[NVIDIA_VISIBLE_DEVICES]="NVIDIA_VISIBLE_DEVICES=all"
+        expected_environment[NVIDIA_DRIVER_CAPABILITIES]="NVIDIA_DRIVER_CAPABILITIES=compute,utility"
+    fi
+
+    for environment_name in "${!expected_environment[@]}"; do
+        printf '%s\n' "${expected_environment[$environment_name]}"
+    done | sort
 }
 
-assert_target_matches() {
-    local expected_fingerprint="$1"
+provisioning_fingerprint() {
+    sha256sum "$script_directory/setup.sh" | cut -d ' ' -f 1
+}
+
+runtime_fingerprint() {
+    local environment_entry expected_environment
+    expected_environment="$(expected_container_environment)" ||
+        fail "could not calculate the expected container environment"
+    {
+        printf '%s\n' \
+            "schema=$CONTAINER_SCHEMA" \
+            "image=$IMAGE:$IMAGE_ID" \
+            "name=$CONTAINER_NAME" \
+            "hostname=$CONTAINER_HOSTNAME" \
+            "entrypoint=$CONTAINER_ENTRYPOINT" \
+            "command=-lc:$CONTAINER_COMMAND" \
+            "workspace=$HOST_PROJECT_DIR:$CONTAINER_PROJECT_DIR:rw,rprivate" \
+            "user=$DEV_UID:$DEV_GID" \
+            "volumes=$BUILD_VOLUME:/work:rw,$HOME_VOLUME:$CONTAINER_HOME:rw" \
+            "port=127.0.0.1:$HOST_PORT:$CONTAINER_PORT/tcp" \
+            "gpu=$GPU_MODE" \
+            "runtime=init:true,restart:no,network:bridge,no-new-privileges=true,pids:2048,shm:2g" \
+            "logging=local,max-size:10m,max-file:3" \
+            "negative=privileged:false,readonly-rootfs:false,auto-remove:false,publish-all:false,extra-devices:0,extra-caps:0"
+        while IFS= read -r environment_entry; do
+            printf 'environment=%s\n' "$environment_entry"
+        done <<<"$expected_environment"
+    } | sha256sum | cut -d ' ' -f 1
+}
+
+assert_target_runtime_matches() {
+    local expected_environment expected_fingerprint expected_gpu_requests
+    local actual_environment
+    expected_fingerprint="$1"
     assert_target_managed
-    [[ "$(container_label "$CONTAINER_NAME" "$CONFIG_LABEL")" == "$expected_fingerprint" ]] ||
-        fail "managed container '$CONTAINER_NAME' has a mismatched configuration; it is preserved"
+    [[ "$(container_label "$CONTAINER_NAME" "$RUNTIME_CONFIG_LABEL")" == "$expected_fingerprint" ]] ||
+        fail "managed container '$CONTAINER_NAME' has a mismatched runtime fingerprint; it is preserved"
+    [[ "$(docker_cli container inspect --format '{{.Name}}' "$CONTAINER_NAME")" == "/$CONTAINER_NAME" ]] ||
+        fail "managed container '$CONTAINER_NAME' has a different name; it is preserved"
     [[ "$(docker_cli container inspect --format '{{.Image}}' "$CONTAINER_NAME")" == "$IMAGE_ID" ]] ||
         fail "managed container '$CONTAINER_NAME' uses a different image; it is preserved"
+    [[ "$(docker_cli container inspect --format '{{.Config.Image}}' "$CONTAINER_NAME")" == "$IMAGE" ]] ||
+        fail "managed container '$CONTAINER_NAME' records a different image reference; it is preserved"
     [[ "$(docker_cli container inspect --format '{{.Config.Hostname}}' "$CONTAINER_NAME")" == "$CONTAINER_HOSTNAME" ]] ||
         fail "managed container '$CONTAINER_NAME' has a different hostname; it is preserved"
+    [[ -z "$(docker_cli container inspect --format '{{.Config.Domainname}}' "$CONTAINER_NAME")" ]] ||
+        fail "managed container '$CONTAINER_NAME' has an unexpected domain name; it is preserved"
     [[ "$(docker_cli container inspect --format '{{.Config.User}}' "$CONTAINER_NAME")" == "$DEV_UID:$DEV_GID" ]] ||
         fail "managed container '$CONTAINER_NAME' has a different user; it is preserved"
+    [[ "$(docker_cli container inspect --format '{{.Config.WorkingDir}}' "$CONTAINER_NAME")" == "$CONTAINER_PROJECT_DIR" ]] ||
+        fail "managed container '$CONTAINER_NAME' has a different working directory; it is preserved"
+    [[ "$(docker_cli container inspect --format '{{len .Config.Entrypoint}}' "$CONTAINER_NAME")" == "1" &&
+        "$(docker_cli container inspect --format '{{index .Config.Entrypoint 0}}' "$CONTAINER_NAME")" == "$CONTAINER_ENTRYPOINT" ]] ||
+        fail "managed container '$CONTAINER_NAME' has a different entrypoint; it is preserved"
+    [[ "$(docker_cli container inspect --format '{{len .Config.Cmd}}' "$CONTAINER_NAME")" == "2" &&
+        "$(docker_cli container inspect --format '{{index .Config.Cmd 0}}' "$CONTAINER_NAME")" == "-lc" &&
+        "$(docker_cli container inspect --format '{{index .Config.Cmd 1}}' "$CONTAINER_NAME")" == "$CONTAINER_COMMAND" ]] ||
+        fail "managed container '$CONTAINER_NAME' has a different command; it is preserved"
+    [[ "$(docker_cli container inspect --format '{{.Config.AttachStdin}}' "$CONTAINER_NAME")" == "false" &&
+        "$(docker_cli container inspect --format '{{.Config.OpenStdin}}' "$CONTAINER_NAME")" == "false" &&
+        "$(docker_cli container inspect --format '{{.Config.StdinOnce}}' "$CONTAINER_NAME")" == "false" &&
+        "$(docker_cli container inspect --format '{{.Config.Tty}}' "$CONTAINER_NAME")" == "false" ]] ||
+        fail "managed container '$CONTAINER_NAME' has different standard-input settings; it is preserved"
+
+    expected_environment="$(expected_container_environment)"
+    actual_environment="$(docker_cli container inspect \
+        --format '{{range .Config.Env}}{{println .}}{{end}}' "$CONTAINER_NAME" | \
+        sed '/^$/d' | sort)"
+    [[ "$actual_environment" == "$expected_environment" ]] ||
+        fail "managed container '$CONTAINER_NAME' has a different environment; it is preserved"
+
+    [[ "$(docker_cli container inspect --format '{{.HostConfig.RestartPolicy.Name}}' "$CONTAINER_NAME")" == "no" &&
+        "$(docker_cli container inspect --format '{{.HostConfig.RestartPolicy.MaximumRetryCount}}' "$CONTAINER_NAME")" == "0" ]] ||
+        fail "managed container '$CONTAINER_NAME' has a different restart policy; it is preserved"
+    [[ "$(docker_cli container inspect --format '{{.HostConfig.Init}}' "$CONTAINER_NAME")" == "true" ]] ||
+        fail "managed container '$CONTAINER_NAME' does not use the expected init process; it is preserved"
+    [[ "$(docker_cli container inspect --format '{{json .HostConfig.SecurityOpt}}' "$CONTAINER_NAME")" == '["no-new-privileges:true"]' ]] ||
+        fail "managed container '$CONTAINER_NAME' has different security options; it is preserved"
+    [[ "$(docker_cli container inspect --format '{{.HostConfig.PidsLimit}}' "$CONTAINER_NAME")" == "2048" ]] ||
+        fail "managed container '$CONTAINER_NAME' has a different PID limit; it is preserved"
+    [[ "$(docker_cli container inspect --format '{{.HostConfig.ShmSize}}' "$CONTAINER_NAME")" == "2147483648" ]] ||
+        fail "managed container '$CONTAINER_NAME' has a different shared-memory size; it is preserved"
+    [[ "$(docker_cli container inspect --format '{{.HostConfig.NetworkMode}}' "$CONTAINER_NAME")" == "bridge" ]] ||
+        fail "managed container '$CONTAINER_NAME' has a different network mode; it is preserved"
+    [[ "$(docker_cli container inspect --format '{{.HostConfig.Privileged}}' "$CONTAINER_NAME")" == "false" &&
+        "$(docker_cli container inspect --format '{{.HostConfig.ReadonlyRootfs}}' "$CONTAINER_NAME")" == "false" &&
+        "$(docker_cli container inspect --format '{{.HostConfig.AutoRemove}}' "$CONTAINER_NAME")" == "false" &&
+        "$(docker_cli container inspect --format '{{len .HostConfig.Devices}}' "$CONTAINER_NAME")" == "0" &&
+        "$(docker_cli container inspect --format '{{len .HostConfig.CapAdd}}' "$CONTAINER_NAME")" == "0" &&
+        "$(docker_cli container inspect --format '{{len .HostConfig.CapDrop}}' "$CONTAINER_NAME")" == "0" ]] ||
+        fail "managed container '$CONTAINER_NAME' has different isolation settings; it is preserved"
+    [[ "$(docker_cli container inspect --format '{{.HostConfig.LogConfig.Type}}' "$CONTAINER_NAME")" == "local" &&
+        "$(docker_cli container inspect --format '{{len .HostConfig.LogConfig.Config}}' "$CONTAINER_NAME")" == "2" &&
+        "$(docker_cli container inspect --format '{{index .HostConfig.LogConfig.Config "max-size"}}' "$CONTAINER_NAME")" == "10m" &&
+        "$(docker_cli container inspect --format '{{index .HostConfig.LogConfig.Config "max-file"}}' "$CONTAINER_NAME")" == "3" ]] ||
+        fail "managed container '$CONTAINER_NAME' has a different logging policy; it is preserved"
+    [[ "$(docker_cli container inspect --format '{{json .HostConfig.PortBindings}}' "$CONTAINER_NAME")" == \
+        "{\"$CONTAINER_PORT/tcp\":[{\"HostIp\":\"127.0.0.1\",\"HostPort\":\"$HOST_PORT\"}]}" &&
+        "$(docker_cli container inspect --format '{{json .Config.ExposedPorts}}' "$CONTAINER_NAME")" == \
+        "{\"$CONTAINER_PORT/tcp\":{}}" &&
+        "$(docker_cli container inspect --format '{{.HostConfig.PublishAllPorts}}' "$CONTAINER_NAME")" == "false" ]] ||
+        fail "managed container '$CONTAINER_NAME' has different port bindings; it is preserved"
+    expected_gpu_requests="null"
+    if [[ "$GPU_MODE" == "all" ]]; then
+        expected_gpu_requests='[{"Driver":"","Count":-1,"DeviceIDs":null,"Capabilities":[["gpu"]],"Options":{}}]'
+    fi
+    [[ "$(docker_cli container inspect --format '{{json .HostConfig.DeviceRequests}}' "$CONTAINER_NAME")" == "$expected_gpu_requests" ]] ||
+        fail "managed container '$CONTAINER_NAME' has a different GPU request; it is preserved"
     assert_exact_mounts
 }
 
@@ -403,36 +512,39 @@ normalize_bind_source() {
 
 assert_exact_mounts() {
     local container_name="${1:-$CONTAINER_NAME}"
-    local expected_bind_source mount_name mount_records mount_source mount_type
-    local mount_destination mount_propagation mount_rw
+    local expected_bind_source mount_driver mount_mode mount_name mount_records
+    local mount_source mount_type mount_destination mount_propagation mount_rw
     local -i build_seen=0 home_seen=0 mount_count=0 project_seen=0
     expected_bind_source="$(normalize_bind_source "$HOST_PROJECT_DIR")"
     mount_records="$(docker_cli container inspect \
-        --format '{{range .Mounts}}{{printf "%s\t%s\t%s\tname=%s\t%t\t%s\n" .Type .Source .Destination .Name .RW .Propagation}}{{end}}' \
+        --format '{{range .Mounts}}{{printf "%s\t%s\t%s\tname=%s\trw=%t\tprop=%s\tmode=%s\tdriver=%s\n" .Type .Source .Destination .Name .RW .Propagation .Mode .Driver}}{{end}}' \
         "$container_name")" ||
         fail "could not inspect mounts for managed container '$container_name'"
 
     while IFS=$'\t' read -r mount_type mount_source mount_destination mount_name \
-        mount_rw mount_propagation; do
+        mount_rw mount_propagation mount_mode mount_driver; do
         [[ -n "$mount_type" ]] || continue
         ((mount_count += 1))
         case "$mount_destination" in
             "$CONTAINER_PROJECT_DIR")
                 [[ "$mount_type" == "bind" && "$mount_name" == "name=" &&
-                    "$mount_rw" == "true" && "$mount_propagation" == "rprivate" &&
+                    "$mount_rw" == "rw=true" && "$mount_propagation" == "prop=rprivate" &&
+                    "$mount_mode" == "mode=" && "$mount_driver" == "driver=" &&
                     "$(normalize_bind_source "$mount_source")" == "$expected_bind_source" ]] ||
                     fail "managed container '$container_name' has a mismatched project bind; it is preserved"
                 ((project_seen += 1))
                 ;;
             /work)
                 [[ "$mount_type" == "volume" && "$mount_name" == "name=$BUILD_VOLUME" &&
-                    "$mount_rw" == "true" ]] ||
+                    "$mount_rw" == "rw=true" && "$mount_propagation" == "prop=" &&
+                    "$mount_mode" == "mode=z" && "$mount_driver" == "driver=local" ]] ||
                     fail "managed container '$container_name' does not use retained build volume '$BUILD_VOLUME' at /work; it is preserved"
                 ((build_seen += 1))
                 ;;
             "$CONTAINER_HOME")
                 [[ "$mount_type" == "volume" && "$mount_name" == "name=$HOME_VOLUME" &&
-                    "$mount_rw" == "true" ]] ||
+                    "$mount_rw" == "rw=true" && "$mount_propagation" == "prop=" &&
+                    "$mount_mode" == "mode=z" && "$mount_driver" == "driver=local" ]] ||
                     fail "managed container '$container_name' does not use retained home volume '$HOME_VOLUME' at $CONTAINER_HOME; it is preserved"
                 ((home_seen += 1))
                 ;;
@@ -510,7 +622,7 @@ prepare_volumes() {
 }
 
 create_container() {
-    local fingerprint="$1"
+    local expected_runtime_fingerprint="$1"
     local -a gpu_arguments=()
     if [[ "$GPU_MODE" == "all" ]]; then
         gpu_arguments=(--gpus all --env "NVIDIA_VISIBLE_DEVICES=all"
@@ -537,28 +649,31 @@ create_container() {
         --mount "type=volume,source=$BUILD_VOLUME,target=/work" \
         --mount "type=volume,source=$HOME_VOLUME,target=$CONTAINER_HOME" \
         --label "$MANAGED_LABEL=true" \
-        --label "$CONFIG_LABEL=$fingerprint" \
+        --label "$RUNTIME_CONFIG_LABEL=$expected_runtime_fingerprint" \
         --label "$WORKSPACE_LABEL=$WORKSPACE_ID" \
         --log-driver local \
         --log-opt max-size=10m \
         --log-opt max-file=3 \
-        --entrypoint /bin/bash \
-        "$IMAGE" -lc 'trap "exit 0" TERM INT; while :; do sleep 3600 & wait $!; done' \
+        --entrypoint "$CONTAINER_ENTRYPOINT" \
+        "$IMAGE" -lc "$CONTAINER_COMMAND" \
     )"
     [[ "$LAST_CREATED_CONTAINER_ID" =~ ^[0-9a-f]{64}$ ]] ||
         fail "Docker returned an invalid immutable ID for '$CONTAINER_NAME'"
 }
 
 provision_container() {
+    local expected_provisioning_fingerprint="$1"
     docker_cli exec --user 0:0 \
         --env "NATURALEHIA_PROTEIN_LOGIC_DEV_UID=$DEV_UID" \
         --env "NATURALEHIA_PROTEIN_LOGIC_DEV_GID=$DEV_GID" \
         --env "NATURALEHIA_PROTEIN_LOGIC_DEV_HOME=$CONTAINER_HOME" \
         --env "NATURALEHIA_PROTEIN_LOGIC_STATE_ROOT=$CONTAINER_STATE_ROOT" \
+        --env "NATURALEHIA_PROTEIN_LOGIC_PROVISIONING_FINGERPRINT=$expected_provisioning_fingerprint" \
         "$CONTAINER_NAME" bash "$CONTAINER_PROJECT_DIR/setup.sh"
 }
 
 verify_environment() {
+    local expected_provisioning_fingerprint="$1"
     local tool
     for tool in cmake ninja make g++ clang++ shellcheck uncrustify; do
         docker_cli exec --user "$DEV_UID:$DEV_GID" "$CONTAINER_NAME" \
@@ -575,15 +690,23 @@ verify_environment() {
         docker_cli exec --user "$DEV_UID:$DEV_GID" "$CONTAINER_NAME" nvidia-smi -L >/dev/null ||
             fail "NVIDIA GPU is not visible; check the host driver and NVIDIA Container Toolkit"
     fi
+    [[ "$(docker_cli exec --user 0:0 "$CONTAINER_NAME" \
+        cat "$PROVISIONING_FINGERPRINT_FILE")" == "$expected_provisioning_fingerprint" ]] ||
+        fail "the recorded provisioning fingerprint does not match setup.sh"
+    docker_cli exec --user 0:0 "$CONTAINER_NAME" test -r /work/toolchain-packages.tsv ||
+        fail "the installed-package manifest is unavailable"
 }
 
 set_active_build_root() {
-    local expected_fingerprint="$1"
+    local expected_provisioning_fingerprint="$1"
+    local expected_runtime_fingerprint="$2"
     local packages_fingerprint
     packages_fingerprint="$(docker_cli exec "$CONTAINER_NAME" \
         sha256sum /work/toolchain-packages.tsv | cut -d ' ' -f 1)"
     active_build_root="$CONTAINER_STATE_ROOT/builds/$(printf '%s\n' \
-        "$expected_fingerprint" "$packages_fingerprint" | sha256sum | cut -d ' ' -f 1)"
+        "runtime=$expected_runtime_fingerprint" \
+        "provisioning=$expected_provisioning_fingerprint" \
+        "packages=$packages_fingerprint" | sha256sum | cut -d ' ' -f 1)"
 }
 
 ensure_up() {
@@ -595,31 +718,33 @@ ensure_up() {
         assert_target_managed
     fi
     ensure_image
-    local expected_fingerprint
-    expected_fingerprint="$(configuration_fingerprint)"
+    local expected_provisioning_fingerprint expected_runtime_fingerprint
+    expected_runtime_fingerprint="$(runtime_fingerprint)"
+    expected_provisioning_fingerprint="$(provisioning_fingerprint)"
     if container_exists "$CONTAINER_NAME"; then
-        assert_target_matches "$expected_fingerprint"
+        assert_target_runtime_matches "$expected_runtime_fingerprint"
     fi
     prepare_volumes
     if ! container_exists "$CONTAINER_NAME"; then
-        create_container "$expected_fingerprint"
+        create_container "$expected_runtime_fingerprint"
         [[ "$(docker_cli container inspect --format '{{.Id}}' \
             "$CONTAINER_NAME")" == "$LAST_CREATED_CONTAINER_ID" ]] ||
             fail "created container identity changed before startup"
+        assert_target_runtime_matches "$expected_runtime_fingerprint"
     fi
     if ! container_running "$CONTAINER_NAME"; then
         docker_cli start "$CONTAINER_NAME" >/dev/null
     fi
-    provision_container
-    verify_environment
-    set_active_build_root "$expected_fingerprint"
+    provision_container "$expected_provisioning_fingerprint"
+    verify_environment "$expected_provisioning_fingerprint"
+    set_active_build_root "$expected_provisioning_fingerprint" \
+        "$expected_runtime_fingerprint"
 }
 
 container_exec() {
     docker_cli exec --user "$DEV_UID:$DEV_GID" \
         --workdir "$CONTAINER_PROJECT_DIR" \
         --env "HOME=$CONTAINER_HOME" \
-        --env "CCACHE_DIR=$CONTAINER_STATE_ROOT/ccache" \
         --env "NATURALEHIA_PROTEIN_LOGIC_CONTAINER=1" \
         --env "NATURALEHIA_PROTEIN_LOGIC_BUILD_ROOT=$active_build_root" \
         "$CONTAINER_NAME" "$@"
@@ -634,7 +759,6 @@ interactive_shell() {
             --user "$DEV_UID:$DEV_GID" \
             --workdir "$CONTAINER_PROJECT_DIR" \
             --env "HOME=$CONTAINER_HOME" \
-            --env "CCACHE_DIR=$CONTAINER_STATE_ROOT/ccache" \
             --env "NATURALEHIA_PROTEIN_LOGIC_CONTAINER=1" \
             --env "NATURALEHIA_PROTEIN_LOGIC_BUILD_ROOT=$active_build_root" \
             "$CONTAINER_NAME" /bin/bash
@@ -644,7 +768,6 @@ interactive_shell() {
         --user "$DEV_UID:$DEV_GID" \
         --workdir "$CONTAINER_PROJECT_DIR" \
         --env "HOME=$CONTAINER_HOME" \
-        --env "CCACHE_DIR=$CONTAINER_STATE_ROOT/ccache" \
         --env "NATURALEHIA_PROTEIN_LOGIC_CONTAINER=1" \
         --env "NATURALEHIA_PROTEIN_LOGIC_BUILD_ROOT=$active_build_root" \
         "$CONTAINER_NAME" /bin/bash
@@ -671,35 +794,56 @@ show_status() {
         return
     fi
 
-    local configuration_state="not comparable (requested image is not local)"
+    local provisioning_state="not checked"
+    local runtime_state="not comparable (requested image is not local)"
     local safe_to_exec="false"
+    local running
+    running="$(docker_cli container inspect --format '{{.State.Running}}' "$CONTAINER_NAME")"
     if [[ "$(container_label "$CONTAINER_NAME" "$MANAGED_LABEL")" != "true" ]]; then
-        configuration_state="UNMANAGED; preserved"
+        runtime_state="UNMANAGED; preserved"
         ok="false"
     elif [[ "$(container_label "$CONTAINER_NAME" "$WORKSPACE_LABEL")" != "$WORKSPACE_ID" ]]; then
-        configuration_state="DIFFERENT WORKSPACE; preserved"
+        runtime_state="DIFFERENT WORKSPACE; preserved"
         ok="false"
     else
-        safe_to_exec="true"
         if docker_cli image inspect "$IMAGE" >/dev/null 2>&1; then
             IMAGE_ID="$(docker_cli image inspect --format '{{.Id}}' "$IMAGE")"
-            if [[ "$(container_label "$CONTAINER_NAME" "$CONFIG_LABEL")" == \
-                "$(configuration_fingerprint)" ]]; then
-                configuration_state="matches container.sh"
+            local expected_runtime_fingerprint
+            expected_runtime_fingerprint="$(runtime_fingerprint)"
+            if (assert_target_runtime_matches \
+                "$expected_runtime_fingerprint") >/dev/null 2>&1; then
+                runtime_state="matches container.sh"
+                safe_to_exec="true"
             else
-                configuration_state="MISMATCH; preserved"
+                runtime_state="MISMATCH; preserved"
                 ok="false"
             fi
         fi
     fi
-    local running
-    running="$(docker_cli container inspect --format '{{.State.Running}}' "$CONTAINER_NAME")"
-    printf 'Container:   %s\nRunning:     %s\nImage:       %s\nUser:        %s\nConfig:      %s\nPorts:       %s\nGPU request: %s\nMounts:\n' \
+
+    if [[ "$running" == "true" && "$safe_to_exec" == "true" ]]; then
+        local expected_provisioning_fingerprint recorded_provisioning_fingerprint
+        expected_provisioning_fingerprint="$(provisioning_fingerprint)"
+        recorded_provisioning_fingerprint="$(docker_cli exec --user 0:0 \
+            "$CONTAINER_NAME" cat "$PROVISIONING_FINGERPRINT_FILE" 2>/dev/null || true)"
+        if [[ "$recorded_provisioning_fingerprint" == \
+            "$expected_provisioning_fingerprint" ]]; then
+            provisioning_state="current"
+        else
+            provisioning_state="STALE; run 'bash container.sh up'"
+            ok="false"
+        fi
+    elif [[ "$running" != "true" && "$safe_to_exec" == "true" ]]; then
+        provisioning_state="not checked (container stopped)"
+    fi
+
+    printf 'Container:    %s\nRunning:      %s\nImage:        %s\nUser:         %s\nRuntime:      %s\nProvisioning: %s\nPorts:        %s\nGPU request:  %s\nMounts:\n' \
         "$CONTAINER_NAME" \
         "$running" \
         "$(docker_cli container inspect --format '{{.Config.Image}}' "$CONTAINER_NAME")" \
         "$(docker_cli container inspect --format '{{.Config.User}}' "$CONTAINER_NAME")" \
-        "$configuration_state" \
+        "$runtime_state" \
+        "$provisioning_state" \
         "$(docker_cli container inspect --format '{{json .HostConfig.PortBindings}}' "$CONTAINER_NAME")" \
         "$(docker_cli container inspect --format '{{json .HostConfig.DeviceRequests}}' "$CONTAINER_NAME")"
     docker_cli container inspect \
@@ -753,8 +897,9 @@ recreate_container() {
         fail "managed container has an invalid immutable ID; it is preserved"
 
     ensure_image
-    local expected_fingerprint
-    expected_fingerprint="$(configuration_fingerprint)"
+    local expected_provisioning_fingerprint expected_runtime_fingerprint
+    expected_runtime_fingerprint="$(runtime_fingerprint)"
+    expected_provisioning_fingerprint="$(provisioning_fingerprint)"
 
     RECREATE_TRANSACTION_ACTIVE="true"
     printf 'Preserving previous container %s as %s during replacement.\n' \
@@ -763,16 +908,17 @@ recreate_container() {
     RECREATE_RENAMED="true"
     assert_recreate_backup_matches "$RECREATE_BACKUP_ID"
 
-    create_container "$expected_fingerprint"
+    create_container "$expected_runtime_fingerprint"
     RECREATE_CANDIDATE_ID="$LAST_CREATED_CONTAINER_ID"
     [[ "$(docker_cli container inspect --format '{{.Id}}' \
         "$CONTAINER_NAME")" == "$RECREATE_CANDIDATE_ID" ]] ||
         fail "replacement container identity changed before startup"
     docker_cli start "$RECREATE_CANDIDATE_ID" >/dev/null
-    provision_container
-    verify_environment
-    assert_target_matches "$expected_fingerprint"
-    set_active_build_root "$expected_fingerprint"
+    provision_container "$expected_provisioning_fingerprint"
+    verify_environment "$expected_provisioning_fingerprint"
+    assert_target_runtime_matches "$expected_runtime_fingerprint"
+    set_active_build_root "$expected_provisioning_fingerprint" \
+        "$expected_runtime_fingerprint"
 
     assert_recreate_backup_matches "$RECREATE_BACKUP_ID"
     docker_cli rm "$RECREATE_BACKUP_ID" >/dev/null

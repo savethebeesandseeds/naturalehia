@@ -17,7 +17,7 @@ readonly CONTAINER_PROJECT_DIR="/workspace/${PROJECT_SLUG}"
 readonly CONTAINER_HOME="/home/developer"
 readonly HOME_VOLUME="${CONTAINER_NAME}-home-v1"
 readonly MANAGED_LABEL="org.naturalehia.fostering-cellular-agriculture.managed"
-readonly CONFIG_LABEL="org.naturalehia.fostering-cellular-agriculture.config"
+readonly RUNTIME_LABEL="org.naturalehia.fostering-cellular-agriculture.runtime"
 readonly PROJECT_LABEL="org.naturalehia.project"
 readonly VOLUME_ROLE_LABEL="org.naturalehia.volume-role"
 readonly WORKSPACE_LABEL="org.naturalehia.workspace"
@@ -46,7 +46,7 @@ DEV_UID=""
 DEV_GID=""
 DEV_USERNAME=""
 IMAGE_ID=""
-CONFIG_FINGERPRINT=""
+RUNTIME_FINGERPRINT=""
 WINDOWS_POSIX_SHELL="false"
 HOST_LOCK_DIR=""
 HOST_LOCK_HELD="false"
@@ -142,6 +142,7 @@ validate_id() {
 resolve_project() {
     local script_dir
     require_command sha256sum
+    require_command sort
     script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
     [[ -f "${script_dir}/CMakeLists.txt" ]] ||
         fail "container.sh must remain in the project root"
@@ -312,8 +313,11 @@ assert_home_volume_exclusive() {
     done <<<"${attached_names}"
 }
 
-calculate_fingerprint() {
-    CONFIG_FINGERPRINT="$({
+calculate_runtime_fingerprint() {
+    # Only immutable Docker creation settings belong in this fingerprint.
+    # setup.sh and its toolchain.tsv are mutable provisioning state that `up`
+    # converges inside the same structurally compatible container.
+    RUNTIME_FINGERPRINT="$({
         printf 'schema=%s\n' "${CONTAINER_SCHEMA}"
         printf 'image=%s\n' "${IMAGE_ID}"
         printf 'image-ref=%s\n' "${IMAGE}"
@@ -323,10 +327,10 @@ calculate_fingerprint() {
         printf 'workdir=%s\n' "${CONTAINER_PROJECT_DIR}"
         printf 'workspace=%s:%s:rprivate\n' "${HOST_PROJECT_DIR}" "${CONTAINER_PROJECT_DIR}"
         printf 'home-volume=%s:%s\n' "${HOME_VOLUME}" "${CONTAINER_HOME}"
-        printf 'runtime=init,restart:no,network:bridge,no-new-privileges,pids:%s,shm:%s\n' \
+        printf 'runtime=init:true,restart:no:0,network:bridge,privileged:false,readonly-rootfs:false,no-new-privileges,cap-add:none,cap-drop:none,pids:%s,shm:%s\n' \
             "${PIDS_LIMIT}" "${SHM_SIZE}"
-        printf 'ports=none\n'
-        printf 'gpu=none\n'
+        printf 'ports=none,publish-all:false\n'
+        printf 'gpu-and-devices=none,device-cgroup-rules:none\n'
         printf 'environment=HOME:%s,LANG:C.UTF-8\n' "${CONTAINER_HOME}"
         printf 'logging=local,max-size:%s,max-file:%s\n' \
             "${LOG_MAX_SIZE}" "${LOG_MAX_FILES}"
@@ -394,7 +398,7 @@ create_container() {
         --mount "type=bind,source=${HOST_PROJECT_DIR},target=${CONTAINER_PROJECT_DIR},bind-propagation=rprivate" \
         --mount "type=volume,source=${HOME_VOLUME},target=${CONTAINER_HOME}" \
         --label "${MANAGED_LABEL}=true" \
-        --label "${CONFIG_LABEL}=${CONFIG_FINGERPRINT}" \
+        --label "${RUNTIME_LABEL}=${RUNTIME_FINGERPRINT}" \
         --label "${PROJECT_LABEL}=${PROJECT_SLUG}" \
         --label "${WORKSPACE_LABEL}=${WORKSPACE_ID}" \
         --label "${IMAGE_LABEL}=${IMAGE}" \
@@ -470,18 +474,46 @@ assert_recreatable_container() {
         fail "container '${container_name}' has an unexpected developer-home mount"
 }
 
-container_env_has() {
-    local expected_entry="$1"
-    local actual_entry
-    while IFS= read -r actual_entry; do
-        [[ "${actual_entry}" == "${expected_entry}" ]] && return 0
-    done < <(docker_cli container inspect --format \
-        '{{range .Config.Env}}{{println .}}{{end}}' "${CONTAINER_NAME}")
-    return 1
+expected_runtime_environment() {
+    local image_environment
+    local environment_entry
+    local environment_name
+    image_environment="$(docker_cli image inspect --format \
+        '{{range .Config.Env}}{{println .}}{{end}}' "${IMAGE}")" ||
+        fail "could not inspect the pinned image environment"
+
+    # Docker inherits the pinned image environment and replaces keys supplied
+    # by --env. Reproduce that merge so unexpected container-only entries do
+    # not pass verification merely because HOME and LANG are present.
+    while IFS= read -r environment_entry; do
+        [[ -n "${environment_entry}" ]] || continue
+        environment_name="${environment_entry%%=*}"
+        case "${environment_name}" in
+            HOME | LANG) ;;
+            *) printf '%s\n' "${environment_entry}" ;;
+        esac
+    done <<<"${image_environment}"
+    printf 'HOME=%s\n' "${CONTAINER_HOME}"
+    printf 'LANG=C.UTF-8\n'
+}
+
+verify_runtime_environment() {
+    local actual_environment
+    local expected_environment
+    actual_environment="$(docker_cli container inspect --format \
+        '{{range .Config.Env}}{{println .}}{{end}}' "${CONTAINER_NAME}" | \
+        sed '/^$/d' | LC_ALL=C sort)" ||
+        fail "could not inspect the container environment"
+    expected_environment="$(expected_runtime_environment | LC_ALL=C sort)" ||
+        fail "could not construct the expected container environment"
+    [[ "${actual_environment}" == "${expected_environment}" ]] ||
+        fail "container environment differs from the pinned image plus the managed overrides"
 }
 
 verify_container_structure() {
     assert_recreatable_container
+    [[ "$(docker_cli container inspect --format '{{.Name}}' "${CONTAINER_NAME}")" == "/${CONTAINER_NAME}" ]] ||
+        fail "container name differs from the canonical project name"
     [[ "$(container_label "${CONTAINER_NAME}" "${IMAGE_LABEL}")" == "${IMAGE}" ]] ||
         fail "container image-reference label differs from the pinned image"
     [[ "$(container_label "${CONTAINER_NAME}" "${DEV_UID_LABEL}")" == "${DEV_UID}" &&
@@ -489,10 +521,12 @@ verify_container_structure() {
         fail "container developer-identity labels differ from the requested identity"
     [[ "$(container_label "${CONTAINER_NAME}" "${SCHEMA_LABEL}")" == "${CONTAINER_SCHEMA}" ]] ||
         fail "container schema label differs from container.sh"
-    [[ "$(container_label "${CONTAINER_NAME}" "${CONFIG_LABEL}")" == "${CONFIG_FINGERPRINT}" ]] ||
-        fail "container configuration changed; run 'bash container.sh recreate'"
+    [[ "$(container_label "${CONTAINER_NAME}" "${RUNTIME_LABEL}")" == "${RUNTIME_FINGERPRINT}" ]] ||
+        fail "container runtime structure differs; the existing container is preserved and only an explicit 'bash container.sh recreate' may replace it"
     [[ "$(docker_cli container inspect --format '{{.Image}}' "${CONTAINER_NAME}")" == "${IMAGE_ID}" ]] ||
         fail "container image differs from the pinned image"
+    [[ "$(docker_cli container inspect --format '{{.Config.Image}}' "${CONTAINER_NAME}")" == "${IMAGE}" ]] ||
+        fail "container image reference differs from the pinned image"
     [[ "$(docker_cli container inspect --format '{{.Config.Hostname}}' "${CONTAINER_NAME}")" == "${CONTAINER_HOSTNAME}" ]] ||
         fail "container hostname differs from the project slug"
     [[ "$(docker_cli container inspect --format '{{.Config.User}}' "${CONTAINER_NAME}")" == "${DEV_UID}:${DEV_GID}" ]] ||
@@ -501,6 +535,8 @@ verify_container_structure() {
         fail "container work directory differs from the project workspace"
     [[ "$(docker_cli container inspect --format '{{.HostConfig.RestartPolicy.Name}}' "${CONTAINER_NAME}")" == "no" ]] ||
         fail "container restart policy must be 'no'"
+    [[ "$(docker_cli container inspect --format '{{.HostConfig.RestartPolicy.MaximumRetryCount}}' "${CONTAINER_NAME}")" == "0" ]] ||
+        fail "container restart retry count differs from the managed configuration"
     [[ "$(docker_cli container inspect --format '{{.HostConfig.NetworkMode}}' "${CONTAINER_NAME}")" == "bridge" ]] ||
         fail "container network mode must be the default bridge"
     [[ "$(docker_cli container inspect --format '{{.HostConfig.PidsLimit}}' "${CONTAINER_NAME}")" == "${PIDS_LIMIT}" ]] ||
@@ -509,8 +545,15 @@ verify_container_structure() {
         fail "container shared-memory size differs from the managed configuration"
     [[ "$(docker_cli container inspect --format '{{.HostConfig.Init}}' "${CONTAINER_NAME}")" == "true" ]] ||
         fail "container init setting differs from the managed configuration"
-    [[ "$(docker_cli container inspect --format '{{json .HostConfig.SecurityOpt}}' "${CONTAINER_NAME}")" == '["no-new-privileges=true"]' ]] ||
+    [[ "$(docker_cli container inspect --format '{{json .HostConfig.SecurityOpt}}' "${CONTAINER_NAME}")" == '["no-new-privileges:true"]' ]] ||
         fail "container security options differ from the managed configuration"
+    [[ "$(docker_cli container inspect --format '{{.HostConfig.Privileged}}' "${CONTAINER_NAME}")" == "false" ]] ||
+        fail "managed container must not be privileged"
+    [[ "$(docker_cli container inspect --format '{{.HostConfig.ReadonlyRootfs}}' "${CONTAINER_NAME}")" == "false" ]] ||
+        fail "container root-filesystem mode differs from the managed configuration"
+    [[ "$(docker_cli container inspect --format '{{len .HostConfig.CapAdd}}' "${CONTAINER_NAME}")" == "0" &&
+        "$(docker_cli container inspect --format '{{len .HostConfig.CapDrop}}' "${CONTAINER_NAME}")" == "0" ]] ||
+        fail "container capability overrides differ from the managed configuration"
     [[ "$(docker_cli container inspect --format '{{len .Config.Entrypoint}}' "${CONTAINER_NAME}")" == "1" &&
         "$(docker_cli container inspect --format '{{index .Config.Entrypoint 0}}' "${CONTAINER_NAME}")" == "/bin/bash" ]] ||
         fail "container entrypoint differs from the managed configuration"
@@ -525,19 +568,28 @@ verify_container_structure() {
         "$(docker_cli container inspect --format \
         '{{ index .HostConfig.LogConfig.Config "max-file" }}' "${CONTAINER_NAME}")" == "${LOG_MAX_FILES}" ]] ||
         fail "container log rotation differs from the managed configuration"
-    container_env_has "HOME=${CONTAINER_HOME}" ||
-        fail "container HOME differs from the managed configuration"
-    container_env_has "LANG=C.UTF-8" ||
-        fail "container locale differs from the managed configuration"
+    [[ "$(docker_cli container inspect --format '{{len .HostConfig.LogConfig.Config}}' "${CONTAINER_NAME}")" == "2" ]] ||
+        fail "container has unexpected logging options"
+    verify_runtime_environment
 
     local port_bindings
     local device_requests
+    local device_mappings
+    local device_cgroup_rules
     port_bindings="$(docker_cli container inspect --format '{{json .HostConfig.PortBindings}}' "${CONTAINER_NAME}")"
     device_requests="$(docker_cli container inspect --format '{{json .HostConfig.DeviceRequests}}' "${CONTAINER_NAME}")"
+    device_mappings="$(docker_cli container inspect --format '{{json .HostConfig.Devices}}' "${CONTAINER_NAME}")"
+    device_cgroup_rules="$(docker_cli container inspect --format '{{json .HostConfig.DeviceCgroupRules}}' "${CONTAINER_NAME}")"
     [[ "${port_bindings}" == "null" || "${port_bindings}" == "{}" ]] ||
         fail "managed container must not publish ports"
+    [[ "$(docker_cli container inspect --format '{{.HostConfig.PublishAllPorts}}' "${CONTAINER_NAME}")" == "false" ]] ||
+        fail "managed container must not publish all exposed ports"
     [[ "${device_requests}" == "null" || "${device_requests}" == "[]" ]] ||
-        fail "managed container must not request GPUs or other devices"
+        fail "managed container must not request GPUs"
+    [[ "${device_mappings}" == "null" || "${device_mappings}" == "[]" ]] ||
+        fail "managed container must not map host devices"
+    [[ "${device_cgroup_rules}" == "null" || "${device_cgroup_rules}" == "[]" ]] ||
+        fail "managed container must not add device cgroup rules"
 }
 
 run_setup() {
@@ -625,7 +677,7 @@ ensure_up() {
         assert_recreatable_container
     fi
     ensure_image
-    calculate_fingerprint
+    calculate_runtime_fingerprint
     ensure_home_volume
     if ! container_exists; then
         create_container
@@ -666,14 +718,14 @@ show_status() {
         printf 'Mounts:    %s\n' "$(docker_cli container inspect --format '{{json .Mounts}}' "${CONTAINER_NAME}")"
         if docker_cli image inspect "${IMAGE}" >/dev/null 2>&1; then
             ensure_image
-            calculate_fingerprint
-            if [[ "$(container_label "${CONTAINER_NAME}" "${CONFIG_LABEL}")" == "${CONFIG_FINGERPRINT}" ]]; then
-                printf 'Config:    matches container.sh\n'
+            calculate_runtime_fingerprint
+            if (verify_container_structure >/dev/null 2>&1); then
+                printf 'Runtime:   matches container.sh\n'
             else
-                printf 'Config:    MISMATCH; run bash container.sh recreate\n'
+                printf 'Runtime:   MISMATCH; container preserved; only explicit recreate may replace it\n'
             fi
         else
-            printf 'Config:    not comparable; pinned image is not local\n'
+            printf 'Runtime:   not comparable; pinned image is not local\n'
         fi
     fi
 
@@ -763,7 +815,7 @@ rollback_recreate() {
 recreate_container() {
     assert_legacy_names_absent
     ensure_image
-    calculate_fingerprint
+    calculate_runtime_fingerprint
     ensure_home_volume
 
     if container_exists; then

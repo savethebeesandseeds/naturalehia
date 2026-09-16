@@ -414,13 +414,15 @@ are preserved legacy disposable recipe containers. `recreate` transactionally
 replaces only the exact managed container and retains the named home volume.
 
 Project operations remain ordinary CMake/CMakePresets and executable commands.
-The development preset requires CMake 3.24 or newer and a C++20 compiler. Run
-it through the host interface from this directory:
+The container preset keeps Linux/Wasm artifacts in the persistent developer-home
+volume, away from native host caches. It also enables the exception and Node
+filesystem modes required by the existing tests and CLI fixtures. Run it through
+the host interface from this directory:
 
 ```sh
-bash container.sh exec emcmake cmake --preset dev
-bash container.sh exec cmake --build --preset dev
-bash container.sh exec ctest --preset dev
+bash container.sh exec emcmake cmake --preset container-dev
+bash container.sh exec cmake --build --preset container-dev
+bash container.sh exec ctest --preset container-dev
 ```
 
 Run the illustrative scenario on Windows with a multi-configuration generator:

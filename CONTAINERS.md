@@ -24,8 +24,12 @@ environment, so it does not have a container definition.
 
 All three definitions use restart policy `no`, an init process, a non-root
 development identity, local logging with rotation, and a host-side
-configuration fingerprint. The launchers resolve and record the checkout's
-actual host path before creating anything.
+runtime-configuration fingerprint. The launchers resolve and record the
+checkout's actual host path before creating anything. Image, mounts, ports,
+devices, and other Docker runtime settings are immutable structure; dependency
+and provisioning revisions converge inside the existing container and do not
+require replacement. `recreate` is reserved for an explicitly approved runtime
+structure change.
 
 ## Responsibility split
 

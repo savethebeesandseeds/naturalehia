@@ -16,6 +16,17 @@
         "NATURALEHIA_CELLULAR_FINANCE_BUILD_CLI": "ON",
         "NATURALEHIA_CELLULAR_FINANCE_WARNINGS_AS_ERRORS": "ON"
       }
+    },
+    {
+      "name": "container-dev",
+      "displayName": "Container development with Emscripten",
+      "description": "Persistent-home Emscripten build with C++ exception catching and Node host-filesystem access for the test and CLI fixtures.",
+      "inherits": "dev",
+      "binaryDir": "$env{HOME}/build/fostering-cellular-agriculture/container-dev",
+      "cacheVariables": {
+        "CMAKE_CXX_FLAGS": "-fexceptions",
+        "CMAKE_EXE_LINKER_FLAGS": "-fexceptions -sNODERAWFS=1"
+      }
     }
   ],
   "buildPresets": [
@@ -23,12 +34,25 @@
       "name": "dev",
       "configurePreset": "dev",
       "configuration": "Debug"
+    },
+    {
+      "name": "container-dev",
+      "configurePreset": "container-dev",
+      "configuration": "Debug"
     }
   ],
   "testPresets": [
     {
       "name": "dev",
       "configurePreset": "dev",
+      "configuration": "Debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "container-dev",
+      "configurePreset": "container-dev",
       "configuration": "Debug",
       "output": {
         "outputOnFailure": true
